@@ -1,0 +1,120 @@
+.about-page {
+  min-height: 100vh;
+  background: #0f172a;
+  color: white;
+  font-family: system-ui, sans-serif;
+}
+
+.about-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.about-logo {
+  font-weight: 800;
+  font-size: 20px;
+  text-decoration: none;
+  background: linear-gradient(135deg, #6366f1, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.about-nav-link {
+  color: rgba(255,255,255,0.6);
+  text-decoration: none;
+  font-size: 14px;
+}
+.about-nav-link:hover { color: white; }
+
+.about-content {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+.about-content h1 {
+  font-size: 36px;
+  font-weight: 800;
+  margin: 0 0 16px;
+  background: linear-gradient(135deg, #fff, rgba(255,255,255,0.6));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.about-lead {
+  font-size: 18px;
+  color: rgba(255,255,255,0.65);
+  line-height: 1.6;
+  margin-bottom: 48px;
+}
+
+.about-section {
+  margin-bottom: 40px;
+}
+
+.about-section h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 14px;
+  color: rgba(255,255,255,0.9);
+}
+
+.about-section p,
+.about-section li {
+  color: rgba(255,255,255,0.65);
+  line-height: 1.7;
+  font-size: 15px;
+}
+
+.about-section ul,
+.about-section ol {
+  padding-left: 20px;
+}
+.about-section li { margin-bottom: 6px; }
+
+.about-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  margin-top: 12px;
+}
+.about-table th,
+.about-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.about-table th {
+  background: rgba(99,102,241,0.15);
+  color: rgba(255,255,255,0.7);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.about-table td { color: rgba(255,255,255,0.65); }
+
+.about-disclaimer {
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.2);
+  border-radius: 10px;
+  padding: 16px;
+  font-size: 14px !important;
+  color: rgba(255,200,200,0.7) !important;
+}
+
+.about-footer {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  padding: 24px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.about-footer a {
+  color: rgba(255,255,255,0.35);
+  text-decoration: none;
+  font-size: 13px;
+}
+.about-footer a:hover { color: rgba(255,255,255,0.7); }

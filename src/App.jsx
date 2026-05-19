@@ -135,6 +135,8 @@ export default function App() {
   const [assetType, setAssetType] = useState('stock')
   const [horizon, setHorizon] = useState('3m')
   const [loading, setLoading] = useState(false)
+  const [loadingProgress, setLoadingProgress] = useState(0)
+  const loadingStartRef = useRef(null)
   const [error, setError] = useState('')
   const [meta, setMeta] = useState(null)
   const [streamText, setStreamText] = useState('')
@@ -216,6 +218,23 @@ export default function App() {
     }, 2000)
     return () => clearInterval(timer)
   }, [loading, loadingLines])
+
+  // Progress bar: simulate progress from 0 to ~90% over avg 42s
+  useEffect(() => {
+    if (!loading) {
+      setLoadingProgress(loading ? 100 : 0)
+      return
+    }
+    loadingStartRef.current = Date.now()
+    setLoadingProgress(2)
+    const AVG_MS = 42000
+    const tick = setInterval(() => {
+      const elapsed = Date.now() - (loadingStartRef.current || Date.now())
+      const pct = Math.min(90, (elapsed / AVG_MS) * 90)
+      setLoadingProgress(Math.round(pct))
+    }, 800)
+    return () => clearInterval(tick)
+  }, [loading])
 
   const runAnalyze = useCallback(
     async (overrides = {}) => {
@@ -656,6 +675,10 @@ export default function App() {
           <div className="spinner" aria-hidden />
           <p className="loading-line">{loadingLines[loadLineIndex]}</p>
           <p className="loading-hint">{t('app.loadingHint')}</p>
+          <div className="loading-progress-bar">
+            <div className="loading-progress-fill" style={{ width: `${loadingProgress}%` }} />
+          </div>
+          <p className="loading-progress-label">{loadingProgress}% · {t('app.loadingAvg', { defaultValue: 'avg ~42s' })}</p>
         </div>
       )}
 

@@ -144,6 +144,7 @@ export default function LandingPage() {
         <p>{t('app.disclaimer')}</p>
         <div className="landing-footer-links">
           <Link to="/accuracy">{t('app.accuracyLink')}</Link>
+          <Link to="/about">About</Link>
           <Link to="/login">{t('landing.signIn')}</Link>
           <Link to="/pricing">{t('pricing.title')}</Link>
         </div>

@@ -2579,7 +2579,7 @@ if (SPA_MODE) {
       const p = req.path || '';
       if (
         /^\/admin(\/.*)?$/.test(p) ||
-        /^\/(accuracy|login|register|verify-email|forgot-password|pricing|settings|sample|compare)(\/.*)?$/.test(p)
+        /^\/(accuracy|login|register|verify-email|forgot-password|pricing|settings|sample|compare|about|methodology)(\/.*)?$/.test(p)
       ) {
         return res.sendFile(idxFile);
       }

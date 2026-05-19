@@ -1,25 +1,61 @@
-# Wenap（可上架发行说明）
+# Wenap — AI Investment Research Platform
 
-联网生成结构化投研报告（SSE 流式输出）、六维评分、自选与历史、免费月度额度与 Pro/Pro+ 档位。**本仓库可按「单进程 + 静态前端」或 Docker 部署上架。**
+AI-powered investment research with six-dimension scoring, scenario analysis, supply chain risk, verifiable prediction accuracy, and tiered subscriptions (Free / Pro / Pro+).
 
-## 快速开始（开发）
+---
 
-1. 复制环境变量模板：将 `.env.example` 复制为 `.env`，填写 `OPENROUTER_API_KEY`（必填）。
-2. `npm ci`
-3. 同时起前后端：`npm run dev:full`（Vite `5173` 代理 `/api` → 本服务 `3002`）  
-   或分终端：`npm run server` + `npm run dev`
+## Quick Start (Development)
 
-## 生产上架（推荐）
+```bash
+cp .env.example .env        # fill OPENROUTER_API_KEY (required)
+npm ci
+npm run dev:full             # Vite :5173 proxies /api → server :3002
+```
 
-### 形态说明
+Open http://localhost:5173
 
-- 执行 `npm run build` 生成 `dist/`。
-- 设置 **`NODE_ENV=production`**（或 **`SERVE_DIST=1`**）启动 `node server.cjs` 时：
-  - 托管 `dist/` 静态资源；
-  - 浏览器请求 **`/api/...`** 会在服务端剥离前缀后进入现有路由（与开发时 Vite 代理行为一致）；
-  - 探活与健康信息在 **`GET /health`**（JSON），勿与 SPA 根路径混淆。
+---
 
-### 命令示例
+## Environment Variables
+
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Required | Description |
+|---|---|---|
+| `OPENROUTER_API_KEY` | ✅ | LLM API key (OpenRouter) |
+| `ALPHA_VANTAGE_API_KEY` | Recommended | Real-time price & fundamentals |
+| `JWT_SECRET` | ✅ Production | JWT signing secret (min 32 chars) |
+| `ADMIN_SECRET` | ✅ Production | Admin panel access key |
+| **Stripe** | | |
+| `STRIPE_SECRET_KEY` | For payments | Stripe secret key (sk_...) |
+| `STRIPE_PUBLISHABLE_KEY` | For payments | Stripe publishable key (pk_...) |
+| `STRIPE_WEBHOOK_SECRET` | For payments | Stripe webhook signing secret |
+| `STRIPE_PRICE_PRO` | For payments | Stripe Price ID for Pro monthly |
+| `STRIPE_PRICE_PRO_PLUS` | For payments | Stripe Price ID for Pro+ monthly |
+| **Email** | | |
+| `RESEND_API_KEY` | For emails | Resend API key (re_...) |
+| `MAIL_FROM` | For emails | Sender email (e.g. noreply@wenap.app) |
+| `SMTP_HOST` | Alt to Resend | SMTP host for fallback |
+| `SMTP_PORT` | Alt to Resend | SMTP port (default: 587) |
+| `SMTP_USER` | Alt to Resend | SMTP username |
+| `SMTP_PASS` | Alt to Resend | SMTP password |
+| **AI Models** | | |
+| `OPENROUTER_MAIN_MODEL` | Optional | Free tier model (default: google/gemini-2.5-flash-lite) |
+| `OPENROUTER_PRO_MODEL` | Optional | Pro tier model (default: anthropic/claude-haiku-4-5) |
+| `OPENROUTER_PRO_PLUS_MODEL` | Optional | Pro+ tier model (default: anthropic/claude-sonnet-4-5) |
+| **App** | | |
+| `APP_PUBLIC_URL` | Production | Public URL (e.g. https://wenap.com) |
+| `PORT` | Optional | Server port (default: 3002) |
+| `CRON_ENABLED` | Optional | Set `false` to disable all cron jobs |
+| `CRON_AUTO_ANALYSIS` | Optional | Set `false` to disable weekly auto-analysis |
+| `WENAP_FREE_UNLIMITED` | Dev only | Set `1` to disable free quota enforcement |
+| `WENAP_PRO_PLUS_DAILY_CAP` | Optional | Pro+ daily analysis cap (default: 30) |
+
+---
+
+## Production Deployment
+
+### Single-process (recommended)
 
 ```bash
 npm ci
@@ -27,105 +63,139 @@ npm run build
 NODE_ENV=production PORT=3002 node server.cjs
 ```
 
-Windows PowerShell：
-
+Windows PowerShell:
 ```powershell
-$env:NODE_ENV="production"; $env:PORT="3002"; node server.cjs
+$env:NODE_ENV="production"; $env:PORT=3002; node server.cjs
 ```
-
-### 环境变量（摘要）
-
-| 变量 | 说明 |
-|------|------|
-| `OPENROUTER_API_KEY` | OpenRouter 密钥（必填） |
-| `ALPHA_VANTAGE_API_KEY` | 可选，行情 OVERVIEW / 报价货币 |
-| `PORT` | 监听端口，默认 `3002` |
-| `NODE_ENV=production` | 启用 `dist` 托管 + `/api` 前缀剥离 |
-| `SERVE_DIST=1` | 不设置 `NODE_ENV` 时也可强制 SPA 模式 |
-| `CORS_ORIGIN` | 前后端分离时填写来源，逗号分隔；同源部署可留空 |
-| `TRUST_PROXY=1` | 反代后识别 HTTPS / 客户端 IP |
-| `VITE_SUBSCRIBE_URL` | 前端构建时写入，结账链接（可选） |
-| `VITE_BASE_PATH` | 子路径部署时与 Vite `base` 一致（可选） |
-
-完整说明见 **`.env.example`**。
 
 ### Docker
 
+```dockerfile
+FROM node:22-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+ENV NODE_ENV=production PORT=3002
+EXPOSE 3002
+CMD ["node", "server.cjs"]
+```
+
 ```bash
-docker build -t wenap:1.0.0 .
-docker run --rm -p 3002:3002 --env-file .env wenap:1.0.0
+docker build -t wenap .
+docker run -p 3002:3002 --env-file .env wenap
 ```
 
-镜像内已 `npm run build`，默认 `NODE_ENV=production`。
+---
 
-### 上线（Render，行动基准）
+## Stripe Setup
 
-**只走 Render、省事优先；不迁 Vultr。**
+1. Create a Stripe account and get your keys from the [Dashboard](https://dashboard.stripe.com/apikeys)
+2. Create two recurring Price IDs (monthly):
+   - Pro: $9.99/month → set as `STRIPE_PRICE_PRO`
+   - Pro+: $19.99/month → set as `STRIPE_PRICE_PRO_PLUS`
+3. Set up webhook: Dashboard → Webhooks → Add endpoint → `https://your-domain.com/api/billing/webhook`
+   - Events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`
+4. Copy the webhook signing secret to `STRIPE_WEBHOOK_SECRET`
 
-| 阶段 | 做法 |
-|------|------|
-| 内测 | Render **Free** |
-| 有收入 | **Starter + 磁盘** |
-| 做大 | Render **升配** |
+Without Stripe keys, upgrade buttons show a "Contact us" email fallback.
 
-👉 按步骤做：**[docs/RENDER-行动基准.md](docs/RENDER-行动基准.md)**（内测 10 步清单）  
-补充说明：[docs/DEPLOY-RENDER.md](docs/DEPLOY-RENDER.md)
+---
 
-### Vultr（备用，不必看）
+## Email Setup (Resend)
 
-见 [docs/DEPLOY-VULTR.md](docs/DEPLOY-VULTR.md)。
+1. Sign up at [resend.com](https://resend.com) and verify your sending domain
+2. Create an API key and set `RESEND_API_KEY`
+3. Set `MAIL_FROM` to your verified sender address
 
-### 反向代理（Nginx 示例）
+Without Resend/SMTP, emails are logged to console (dev-friendly fallback).
 
-```nginx
-location / {
-  proxy_pass http://127.0.0.1:3002;
-  proxy_http_version 1.1;
-  proxy_set_header Host $host;
-  proxy_set_header X-Real-IP $remote_addr;
-  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-  proxy_set_header X-Forwarded-Proto $scheme;
-}
+---
+
+## Cron Jobs
+
+Two cron jobs run automatically (unless disabled):
+
+| Job | Schedule | Description |
+|---|---|---|
+| Prediction verification | Daily 00:00 UTC | Verify due predictions against actual prices |
+| Weekly auto-analysis | Mondays 02:00 UTC | Run AI analysis on 10 featured tickers (NVDA, AAPL, JPM, ...) |
+
+To disable all cron: `CRON_ENABLED=false`  
+To disable only weekly auto-analysis: `CRON_AUTO_ANALYSIS=false`
+
+The weekly auto-analysis feeds the `/sample/:ticker` public reports and `/accuracy` data.
+
+---
+
+## AI Model Tiers
+
+| Tier | Model | Sources | Monthly cap |
+|---|---|---|---|
+| Free | Gemini 2.5 Flash Lite | 5 | 5 |
+| Pro | Claude Haiku 4.5 | 8 | Unlimited |
+| Pro+ | Claude Sonnet 4.5 | 8 | 30/day |
+
+Override models via environment variables. Pro+ daily cap: `WENAP_PRO_PLUS_DAILY_CAP` (default: 30).
+
+---
+
+## Key Routes
+
+| Route | Description |
+|---|---|
+| `GET /` | Landing page (unauthenticated) |
+| `GET /app` | Main app (requires auth) |
+| `GET /pricing` | Pricing page |
+| `GET /sample/:ticker` | Public sample report (featured tickers only) |
+| `GET /compare` | Side-by-side compare (Pro+ only) |
+| `GET /accuracy` | Public prediction accuracy stats |
+| `GET /about` | How Wenap works |
+| `GET /health` | Server health check (JSON) |
+| `GET /api/og/:ticker` | OG image (SVG) for social sharing |
+| `POST /api/analyze` | Run AI analysis (auth required) |
+| `POST /api/billing/create-checkout-session` | Start Stripe checkout |
+| `GET /admin` | Admin panel |
+
+---
+
+## Native Module Rebuild
+
+If you see `NODE_MODULE_VERSION` errors with `better-sqlite3`:
+
+```bash
+npm run rebuild:native
+# or
+npm rebuild better-sqlite3
 ```
 
-云上托管请将 **`TRUST_PROXY=1`** 打开，以便限流与日志使用真实客户端 IP（若后续启用）。
+---
 
-## 计费与套餐（当前实现）
+## Architecture
 
-- **免费**：每月固定次数（见服务端 `FREE_MONTHLY_ANALYSIS_CAP`），需传 **`anonId`** 或 **`userId`** 计次；前端已生成并附带 `anonId`。
-- **Pro / Pro+**：由请求体 `tier` 与本地 `localStorage.wenap_tier` 控制；**上架前请接入你自己的账号/支付系统**，勿仅依赖本地存储。
-
-## 数据目录
-
-运行时写入 `data/`（额度、自选、历史）。仓库内仅保留 `data/.gitkeep`；部署环境请挂载卷或备份该目录。
-
-## 合规
-
-页脚免责声明已提示「仅供参考、不构成投资建议」。上架应用商店或面向公众时，请再做法务审核与地域合规检查。
-
-## 脚本
-
-| 命令 | 作用 |
-|------|------|
-| `npm run dev` | 仅前端 |
-| `npm run server` | 仅 API（默认无 SPA，配合 Vite 代理） |
-| `npm run dev:full` | 前后端开发 |
-| `npm run build` | 生产构建 |
-| `npm run start` | 运行 `server.cjs`（生产请配合 `NODE_ENV=production` 与已构建的 `dist`） |
-| `npm run lint` | ESLint |
-
-## 成本与毛利试算（运营）
-
-- 开发模式（`npm run dev`）下，页底会显示 **「运营成本与毛利试算」** 折叠面板：默认按你这类 workload **单次约 $0.05（Flash 路径）** 做账单边际；可改「Pro+ 单次」、用量与固定成本，粗算**毛利**。
-- 生产构建若也要显示：构建前设置 **`VITE_SHOW_ECONOMICS=1`**（勿对终端用户默认开启）。
-- 默认单价为**占位**，必须用 OpenRouter / 云厂商**真实账单**回填后再做定价；未含支付手续费、税与人力。
-
-## 降本（代码已支持，默认不伤体验）
-
-- **Alpha Vantage**：同一标的 **`ALPHA_VANTAGE_CACHE_MS`**（默认 10 分钟）内复用 GLOBAL_QUOTE+OVERVIEW，少打 AV、少等 1.2s 间隔；设为 `0` 关闭缓存。  
-- **OpenRouter**：主模型与领导人调用带 **`max_tokens`** 上限（`OPENROUTER_MAX_OUTPUT_TOKENS_MAIN` / `…_LEADER`），抑制偶发超长补全；默认 16384 / 3072，JSON 正常远小于此。  
-- **客户端断开**：SSE 连接关闭后，在 AV / 主模型 / 领导人 / 流式正文前检测，**尽早中止**后续上游调用。
-
-## 技术栈
-
-React 19 + Vite 8，Express 5（`server.cjs` CommonJS），OpenRouter，可选 Alpha Vantage。
+```
+stockai/
+├── server.cjs          # Express backend (main entry)
+├── routes/
+│   ├── auth.cjs        # Register, login, verify, reset password, referral
+│   ├── billing.cjs     # Stripe checkout, webhook, portal
+│   ├── notifications.cjs # In-app notifications
+│   ├── admin.cjs       # Admin stats, conversion funnel
+│   └── publicAccuracy.cjs
+├── db/
+│   ├── store.cjs       # SQLite DB (predictions, analysis logs)
+│   └── auth.cjs        # User auth, quota enforcement
+├── lib/
+│   ├── emailSend.cjs   # Resend/SMTP email (welcome, quota, weekly digest, etc.)
+│   └── outputLocale.cjs # i18n for server-side prompts
+├── jobs/
+│   ├── verifyPredictions.cjs  # Daily cron: verify due predictions
+│   └── weeklyAutoAnalysis.cjs # Monday cron: auto-run 10 featured tickers
+├── src/               # React frontend (Vite)
+│   ├── pages/         # LandingPage, PricingPage, SettingsPage, ComparePage, SampleReportPage, AboutPage
+│   ├── components/    # NotificationCenter, QuotaStrip, analysis/...
+│   └── i18n/locales/  # en, zh-CN, zh-TW, ja, ko, de
+└── public/
+    └── sw.js          # PWA service worker
+```
