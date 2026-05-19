@@ -235,6 +235,7 @@ export function snapshotToMobileReport(snapshot, meta = {}) {
     // Pro+ fields
     bullBearDebate,
     proPlusFieldHints: snapshot.proPlusFieldHints || {},
+    secondPassCritique: snapshot.secondPassCritique || null,
   }
 }
 

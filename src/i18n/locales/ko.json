@@ -204,7 +204,11 @@
       "bullBearTeaser": "강세/약세 각 3가지 이유 (가중치 포함)…",
       "scenarioTeaser": "시나리오 세분화 · 트리거 가격 및 기간…",
       "supplyTeaser": "공급망 연관 · 관련 종목 분석…",
-      "upgradeCta": "Pro+로 업그레이드"
+      "upgradeCta": "Pro+로 업그레이드",
+      "critiqueTitle": "비평가 시각",
+      "critiqueSub": "2차 AI 검토로 분석의 잠재적 맹점을 파악했습니다:",
+      "pdfExport": "⬇ PDF 내보내기",
+      "pdfExporting": "준비 중…"
     },
     "upgradeBar": {
       "unlockHint": "🔒 전체 분석 잠금 해제",

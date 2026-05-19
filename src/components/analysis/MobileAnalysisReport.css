@@ -170,6 +170,82 @@
   letter-spacing: 0.02em;
 }
 
+.ma-critique-card {
+  border-left: 3px solid rgba(168, 85, 247, 0.5);
+}
+.ma-critique-sub {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin: 0 0 12px;
+}
+.ma-critique-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ma-critique-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.ma-critique-num {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(168, 85, 247, 0.15);
+  color: #a855f7;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ma-critique-text {
+  font-size: 0.875rem;
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+.ma-pro-plus-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 4px 8px;
+}
+.ma-pdf-export-btn {
+  padding: 7px 18px;
+  background: transparent;
+  border: 1px solid rgba(168, 85, 247, 0.5);
+  color: #a855f7;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.ma-pdf-export-btn:hover {
+  background: rgba(168, 85, 247, 0.12);
+}
+.ma-pdf-export-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media print {
+  .wenap-print-mode .ma-upgrade-bar,
+  .wenap-print-mode .ma-pro-plus-actions,
+  .wenap-print-mode .ma-share-btn,
+  .wenap-print-mode .ma-compare-btn {
+    display: none !important;
+  }
+  .wenap-print-mode .mobile-analysis-root {
+    max-width: 100%;
+  }
+}
+
 .ma-hero-bottom {
   margin-top: 12px;
   font-size: 12px;

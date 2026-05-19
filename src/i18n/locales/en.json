@@ -206,7 +206,11 @@
       "bullBearTeaser": "Bull/bear debate · 3 weighted reasons each…",
       "scenarioTeaser": "Scenario refinement · trigger price & time window…",
       "supplyTeaser": "Supply chain thesis · linked ticker analysis…",
-      "upgradeCta": "Upgrade to Pro+"
+      "upgradeCta": "Upgrade to Pro+",
+      "critiqueTitle": "Critic's corner",
+      "critiqueSub": "A second AI pass identified these potential blind spots in the analysis:",
+      "pdfExport": "⬇ Export PDF",
+      "pdfExporting": "Preparing…"
     },
     "upgradeBar": {
       "unlockHint": "🔒 Upgrade for full analysis",

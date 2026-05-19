@@ -204,7 +204,11 @@
       "bullBearTeaser": "強気/弱気 各3理由（重み付き）…",
       "scenarioTeaser": "シナリオ精緻化 · トリガー価格と時間窓…",
       "supplyTeaser": "サプライチェーン · 関連銘柄分析…",
-      "upgradeCta": "Pro+ にアップグレード"
+      "upgradeCta": "Pro+ にアップグレード",
+      "critiqueTitle": "批評家の視点",
+      "critiqueSub": "第2パスAIが分析の盲点を特定しました：",
+      "pdfExport": "⬇ PDFエクスポート",
+      "pdfExporting": "準備中…"
     },
     "upgradeBar": {
       "unlockHint": "🔒 フル分析のアップグレード",

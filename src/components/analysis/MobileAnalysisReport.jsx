@@ -12,6 +12,8 @@ import ProFieldsSection from './ProFieldsSection.jsx'
 import ProPlusLockedSection from './ProPlusLockedSection.jsx'
 import BullBearSection from './BullBearSection.jsx'
 import ProUpgradeBar from './ProUpgradeBar.jsx'
+import CritiqueSection from './CritiqueSection.jsx'
+import ExportPdfButton from './ExportPdfButton.jsx'
 import Skeleton, { HeroSkeleton, RadarSkeleton, BlockSkeleton } from './Skeleton.jsx'
 
 const SECTION_COUNT = 9
@@ -146,6 +148,14 @@ export default function MobileAnalysisReport({
       ) : (
         <BlockSkeleton h={48} />
       )}
+      {isProPlus && report.secondPassCritique ? (
+        <CritiqueSection critique={report.secondPassCritique} />
+      ) : null}
+      {isProPlus ? (
+        <div className="ma-pro-plus-actions">
+          <ExportPdfButton report={report} />
+        </div>
+      ) : null}
       {isFree ? (
         <ProUpgradeBar quotaBanner={quotaBanner} subscribeUrl={subscribeUrl} onDevUnlock={onDevUnlock} />
       ) : null}

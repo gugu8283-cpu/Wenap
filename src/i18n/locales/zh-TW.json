@@ -204,7 +204,11 @@
       "bullBearTeaser": "多空對撞 · 看多/看空各 3 條附權重…",
       "scenarioTeaser": "情景細化 · 觸發價位與時間窗口…",
       "supplyTeaser": "產業鏈聯動 · 關聯標的獨立評分…",
-      "upgradeCta": "升級 Pro+ 查看"
+      "upgradeCta": "升級 Pro+ 查看",
+      "critiqueTitle": "批評家視角",
+      "critiqueSub": "第二輪 AI 複盤，識別本次分析可能被低估的盲區：",
+      "pdfExport": "⬇ 匯出 PDF",
+      "pdfExporting": "準備中…"
     },
     "upgradeBar": {
       "unlockHint": "🔒 升級解鎖完整分析",

@@ -350,8 +350,8 @@ function writeWatchlist(s) {
 }
 
 function watchlistCap(tier) {
-  if (tier === 'pro_plus') return 100;
-  if (tier === 'pro') return 20;
+  if (tier === 'pro_plus') return 200;
+  if (tier === 'pro') return 50;
   return 3;
 }
 
@@ -1861,6 +1861,7 @@ function stripDataForViz(data, { tier = 'free', latestPrice = NaN, locale = 'zh-
     listingCurrency: String(listingCurrency || 'USD'),
     reportTier: tier,
     model: String(model || data.model || '').trim(),
+    secondPassCritique: data.secondPassCritique || null,
   };
   const proHints = {
     hasActionLine: Boolean(
@@ -1922,6 +1923,51 @@ function stripDataForViz(data, { tier = 'free', latestPrice = NaN, locale = 'zh-
     ...snap,
     proFieldHints: { hasActionLine: false, catalystCount: 0, hasInsider: false, hasPeer: false },
     proPlusFieldHints: { hasBullBear: false, hasScenarioDetail: false, hasSupplyDetail: false },
+  };
+}
+
+/**
+ * Pro+ second-pass critique: run Haiku as a "devil's advocate" to identify 3 weaknesses
+ * in the main analysis. Returns { weaknesses: string[] }
+ */
+async function runSecondPassCritique(apiKey, data, symbol, locale, model) {
+  const summary = String(data.summary || '').slice(0, 500);
+  const signal = String(data.signal || '');
+  const riskReward = String(data.riskReward || '');
+  const dims = (data.dimensions || []).map((d) => `${d.name}: ${d.score}`).join(', ');
+  const loc = normalizeLocale(locale);
+  const lang = loc === 'zh-CN' || loc === 'zh-TW' ? 'Chinese' : loc === 'ja' ? 'Japanese' : loc === 'ko' ? 'Korean' : loc === 'de' ? 'German' : 'English';
+
+  const prompt = `You are a skeptical financial analyst. Given this ${symbol} analysis summary, identify exactly 3 specific weaknesses, blind spots, or risks the main analysis may have underweighted.
+
+Summary: ${summary}
+Signal: ${signal} | Risk/Reward: ${riskReward}
+Dimensions: ${dims}
+
+Respond ONLY with JSON: {"weaknesses": ["weakness 1", "weakness 2", "weakness 3"]}
+Each weakness should be 1 concise sentence in ${lang}.`;
+
+  const resp = await fetch(OPENROUTER_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 300,
+      temperature: 0.4,
+    }),
+  });
+  if (!resp.ok) throw new Error(`secondPassCritique HTTP ${resp.status}`);
+  const j = await resp.json();
+  const text = j.choices?.[0]?.message?.content || '';
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error('No JSON in secondPassCritique response');
+  const parsed = JSON.parse(match[0]);
+  return {
+    weaknesses: Array.isArray(parsed.weaknesses) ? parsed.weaknesses.filter(Boolean).slice(0, 3) : [],
   };
 }
 
@@ -2078,6 +2124,17 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
     sanitizeRiskRewardField(data);
     fillRiskRewardIfEmpty(data);
     const md = jsonToMarkdownFourParts(data, tier, locale);
+    let secondCritique = null;
+    if (tier === 'pro_plus') {
+      try {
+        secondCritique = await runSecondPassCritique(apiKey, data, symbol, locale, MODEL_PRO);
+        if (secondCritique?.weaknesses?.length) {
+          data.secondPassCritique = secondCritique;
+        }
+      } catch (e) {
+        console.warn('[Wenap] secondPassCritique failed (non-fatal):', e.message);
+      }
+    }
     const vizSnapshot = stripDataForViz(data, { tier, latestPrice, locale, listingCurrency, model: mainModel });
     if (!writeSse(res, { type: 'viz', snapshot: vizSnapshot })) return;
     if (bailIfClientGone('before-stream')) return;
@@ -2444,9 +2501,9 @@ app.post('/analyze', requireAuth, async (req, res) => {
               skipped: qMeta.skipped,
             }
           : tier === 'pro'
-          ? { monthlyUnlimited: true, sameModelAsFree: true }
+          ? { monthlyUnlimited: true, model: MODEL_PRO }
           : tier === 'pro_plus'
-            ? { monthlyUnlimited: true, premiumMainModel: true }
+            ? { monthlyUnlimited: true, model: MODEL_PRO_PLUS, dailyCap: PRO_PLUS_DAILY_CAP }
             : null,
     startedAt: new Date().toISOString(),
   });

@@ -204,7 +204,11 @@
       "bullBearTeaser": "Bull/Bear-Debatte · je 3 gewichtete Argumente…",
       "scenarioTeaser": "Szenario-Verfeinerung · Trigger-Preis & Zeitfenster…",
       "supplyTeaser": "Lieferketten-These · verknüpfte Ticker-Analyse…",
-      "upgradeCta": "Auf Pro+ upgraden"
+      "upgradeCta": "Auf Pro+ upgraden",
+      "critiqueTitle": "Kritiker-Perspektive",
+      "critiqueSub": "Ein zweiter KI-Durchgang identifizierte diese potenziellen blinden Flecken:",
+      "pdfExport": "⬇ PDF exportieren",
+      "pdfExporting": "Wird vorbereitet…"
     },
     "upgradeBar": {
       "unlockHint": "🔒 Vollständige Analyse freischalten",
