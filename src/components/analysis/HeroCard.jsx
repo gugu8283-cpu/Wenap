@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import './MobileAnalysisReport.css'
 import { scoreHue } from '../../constants/colors.js'
 import Sparkline from './Sparkline.jsx'
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 
-function sigLabel(t) {
-  if (t === 'buy') return '买入'
-  if (t === 'sell') return '卖出'
-  return '持有'
+function mapRiskLevel(risk, t) {
+  if (risk === '高') return t('report.riskHigh')
+  if (risk === '低') return t('report.riskLow')
+  if (risk === '中') return t('report.riskMid')
+  return risk || '—'
 }
 
 function formatGeneratedAt(iso) {
@@ -26,6 +28,12 @@ function formatGeneratedAt(iso) {
 }
 
 export default function HeroCard({ report, onShare, showCompare, onCompare, onReanalyze }) {
+  const { t } = useTranslation()
+  const sigLabel = (sig) => {
+    if (sig === 'buy') return t('report.signalBuy')
+    if (sig === 'sell') return t('report.signalSell')
+    return t('report.signalHold')
+  }
   const r = 55
   const c = 2 * Math.PI * r
   const pct = Math.min(100, Math.max(0, Number(report.score) || 0)) / 100
@@ -96,7 +104,7 @@ export default function HeroCard({ report, onShare, showCompare, onCompare, onRe
         <div className="ma-hero-actions">
           {showCompare ? (
             <button type="button" className="ma-compare-btn" onClick={() => onCompare?.()}>
-              对比分析
+              {t('report.compare')}
             </button>
           ) : null}
           <button type="button" className="ma-share-btn" aria-label="分享" onClick={handleShare}>
@@ -140,12 +148,14 @@ export default function HeroCard({ report, onShare, showCompare, onCompare, onRe
 
       <div className="ma-pills">
         <span className={`ma-pill ma-pill--${report.tendency}`}>{sigLabel(report.tendency)}</span>
-        <span className="ma-pill">风险 {report.risk}</span>
+        <span className="ma-pill">{t('report.risk', { level: mapRiskLevel(report.risk, t) })}</span>
         {report.riskReward ? <span className="ma-pill">RR {report.riskReward}</span> : null}
       </div>
 
       <div className="ma-hero-prices ma-num">
-        <span>现价 {fmtPrice(report.currentPrice)}</span>
+        <span>
+          {t('report.currentPrice')} {fmtPrice(report.currentPrice)}
+        </span>
         {sparkPoints ? (
           <div className="ma-sparkline-wrap">
             <Sparkline points={sparkPoints} />
@@ -154,7 +164,10 @@ export default function HeroCard({ report, onShare, showCompare, onCompare, onRe
           <div className="ma-sparkline-wrap ma-sparkline-wrap--empty" aria-hidden />
         )}
         <span>
-          目标 {fmtPrice(report.targetPrice)} · <span className="ma-upside">涨幅 {upsideStr}</span>
+          {t('report.targetPrice')} {fmtPrice(report.targetPrice)} ·{' '}
+          <span className="ma-upside">
+            {t('report.upside')} {upsideStr}
+          </span>
         </span>
       </div>
 
@@ -163,10 +176,10 @@ export default function HeroCard({ report, onShare, showCompare, onCompare, onRe
           type="button"
           className={`ma-hero-ts${gen.stale ? ' ma-hero-ts--stale' : ''}`}
           onClick={() => onReanalyze?.()}
-          title="点击重新分析"
+          title={t('report.reanalyzeTitle')}
         >
-          数据口径 {dataAsOf} · 生成于 {gen.time}
-          {gen.stale ? ' · ⚠️ 数据可能已过期' : ''}
+          {t('report.dataLine', { date: dataAsOf, time: gen.time })}
+          {gen.stale ? t('report.staleHint') : ''}
         </button>
       </div>
     </div>

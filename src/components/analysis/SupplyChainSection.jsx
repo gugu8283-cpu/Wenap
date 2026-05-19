@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import './MobileAnalysisReport.css'
 import { formatSupplyRelation } from '../../utils/supplyRelation.js'
 
@@ -10,10 +11,11 @@ function badgeLabel(row) {
 }
 
 export default function SupplyChainSection({ rows, onAnalyzeCode }) {
+  const { t } = useTranslation()
   if (!rows?.length) return null
   return (
     <div className="ma-card ma-supply-card">
-      <h2 className="ma-section-title">产业链关联</h2>
+      <h2 className="ma-section-title">{t('report.supplyChain')}</h2>
       {rows.map((row, i) => {
         const sym = String(row.analyzeCode || '').trim().toUpperCase()
         const canRun = /^[A-Z0-9.-]{1,16}$/.test(sym) && sym !== '—'

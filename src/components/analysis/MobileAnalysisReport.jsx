@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { snapshotToMobileReport } from '../../utils/snapshotToMobileReport.js'
 import './MobileAnalysisReport.css'
 import HeroCard from './HeroCard.jsx'
@@ -26,6 +27,7 @@ export default function MobileAnalysisReport({
   onDevUnlock,
   onCompareToast,
 }) {
+  const { t } = useTranslation()
   const report = useMemo(
     () => snapshotToMobileReport(snapshot, { ...meta, fallbackTicker: ticker }),
     [snapshot, meta, ticker],
@@ -133,9 +135,7 @@ export default function MobileAnalysisReport({
       {vis(8) ? (
         <>
           {targetPriceMismatch ? (
-            <p className="ma-target-mismatch-warn">
-              ⚠️ 目标价与情景区间存在差异，数据仅供参考
-            </p>
+            <p className="ma-target-mismatch-warn">⚠️ {t('report.targetMismatch')}</p>
           ) : null}
           <SourcesAccordion
             sources={report.sources}

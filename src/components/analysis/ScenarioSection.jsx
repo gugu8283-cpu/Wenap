@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import './MobileAnalysisReport.css'
 import { useInView } from '../../hooks/useInView.js'
 
@@ -21,6 +22,7 @@ function priceInAnyInterval(price, intervals) {
 }
 
 export default function ScenarioSection({ scenarios, currentPrice }) {
+  const { t } = useTranslation()
   const { ref: sectionRef, inView } = useInView({ threshold: 0.15 })
   const [chartAnim, setChartAnim] = useState(false)
 
@@ -76,17 +78,21 @@ export default function ScenarioSection({ scenarios, currentPrice }) {
     }
   }, [numericRows, currentPrice])
 
-  const labelZh = (t) => (t === 'bull' ? '牛势' : t === 'bear' ? '熊势' : '基准')
+  const scenLabel = (type) => {
+    if (type === 'bull') return t('report.scenarioBull')
+    if (type === 'bear') return t('report.scenarioBear')
+    return t('report.scenarioBase')
+  }
 
   return (
     <div ref={sectionRef} className="ma-card ma-scenario-card">
-      <h2 className="ma-section-title">情景概率</h2>
+      <h2 className="ma-section-title">{t('report.scenario')}</h2>
       {rows.map((s) => (
         <div key={s.type} className="ma-scenario-row">
           <div className={`ma-scen-p ${scenClass(s.type)}`}>{s.probability}%</div>
           <div>
             <div className="ma-scen-mid">
-              {labelZh(s.type)} ·{' '}
+              {scenLabel(s.type)} ·{' '}
               {Number.isFinite(s.rangeMin) && Number.isFinite(s.rangeMax)
                 ? `$${s.rangeMin.toFixed(0)} – $${s.rangeMax.toFixed(0)}`
                 : s.rangeLabel || '—'}
@@ -94,16 +100,18 @@ export default function ScenarioSection({ scenarios, currentPrice }) {
             <div className="ma-scen-trig">{s.trigger}</div>
             {s.triggerPrice || s.timeWindow ? (
               <div className="ma-scen-detail">
-                {Number.isFinite(s.triggerPrice) ? `触发价 $${s.triggerPrice.toFixed(2)}` : null}
+                {Number.isFinite(s.triggerPrice)
+                  ? t('report.triggerAt', { price: s.triggerPrice.toFixed(2) })
+                  : null}
                 {s.triggerPrice && s.timeWindow ? ' · ' : null}
-                {s.timeWindow ? `窗口 ${s.timeWindow}` : null}
+                {s.timeWindow ? t('report.window', { window: s.timeWindow }) : null}
               </div>
             ) : null}
           </div>
         </div>
       ))}
       {axis?.priceOutside ? (
-        <p className="ma-scen-outside-hint">当前价处于情景区间外，需等待明确方向确认</p>
+        <p className="ma-scen-outside-hint">{t('report.scenarioOutside')}</p>
       ) : null}
       {axis ? (
         <svg className="ma-axis-svg" viewBox={`0 0 ${W} 56`} preserveAspectRatio="none" aria-hidden>
@@ -147,7 +155,7 @@ export default function ScenarioSection({ scenarios, currentPrice }) {
                 className="ma-num"
               >
                 {axis.priceOutside
-                  ? `$${currentPrice.toFixed(0)} · 观望区间`
+                  ? `$${currentPrice.toFixed(0)} · ${t('report.watchRange')}`
                   : `$${currentPrice.toFixed(0)}`}
               </text>
             </g>

@@ -7,16 +7,19 @@ function signalToTendency(sig) {
   return 'hold'
 }
 
-function parseCompanyExchange(identityCheck, ticker) {
+function parseCompanyExchange(identityCheck, ticker, companyName = '') {
+  const official = String(companyName || '').trim()
   const s = String(identityCheck || '').trim()
-  let name = ''
+  let name = official
   let exchange = '—'
   const m = /^(.+?)\s*\(([A-Za-z.]+)\s*[:：]?\s*([A-Z0-9.-]+)\)/i.exec(s)
   if (m) {
-    name = m[1].replace(/实体与代码核验[：:]\s*/, '').trim()
+    if (!name) name = m[1].replace(/实体与代码核验[：:]\s*/, '').trim()
     exchange = m[2].toUpperCase()
   } else if (s) {
-    name = s.replace(/实体与代码核验[：:]\s*/, '').slice(0, 48).trim()
+    const dash = /^(.+?)\s*[-–—]\s*([A-Z0-9.-]+)$/i.exec(s)
+    if (dash && !name) name = dash[1].trim()
+    else if (!name) name = s.replace(/实体与代码核验[：:]\s*/, '').slice(0, 48).trim()
   }
   if (!name) name = ticker || '—'
   return { name, exchange }
@@ -55,8 +58,10 @@ function parseScenarioRange(rangeStr) {
 
 function timeSavedFromFooter(line, n) {
   const s = String(line || '')
-  const m = /约可节省\s*(\d+)\s*小时/.exec(s)
-  if (m) return parseInt(m[1], 10)
+  const zh = /约可节省\s*(\d+)\s*小时/.exec(s)
+  if (zh) return parseInt(zh[1], 10)
+  const en = /~(\d+)\s*h/i.exec(s)
+  if (en) return parseInt(en[1], 10)
   return Math.min(6, Math.max(1, Math.round(n / 2)))
 }
 
@@ -76,7 +81,11 @@ export function snapshotToMobileReport(snapshot, meta = {}) {
   if (!snapshot || !Array.isArray(snapshot.dimensions) || !snapshot.dimensions.length) return null
 
   const ticker = String(meta.ticker || '').toUpperCase() || '—'
-  const { name, exchange } = parseCompanyExchange(snapshot.identityCheck, ticker)
+  const { name, exchange } = parseCompanyExchange(
+    snapshot.identityCheck,
+    ticker,
+    snapshot.companyName,
+  )
   const latest = snapshot.latestPriceUsd
   const { current, target, upside } = parsePricesFromLine(snapshot.analystPriceLine, latest)
 

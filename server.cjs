@@ -196,6 +196,7 @@ const {
   dimensionBoundaryPromptBlock,
   policyRegulationBlock,
   signalDisplayLabel,
+  researchFooterLine: researchFooterLineLocale,
 } = require('./lib/outputLocale.cjs');
 try {
   store.initDb();
@@ -965,8 +966,26 @@ function normalizeSupplyChainProPlusFields(data) {
   });
 }
 
-function normalizeReportExtensions(data, alphaOverview, latestPrice, listingCurrency = 'USD') {
+function applyAlphaIdentity(data, alphaOverview, symbol, locale = 'zh-CN') {
+  if (!data || !alphaOverview || typeof alphaOverview !== 'object') return;
+  const req = String(symbol || '')
+    .trim()
+    .toUpperCase()
+    .replace(/\.(US|NYSE|NASDAQ)$/i, '');
+  const sym = String(alphaOverview.Symbol || '')
+    .trim()
+    .toUpperCase();
+  if (!req || !sym || sym !== req) return;
+  const name = String(alphaOverview.Name || '').trim();
+  if (!name) return;
+  const exch = String(alphaOverview.Exchange || '').trim();
+  data.companyName = name;
+  data.identityCheck = (exch ? `${name} (${exch}:${sym})` : `${name} (${sym})`).slice(0, 200);
+}
+
+function normalizeReportExtensions(data, alphaOverview, latestPrice, listingCurrency = 'USD', ctx = {}) {
   if (!data || typeof data !== 'object') return;
+  applyAlphaIdentity(data, alphaOverview, ctx.symbol, ctx.locale);
   normalizeActionLineField(data);
   normalizeKeyEventsField(data);
   normalizeBullBearDebateField(data);
@@ -1036,11 +1055,6 @@ function buildDetailBodyForMarkdown(data) {
   return clipToCompleteThought(det, DETAIL_MARKDOWN_MAX_CHARS, 0.32);
 }
 
-function researchFooterLine(sourceCount) {
-  const n = Math.max(0, Number(sourceCount) || 0);
-  const hours = Math.min(6, Math.max(1, Math.round(n / 2)));
-  return `本分析整合了 ${n} 个公开来源，约可节省 ${hours} 小时人工梳理（估算）。`;
-}
 
 function extractPolicyRegulationDimension(dimensions) {
   const arr = Array.isArray(dimensions) ? dimensions : [];
@@ -1778,7 +1792,7 @@ function jsonToMarkdownFourParts(data, tier = 'free', locale = 'zh-CN') {
   s4 += `\n**${L.outlook}:**\n${out || '—'}\n`;
   s4 += `\n${data.disclaimer || defaultDisclaimer(loc)}\n`;
   const srcN = Array.isArray(data.sources) ? data.sources.length : 0;
-  s4 += `\n${researchFooterLine(srcN)}\n`;
+  s4 += `\n${researchFooterLineLocale(loc, srcN)}\n`;
   if (tier === 'free') {
     s4 += '\n**会员提示**：Pro 解锁操作建议、时间节点、内部人与同行对标；Pro+ 解锁多空对撞与情景细化。\n';
   }
@@ -1787,7 +1801,7 @@ function jsonToMarkdownFourParts(data, tier = 'free', locale = 'zh-CN') {
 }
 
 /** 供前端图表用，控制体积 */
-function stripDataForViz(data, { tier = 'free', latestPrice = NaN } = {}) {
+function stripDataForViz(data, { tier = 'free', latestPrice = NaN, locale = 'zh-CN' } = {}) {
   const detailFull = trimSuspensionSuffix(String(data.detailAnalysis || '').trim());
   const detailPreview = clipToCompleteThought(detailFull, DETAIL_MARKDOWN_MAX_CHARS, 0.32);
   const detailNeedsFold = [...detailFull].length > DETAIL_MARKDOWN_MAX_CHARS;
@@ -1824,7 +1838,8 @@ function stripDataForViz(data, { tier = 'free', latestPrice = NaN } = {}) {
     detailAnalysisPreview: detailPreview,
     detailNeedsFold,
     sourcesCount: srcArr.length,
-    researchFooterLine: researchFooterLine(srcArr.length),
+    researchFooterLine: researchFooterLineLocale(normalizeLocale(locale), srcArr.length),
+    companyName: String(data.companyName || '').trim(),
     identityCheck: String(data.identityCheck || '').trim().slice(0, 200),
     technicalSnapshot: String(data.technicalSnapshot || '').trim().slice(0, 200),
     outlook: String(data.outlook || '').trim().slice(0, 1200),
@@ -2049,17 +2064,18 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
     ensureSupplyChainAndScenarios(data, symbol);
     enrichSourcesForOutput(data);
     polishDomainBracketCites(data);
+    applyAlphaIdentity(data, alphaOverview, symbol, locale);
     data.dimensions = alignDimensionSlots(data.dimensions, effectiveAssetType, locale);
     if (tier === 'pro' || tier === 'pro_plus') {
       mergePeerLineIntoDimensions(data.dimensions, data.peerVsSectorLine);
     }
     repairMisattributedUsdScenarioRanges(data, listingCurrency);
-    normalizeReportExtensions(data, alphaOverview, latestPrice, listingCurrency);
+    normalizeReportExtensions(data, alphaOverview, latestPrice, listingCurrency, { symbol, locale });
     clampVerboseChineseFields(data);
     sanitizeRiskRewardField(data);
     fillRiskRewardIfEmpty(data);
     const md = jsonToMarkdownFourParts(data, tier, locale);
-    const vizSnapshot = stripDataForViz(data, { tier, latestPrice });
+    const vizSnapshot = stripDataForViz(data, { tier, latestPrice, locale });
     if (!writeSse(res, { type: 'viz', snapshot: vizSnapshot })) return;
     if (bailIfClientGone('before-stream')) return;
     await streamChunkedMarkdown(res, md);
@@ -2149,7 +2165,7 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
 function serverInfoPayload() {
   return {
     status: 'Wenap server running',
-    apiVersion: 10,
+    apiVersion: 11,
     adminApiMount: '/admin-api',
     adminSpaPaths: ['/admin', '/admin/*'],
     openRouterKeyConfigured: Boolean(getOpenRouterKey()),

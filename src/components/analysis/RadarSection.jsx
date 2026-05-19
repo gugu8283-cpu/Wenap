@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useInView } from '../../hooks/useInView.js'
 import {
   Chart as ChartJS,
@@ -27,6 +28,7 @@ function readChartTheme() {
 }
 
 export default function RadarSection({ dimensions }) {
+  const { t } = useTranslation()
   const [openIdx, setOpenIdx] = useState(null)
   const [pendingIdx, setPendingIdx] = useState(null)
   const [themeKey, setThemeKey] = useState(0)
@@ -142,7 +144,7 @@ export default function RadarSection({ dimensions }) {
 
   return (
     <div ref={sectionRef} className="ma-card ma-radar-card">
-      <h2 className="ma-section-title">六维雷达</h2>
+      <h2 className="ma-section-title">{t('report.radar')}</h2>
       <div className="ma-radar-wrap">
         <Radar
           key={themeKey}
