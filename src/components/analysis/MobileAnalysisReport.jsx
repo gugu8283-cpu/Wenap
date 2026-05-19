@@ -70,7 +70,7 @@ export default function MobileAnalysisReport({
 
   const onCompare = () => {
     if (onCompareToast) onCompareToast()
-    else window.alert('功能开发中，敬请期待')
+    else window.alert(t('report.compareComingSoon'))
   }
 
   if (loading && !report) {
@@ -89,7 +89,7 @@ export default function MobileAnalysisReport({
   return (
     <div className="mobile-analysis-root">
       {vis(1) ? (
-        <HeroCard report={report} showCompare={isProPlus} onCompare={onCompare} />
+        <HeroCard report={report} showCompare={false} onCompare={onCompare} />
       ) : (
         <HeroSkeleton />
       )}

@@ -88,7 +88,7 @@ export default function HeroCard({ report, onShare, showCompare, onCompare, onRe
       await navigator.clipboard.writeText(url)
       onShare?.(url)
     } catch {
-      window.prompt('复制分析链接', url)
+      window.prompt(t('report.sharePrompt'), url)
     }
   }
 
@@ -107,7 +107,7 @@ export default function HeroCard({ report, onShare, showCompare, onCompare, onRe
               {t('report.compare')}
             </button>
           ) : null}
-          <button type="button" className="ma-share-btn" aria-label="分享" onClick={handleShare}>
+          <button type="button" className="ma-share-btn" aria-label={t('report.share')} onClick={handleShare}>
             ⎘
           </button>
         </div>
@@ -150,6 +150,11 @@ export default function HeroCard({ report, onShare, showCompare, onCompare, onRe
         <span className={`ma-pill ma-pill--${report.tendency}`}>{sigLabel(report.tendency)}</span>
         <span className="ma-pill">{t('report.risk', { level: mapRiskLevel(report.risk, t) })}</span>
         {report.riskReward ? <span className="ma-pill">RR {report.riskReward}</span> : null}
+        {report.model ? (
+          <span className="ma-pill ma-pill--model" title={t('report.modelBadge', { model: report.model })}>
+            {report.model.includes('sonnet') ? '✦ Sonnet' : report.model.includes('haiku') ? '✦ Haiku' : '✦ Flash'}
+          </span>
+        ) : null}
       </div>
 
       <div className="ma-hero-prices ma-num">

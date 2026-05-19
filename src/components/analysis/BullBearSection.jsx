@@ -1,8 +1,8 @@
+import { useTranslation } from 'react-i18next'
 import './MobileAnalysisReport.css'
 
 function Side({ label, items, side }) {
   if (!items?.length) return null
-  const isBull = side === 'bull'
   return (
     <div className={`ma-bb-side ma-bb-side--${side}`}>
       <p className="ma-bb-side-label">{label}</p>
@@ -22,6 +22,7 @@ function Side({ label, items, side }) {
 }
 
 export default function BullBearSection({ bullBearDebate }) {
+  const { t } = useTranslation()
   const bb = bullBearDebate || { bull: [], bear: [] }
   const bull = bb.bull || []
   const bear = bb.bear || []
@@ -29,10 +30,10 @@ export default function BullBearSection({ bullBearDebate }) {
 
   return (
     <div className="ma-card ma-bb-card">
-      <h2 className="ma-section-title">多空对撞</h2>
+      <h2 className="ma-section-title">{t('report.proPlus.bullBearTitle')}</h2>
       <div className="ma-bb-grid">
-        <Side label="看多" items={bull} side="bull" />
-        <Side label="看空" items={bear} side="bear" />
+        <Side label={t('report.proPlus.bull')} items={bull} side="bull" />
+        <Side label={t('report.proPlus.bear')} items={bear} side="bear" />
       </div>
     </div>
   )

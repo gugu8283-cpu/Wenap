@@ -163,6 +163,12 @@
   background: rgba(255, 77, 77, 0.15);
   color: var(--accent-red);
 }
+.ma-pill--model {
+  background: rgba(168, 85, 247, 0.12);
+  color: #a855f7;
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+}
 
 .ma-hero-bottom {
   margin-top: 12px;

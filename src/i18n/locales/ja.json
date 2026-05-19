@@ -48,9 +48,13 @@
     "errTicker": "銘柄コードを入力してください",
     "errVerifyEmail": "先にメール認証を完了してください",
     "errLoadHistory": "履歴の読み込みに失敗しました",
+    "errGeneric": "エラーが発生しました、もう一度お試しください",
+    "historyLockedItem": "履歴閲覧はPro以上限定です。アップグレードして解除してください",
+    "watchlistFull": "ウォッチリストが満杯です（{{cap}}銘柄）。Proで20銘柄、Pro+で100銘柄に拡張できます。",
     "upgradeTitle": "今月の無料分析回数を使い切りました",
-    "upgradePro": "Pro · {{price}} · 無制限 + ウォッチ20 + 全履歴",
-    "upgradeProPlus": "Pro+ · {{price}} · Claude Sonnet 4.5 + ウォッチ100",
+    "upgradePro": "Pro · {{price}} · 無制限 + Claude Haiku 4.5 + 全履歴",
+    "upgradeProPlus": "Pro+ · {{price}} · Claude Sonnet 4.5 + ウォッチ100 + 批評家視点",
+    "upgradeBtn": "今すぐアップグレード",
     "metaTime": "分析 {{time}} · {{ticker}} · {{asset}} · {{horizon}}",
     "disclaimer": "公開情報の整理であり投資助言ではありません。最終判断はご自身でお願いします。",
     "accuracyLink": "Wenap 予測追跡の公開精度",
@@ -97,7 +101,22 @@
     "resendVerify": "認証メールを再送",
     "showPw": "表示",
     "hidePw": "非表示",
-    "invalidCreds": "メールまたはパスワードが正しくありません"
+    "invalidCreds": "メールまたはパスワードが正しくありません",
+    "verifyTitle": "メールアドレスを確認",
+    "verifySentTo": "{{email}} に確認リンクを送信しました",
+    "verifyYourEmail": "メールアドレス",
+    "verifyCheckInbox": "メールを確認してリンクをクリックしてください",
+    "verifyResend": "届いていない？再送する",
+    "verifyResentCooldown": "再送しました ✓（{{seconds}}秒）",
+    "verifySuccess": "メール確認完了！",
+    "verifyRedirecting": "アプリに移動中…",
+    "backToLogin": "サインインに戻る",
+    "forgotTitle": "パスワードのリセット",
+    "forgotSub": "リセットリンクを受け取るためにメールを入力",
+    "forgotBtn": "リセットリンクを送信",
+    "forgotSending": "送信中…",
+    "forgotSent": "リセットリンクを送信しました。メールをご確認ください",
+    "forgotBack": "サインインに戻る"
   },
   "protected": {
     "loading": "読み込み中…"
@@ -156,6 +175,44 @@
     "credLow": "低",
     "dateUnknown": "日付不明",
     "triggerAt": "トリガー ${{price}}",
-    "window": "期間 {{window}}"
+    "window": "期間 {{window}}",
+    "share": "シェア",
+    "sharePrompt": "レポートリンクをコピー",
+    "compareComingSoon": "比較機能は近日公開予定（Pro+ 限定）",
+    "modelBadge": "{{model}}",
+    "pro": {
+      "sectionTitle": "Pro インサイト",
+      "actionTitle": "アクション · ストップ · 触媒",
+      "actionTeaser": "推奨アクション… · ストップ $… · 触媒: …",
+      "eventsTitle": "主要イベント",
+      "eventsTeaser": "{{count}} 件のイベントをまとめました — Pro にアップグレードして全リストを表示",
+      "insiderTitle": "インサイダー動向",
+      "insiderTeaser": "Form 4 · 純買/売傾向…",
+      "peerTitle": "同業比較",
+      "peerTeaser": "セクター比較 · 相対強度…",
+      "suggestion": "推奨",
+      "stopLoss": "ストップロス",
+      "catalyst": "触媒",
+      "dateTbd": "未定",
+      "upgradeCta": "Pro にアップグレード"
+    },
+    "proPlus": {
+      "sectionTitle": "Pro+ 深層分析",
+      "bullBearTitle": "強気 vs 弱気",
+      "bull": "強気材料",
+      "bear": "弱気材料",
+      "bullBearTeaser": "強気/弱気 各3理由（重み付き）…",
+      "scenarioTeaser": "シナリオ精緻化 · トリガー価格と時間窓…",
+      "supplyTeaser": "サプライチェーン · 関連銘柄分析…",
+      "upgradeCta": "Pro+ にアップグレード"
+    },
+    "upgradeBar": {
+      "unlockHint": "🔒 フル分析のアップグレード",
+      "remaining": "🔒 残り {{count}} 回の無料分析",
+      "exhausted": "🔒 無料分析回数を使い切りました",
+      "cta": "Pro にアップグレード"
+    },
+    "errorTitle": "分析に失敗しました",
+    "retry": "再試行"
   }
 }

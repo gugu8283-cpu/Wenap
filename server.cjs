@@ -152,15 +152,19 @@ if (SPA_MODE) {
 const PORT = Number.parseInt(String(process.env.PORT || '3002'), 10) || 3002;
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-/** 普通用户：联网 + 低成本主模型（可用 OPENROUTER_MAIN_MODEL 覆盖） */
+/** Free 主模型：联网 + 低成本（可用 OPENROUTER_MAIN_MODEL 覆盖） */
 const MODEL_FLASH =
   String(process.env.OPENROUTER_MAIN_MODEL || '').trim() || 'google/gemini-2.5-flash-lite';
-/** Pro+ 主分析模型 */
-const MODEL_PRO_PLUS = 'anthropic/claude-haiku-4-5';
+/** Pro 主分析模型（比 Free 更强的推理能力） */
+const MODEL_PRO = String(process.env.OPENROUTER_PRO_MODEL || '').trim() || 'anthropic/claude-haiku-4-5';
+/** Pro+ 主分析模型：兑现宣传，真 Sonnet */
+const MODEL_PRO_PLUS = String(process.env.OPENROUTER_PRO_PLUS_MODEL || '').trim() || 'anthropic/claude-sonnet-4-5';
+/** Pro+ 每日硬上限（防止成本爆炸），可用 WENAP_PRO_PLUS_DAILY_CAP 覆盖 */
+const PRO_PLUS_DAILY_CAP = parseInt(String(process.env.WENAP_PRO_PLUS_DAILY_CAP || '30'), 10) || 30;
 
 const MODEL_MAP = {
   free: MODEL_FLASH,
-  pro: MODEL_FLASH,
+  pro: MODEL_PRO,
   pro_plus: MODEL_PRO_PLUS,
   proplus: MODEL_PRO_PLUS,
 };
@@ -968,19 +972,15 @@ function normalizeSupplyChainProPlusFields(data) {
 
 function applyAlphaIdentity(data, alphaOverview, symbol, locale = 'zh-CN') {
   if (!data || !alphaOverview || typeof alphaOverview !== 'object') return;
-  const req = String(symbol || '')
-    .trim()
-    .toUpperCase()
-    .replace(/\.(US|NYSE|NASDAQ)$/i, '');
-  const sym = String(alphaOverview.Symbol || '')
+  const name = String(alphaOverview.Name || '').trim();
+  if (!name || name.length < 2) return;
+  const sym = String(alphaOverview.Symbol || alphaOverview.symbol || symbol || '')
     .trim()
     .toUpperCase();
-  if (!req || !sym || sym !== req) return;
-  const name = String(alphaOverview.Name || '').trim();
-  if (!name) return;
   const exch = String(alphaOverview.Exchange || '').trim();
+  // Always override with AV official name when AV returned data for this request
   data.companyName = name;
-  data.identityCheck = (exch ? `${name} (${exch}:${sym})` : `${name} (${sym})`).slice(0, 200);
+  data.identityCheck = (exch && sym ? `${name} (${exch}:${sym})` : sym ? `${name} (${sym})` : name).slice(0, 200);
 }
 
 function normalizeReportExtensions(data, alphaOverview, latestPrice, listingCurrency = 'USD', ctx = {}) {
@@ -1801,7 +1801,7 @@ function jsonToMarkdownFourParts(data, tier = 'free', locale = 'zh-CN') {
 }
 
 /** 供前端图表用，控制体积 */
-function stripDataForViz(data, { tier = 'free', latestPrice = NaN, locale = 'zh-CN' } = {}) {
+function stripDataForViz(data, { tier = 'free', latestPrice = NaN, locale = 'zh-CN', listingCurrency = 'USD', model = '' } = {}) {
   const detailFull = trimSuspensionSuffix(String(data.detailAnalysis || '').trim());
   const detailPreview = clipToCompleteThought(detailFull, DETAIL_MARKDOWN_MAX_CHARS, 0.32);
   const detailNeedsFold = [...detailFull].length > DETAIL_MARKDOWN_MAX_CHARS;
@@ -1851,13 +1851,16 @@ function stripDataForViz(data, { tier = 'free', latestPrice = NaN, locale = 'zh-
     })),
     scenarios: data.scenarios && typeof data.scenarios === 'object' ? data.scenarios : null,
     supplyChain: Array.isArray(data.supplyChain) ? data.supplyChain : [],
-    sources: srcArr.slice(0, 5).map((s) => ({
+    sources: srcArr.slice(0, tier === 'free' ? 5 : 8).map((s) => ({
       text: s.text,
       url: s.url,
       time: s.time,
       credibility: s.credibility,
       cite: s.cite || guessSourceCite(s),
     })),
+    listingCurrency: String(listingCurrency || 'USD'),
+    reportTier: tier,
+    model: String(model || data.model || '').trim(),
   };
   const proHints = {
     hasActionLine: Boolean(
@@ -2075,7 +2078,7 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
     sanitizeRiskRewardField(data);
     fillRiskRewardIfEmpty(data);
     const md = jsonToMarkdownFourParts(data, tier, locale);
-    const vizSnapshot = stripDataForViz(data, { tier, latestPrice, locale });
+    const vizSnapshot = stripDataForViz(data, { tier, latestPrice, locale, listingCurrency, model: mainModel });
     if (!writeSse(res, { type: 'viz', snapshot: vizSnapshot })) return;
     if (bailIfClientGone('before-stream')) return;
     await streamChunkedMarkdown(res, md);
@@ -2165,7 +2168,7 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
 function serverInfoPayload() {
   return {
     status: 'Wenap server running',
-    apiVersion: 11,
+    apiVersion: 12,
     adminApiMount: '/admin-api',
     adminSpaPaths: ['/admin', '/admin/*'],
     openRouterKeyConfigured: Boolean(getOpenRouterKey()),
@@ -2179,23 +2182,26 @@ function serverInfoPayload() {
           ? { monthlyUnlimited: true, note: '试运行：免费暂不限次' }
           : {
               monthlyAnalysesCap: FREE_MONTHLY_ANALYSIS_CAP,
-              note: '需传 userId 或 anonId 计次；仅 IP 时多台设备易共用额度',
+              note: 'JWT auth; 5 analyses/month',
             }),
       },
       pro: {
-        mainModel: MODEL_FLASH,
+        mainModel: MODEL_PRO,
         policyFallback: 'same as main when dim insufficient',
         monthlyUnlimited: true,
-        note: '与免费相同主模型，付费解锁次数',
+        note: 'Claude Haiku 4.5 — deeper reasoning than Free',
       },
       pro_plus: {
         mainModel: MODEL_PRO_PLUS,
         policyFallback: 'same as main when dim insufficient',
         monthlyUnlimited: true,
+        dailyCap: PRO_PLUS_DAILY_CAP,
+        note: 'Claude Sonnet 4.5 — highest quality + critique pass',
       },
     },
     models: {
-      main: MODEL_FLASH,
+      free: MODEL_FLASH,
+      pro: MODEL_PRO,
       proPlusMain: MODEL_PRO_PLUS,
       policyFallback: 'same as main',
     },
@@ -2216,9 +2222,9 @@ if (!SPA_MODE) {
   });
 }
 
-app.get('/watchlist', (req, res) => {
-  const tier = resolveTier(req.query || {});
-  const userKey = userKeyFromQuery(req);
+app.get('/watchlist', requireAuth, (req, res) => {
+  const tier = authDb.normalizeTier(req.authUser.tier);
+  const userKey = `uid:${req.authUser.id}`;
   const w = readWatchlist();
   const items = Array.isArray(w.byUser[userKey]) ? w.byUser[userKey] : [];
   res.json({ items, cap: watchlistCap(tier), tier });
@@ -2265,9 +2271,9 @@ app.get('/quota', requireAuth, (req, res) => {
   });
 });
 
-app.post('/watchlist', (req, res) => {
-  const tier = resolveTier(req.body || {});
-  const userKey = userQuotaKey(req);
+app.post('/watchlist', requireAuth, (req, res) => {
+  const tier = authDb.normalizeTier(req.authUser.tier);
+  const userKey = `uid:${req.authUser.id}`;
   const cap = watchlistCap(tier);
   const sym = String(req.body?.symbol || '')
     .trim()
@@ -2300,14 +2306,14 @@ app.post('/watchlist', (req, res) => {
   res.json({ items: state.byUser[userKey], cap });
 });
 
-app.delete('/watchlist/:symbol', (req, res) => {
+app.delete('/watchlist/:symbol', requireAuth, (req, res) => {
   const raw = decodeURIComponent(String(req.params.symbol || ''));
   const sym = raw
     .trim()
     .toUpperCase()
     .replace(/[^A-Z0-9.-]/g, '')
     .slice(0, 16);
-  const userKey = userKeyFromQuery(req);
+  const userKey = `uid:${req.authUser.id}`;
   const state = readWatchlist();
   if (!state.byUser[userKey]) state.byUser[userKey] = [];
   state.byUser[userKey] = state.byUser[userKey].filter((x) => x.symbol !== sym);
@@ -2315,9 +2321,9 @@ app.delete('/watchlist/:symbol', (req, res) => {
   res.json({ items: state.byUser[userKey] });
 });
 
-app.get('/history', (req, res) => {
-  const tier = resolveTier(req.query || {});
-  const userKey = userKeyFromQuery(req);
+app.get('/history', requireAuth, (req, res) => {
+  const tier = authDb.normalizeTier(req.authUser.tier);
+  const userKey = `uid:${req.authUser.id}`;
   const idx = readHistoryIndex();
   const all = Array.isArray(idx.byUser[userKey]) ? idx.byUser[userKey] : [];
   if (tier === 'free') {
@@ -2331,13 +2337,13 @@ app.get('/history', (req, res) => {
   res.json({ items: all, tier, free_limit: 1, locked: false });
 });
 
-app.get('/history/:id', (req, res) => {
+app.get('/history/:id', requireAuth, (req, res) => {
   const id = String(req.params.id || '').trim();
   if (!/^[a-zA-Z0-9._-]+$/.test(id)) {
     return res.status(400).json({ error: 'Invalid id' });
   }
-  const tier = resolveTier(req.query || {});
-  const userKey = userKeyFromQuery(req);
+  const tier = authDb.normalizeTier(req.authUser.tier);
+  const userKey = `uid:${req.authUser.id}`;
   const idx = readHistoryIndex();
   const list = Array.isArray(idx.byUser[userKey]) ? idx.byUser[userKey] : [];
   const row = list.find((x) => x.id === id);
@@ -2349,8 +2355,16 @@ app.get('/history/:id', (req, res) => {
   }
   const filePath = path.join(HISTORY_DIR, userKeyHash(userKey), `${id}.json`);
   try {
-    const record = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-    return res.json(record);
+    const raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    // Re-align dimension names on historical snapshots so stale generic names get fixed
+    if (raw.vizSnapshot && Array.isArray(raw.vizSnapshot.dimensions)) {
+      raw.vizSnapshot.dimensions = alignDimensionSlots(
+        raw.vizSnapshot.dimensions,
+        raw.assetType || 'stock',
+        normalizeLocale(req.query?.locale),
+      );
+    }
+    return res.json(raw);
   } catch {
     return res.status(404).json({ error: 'NOT_FOUND' });
   }
@@ -2505,10 +2519,10 @@ app.listen(PORT, () => {
   const key = getOpenRouterKey();
   console.log(`Wenap listening on :${PORT}${SPA_MODE ? '（托管 dist + 剥离 /api 前缀）' : '（仅 API，请配合 Vite 代理）'}`);
   const freeBilling = FREE_ANALYSIS_UNLIMITED
-    ? `免费暂不限次(主${MODEL_FLASH})`
-    : `免费≤${FREE_MONTHLY_ANALYSIS_CAP}次/月(主${MODEL_FLASH})`;
+    ? `Free unlimited (${MODEL_FLASH})`
+    : `Free ≤${FREE_MONTHLY_ANALYSIS_CAP}/mo (${MODEL_FLASH})`;
   console.log(
-    `[Wenap] 计费：${freeBilling}；Pro无限/月(主${MODEL_FLASH})；Pro+主模${MODEL_PRO_PLUS}；政策法规不足时同模补刀`,
+    `[Wenap] Billing: ${freeBilling} | Pro unlimited (${MODEL_PRO}) | Pro+ (${MODEL_PRO_PLUS}, cap ${PRO_PLUS_DAILY_CAP}/day)`,
   );
   if (key) {
     if (SPA_MODE) {

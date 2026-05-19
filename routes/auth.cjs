@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const {
   getUserByEmail,
   getUserById,
@@ -10,10 +11,14 @@ const {
   canResendVerifyEmail,
   setVerifyEmailSent,
   getClientIp,
+  setPasswordResetToken,
+  getUserByPasswordResetToken,
+  consumePasswordResetToken,
 } = require('../db/auth.cjs');
+const bcrypt = require('bcryptjs');
 const { signAccessToken } = require('../lib/jwtAuth.cjs');
 const { isDisposableEmail } = require('../lib/disposableEmail.cjs');
-const { sendVerificationEmail } = require('../lib/emailSend.cjs');
+const { sendVerificationEmail, sendPasswordResetEmail } = require('../lib/emailSend.cjs');
 const { requireAuth } = require('../middleware/requireAuth.cjs');
 
 const router = express.Router();
@@ -157,6 +162,50 @@ router.post('/resend-verify', async (req, res) => {
 
 router.get('/me', requireAuth, (req, res) => {
   res.json({ user: req.authPublic });
+});
+
+// Password reset request
+router.post('/request-reset', async (req, res) => {
+  try {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    if (!EMAIL_RE.test(email)) {
+      return res.status(400).json({ error: 'INVALID_EMAIL' });
+    }
+    const user = getUserByEmail(email);
+    // Always respond 200 to prevent email enumeration
+    if (!user) {
+      return res.json({ ok: true, message: 'If this email exists you will receive a reset link.' });
+    }
+    const token = crypto.randomBytes(32).toString('hex');
+    setPasswordResetToken(user.id, token);
+    await sendPasswordResetEmail({ to: email, token });
+    res.json({ ok: true, message: 'If this email exists you will receive a reset link.' });
+  } catch (e) {
+    console.error('[Wenap] request-reset:', e);
+    res.status(500).json({ error: 'SERVER_ERROR' });
+  }
+});
+
+// Password reset confirm
+router.post('/reset-password', async (req, res) => {
+  try {
+    const token = String(req.body?.token || '').trim();
+    const newPassword = String(req.body?.password || '');
+    if (!token) return res.status(400).json({ error: 'MISSING_TOKEN' });
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({ error: 'WEAK_PASSWORD', message: 'Password must be at least 8 characters.' });
+    }
+    const user = getUserByPasswordResetToken(token);
+    if (!user) {
+      return res.status(400).json({ error: 'INVALID_OR_EXPIRED_TOKEN', message: 'Reset link is invalid or expired.' });
+    }
+    const hash = await bcrypt.hash(newPassword, 12);
+    consumePasswordResetToken(user.id, hash);
+    res.json({ ok: true, message: 'Password updated. You can now sign in.' });
+  } catch (e) {
+    console.error('[Wenap] reset-password:', e);
+    res.status(500).json({ error: 'SERVER_ERROR' });
+  }
 });
 
 module.exports = router;

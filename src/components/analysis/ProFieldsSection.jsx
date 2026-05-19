@@ -1,12 +1,13 @@
+import { useTranslation } from 'react-i18next'
 import './MobileAnalysisReport.css'
 
-function LockedBlock({ title, teaser, onUpgrade }) {
+function LockedBlock({ title, teaser, onUpgrade, t }) {
   return (
     <div className="ma-pro-field ma-pro-field--locked">
       <p className="ma-pro-field-title">{title}</p>
       <p className="ma-pro-blur-item">{teaser}</p>
       <button type="button" className="ma-pro-field-cta" onClick={onUpgrade}>
-        升级 Pro 查看
+        {t('report.pro.upgradeCta')}
       </button>
     </div>
   )
@@ -18,6 +19,7 @@ export default function ProFieldsSection({
   onUpgrade,
   keyEventsTeaserCount = 0,
 }) {
+  const { t } = useTranslation()
   const al = report.actionLineObj || {}
   const hasAction =
     Boolean(al.suggestion || al.stopLoss || al.catalyst) || Boolean(report.actionLine)
@@ -27,22 +29,38 @@ export default function ProFieldsSection({
   if (locked) {
     return (
       <div className="ma-card ma-pro-fields">
-        <h2 className="ma-section-title">Pro 增强</h2>
+        <h2 className="ma-section-title">{t('report.pro.sectionTitle')}</h2>
         {hasAction || report.proFieldHints?.hasActionLine ? (
-          <LockedBlock title="操作建议 · 止损 · 催化剂" teaser="建议持有… · 止损 $… · 催化剂：…" onUpgrade={onUpgrade} />
+          <LockedBlock
+            title={t('report.pro.actionTitle')}
+            teaser={t('report.pro.actionTeaser')}
+            onUpgrade={onUpgrade}
+            t={t}
+          />
         ) : null}
         {eventCount > 0 ? (
           <LockedBlock
-            title="关键时间节点"
-            teaser={`已整理 ${eventCount} 条节点，Pro 版查看完整列表`}
+            title={t('report.pro.eventsTitle')}
+            teaser={t('report.pro.eventsTeaser', { count: eventCount })}
             onUpgrade={onUpgrade}
+            t={t}
           />
         ) : null}
         {report.proFieldHints?.hasInsider ? (
-          <LockedBlock title="内部人动态" teaser="Form 4 · 净买卖倾向…" onUpgrade={onUpgrade} />
+          <LockedBlock
+            title={t('report.pro.insiderTitle')}
+            teaser={t('report.pro.insiderTeaser')}
+            onUpgrade={onUpgrade}
+            t={t}
+          />
         ) : null}
         {report.proFieldHints?.hasPeer ? (
-          <LockedBlock title="同行对标" teaser="跑赢行业 · 相对强弱…" onUpgrade={onUpgrade} />
+          <LockedBlock
+            title={t('report.pro.peerTitle')}
+            teaser={t('report.pro.peerTeaser')}
+            onUpgrade={onUpgrade}
+            t={t}
+          />
         ) : null}
       </div>
     )
@@ -50,13 +68,25 @@ export default function ProFieldsSection({
 
   return (
     <div className="ma-card ma-pro-fields">
-      <h2 className="ma-section-title">Pro 增强</h2>
+      <h2 className="ma-section-title">{t('report.pro.sectionTitle')}</h2>
       {hasAction ? (
         <div className="ma-pro-field">
-          <p className="ma-pro-field-title">操作建议</p>
-          {al.suggestion ? <p className="ma-pro-field-line">建议：{al.suggestion}</p> : null}
-          {al.stopLoss ? <p className="ma-pro-field-line">止损：{al.stopLoss}</p> : null}
-          {al.catalyst ? <p className="ma-pro-field-line">催化剂：{al.catalyst}</p> : null}
+          <p className="ma-pro-field-title">{t('report.pro.actionTitle')}</p>
+          {al.suggestion ? (
+            <p className="ma-pro-field-line">
+              {t('report.pro.suggestion')}: {al.suggestion}
+            </p>
+          ) : null}
+          {al.stopLoss ? (
+            <p className="ma-pro-field-line">
+              {t('report.pro.stopLoss')}: {al.stopLoss}
+            </p>
+          ) : null}
+          {al.catalyst ? (
+            <p className="ma-pro-field-line">
+              {t('report.pro.catalyst')}: {al.catalyst}
+            </p>
+          ) : null}
           {!al.suggestion && !al.stopLoss && report.actionLine ? (
             <p className="ma-pro-field-line">{report.actionLine}</p>
           ) : null}
@@ -64,11 +94,11 @@ export default function ProFieldsSection({
       ) : null}
       {events.length ? (
         <div className="ma-pro-field">
-          <p className="ma-pro-field-title">关键时间节点</p>
+          <p className="ma-pro-field-title">{t('report.pro.eventsTitle')}</p>
           <ul className="ma-key-events">
             {events.map((ev, i) => (
               <li key={`${ev.date}-${i}`}>
-                <strong>{ev.date || '待公告'}</strong> — {ev.event}
+                <strong>{ev.date || t('report.pro.dateTbd')}</strong> — {ev.event}
               </li>
             ))}
           </ul>
@@ -76,13 +106,13 @@ export default function ProFieldsSection({
       ) : null}
       {report.leaderInsiderSummary ? (
         <div className="ma-pro-field">
-          <p className="ma-pro-field-title">内部人动态</p>
+          <p className="ma-pro-field-title">{t('report.pro.insiderTitle')}</p>
           <p className="ma-pro-field-line">{report.leaderInsiderSummary}</p>
         </div>
       ) : null}
       {report.peerVsSectorLine ? (
         <div className="ma-pro-field">
-          <p className="ma-pro-field-title">同行对标</p>
+          <p className="ma-pro-field-title">{t('report.pro.peerTitle')}</p>
           <p className="ma-pro-field-line">{report.peerVsSectorLine}</p>
         </div>
       ) : null}

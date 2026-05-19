@@ -45,12 +45,16 @@
       "產業鏈與走勢預判"
     ],
     "waitingOutput": "等待模型輸出…",
-    "errTicker": "請輸入股票代碼",
+    "errTicker": "請輸入標的代碼",
     "errVerifyEmail": "請先驗證信箱",
     "errLoadHistory": "載入歷史失敗",
+    "errGeneric": "操作失敗，請重試",
+    "historyLockedItem": "歷史回看僅限 Pro 及以上，升級後解鎖",
+    "watchlistFull": "自選已滿（{{cap}} 檔）。升級 Pro 加 20 檔，Pro+ 加 100 檔。",
     "upgradeTitle": "本月 5 次免費分析已用完",
-    "upgradePro": "Pro · {{price}} · 無限次 + 20 檔自選 + 全部歷史",
-    "upgradeProPlus": "Pro+ · {{price}} · Claude Sonnet 4.5 + 100 檔自選",
+    "upgradePro": "Pro · {{price}} · 無限次 + Claude Haiku 4.5 + 全部歷史",
+    "upgradeProPlus": "Pro+ · {{price}} · Claude Sonnet 4.5 + 100 檔自選 + 批評家視角",
+    "upgradeBtn": "立即升級",
     "metaTime": "分析時間：{{time}} · {{ticker}} · {{asset}} · {{horizon}}",
     "disclaimer": "本工具整理公開資訊、列出反方觀點與風險情境，僅供參考；最終決策由你做出。不構成投資建議。請獨立判斷並自擔風險。",
     "accuracyLink": "查看 Wenap 預測追蹤公開準確率",
@@ -97,7 +101,22 @@
     "resendVerify": "重新發送驗證郵件",
     "showPw": "顯示",
     "hidePw": "隱藏",
-    "invalidCreds": "信箱或密碼不正確"
+    "invalidCreds": "信箱或密碼不正確",
+    "verifyTitle": "驗證您的信箱",
+    "verifySentTo": "我們已向 {{email}} 發送了驗證連結",
+    "verifyYourEmail": "您的信箱",
+    "verifyCheckInbox": "請查收郵件並點擊連結完成驗證",
+    "verifyResend": "沒收到郵件？重新發送",
+    "verifyResentCooldown": "已重新發送 ✓（{{seconds}}s）",
+    "verifySuccess": "信箱驗證成功！",
+    "verifyRedirecting": "正在跳轉到主頁…",
+    "backToLogin": "返回登入",
+    "forgotTitle": "重設密碼",
+    "forgotSub": "輸入信箱以接收重設連結",
+    "forgotBtn": "發送重設連結",
+    "forgotSending": "發送中…",
+    "forgotSent": "重設連結已發送，請查收郵件",
+    "forgotBack": "返回登入"
   },
   "protected": {
     "loading": "載入中…"
@@ -156,6 +175,44 @@
     "credLow": "低",
     "dateUnknown": "日期未知",
     "triggerAt": "觸發價 ${{price}}",
-    "window": "窗口 {{window}}"
+    "window": "窗口 {{window}}",
+    "share": "分享",
+    "sharePrompt": "複製分析連結",
+    "compareComingSoon": "對比分析開發中，Pro+ 即將上線",
+    "modelBadge": "{{model}}",
+    "pro": {
+      "sectionTitle": "Pro 增強",
+      "actionTitle": "操作建議 · 止損 · 催化劑",
+      "actionTeaser": "建議持有… · 止損 $… · 催化劑：…",
+      "eventsTitle": "關鍵時間節點",
+      "eventsTeaser": "已整理 {{count}} 條節點，升級 Pro 查看完整列表",
+      "insiderTitle": "內部人動態",
+      "insiderTeaser": "Form 4 · 淨買賣傾向…",
+      "peerTitle": "同行對標",
+      "peerTeaser": "跑贏行業 · 相對強弱…",
+      "suggestion": "建議",
+      "stopLoss": "止損",
+      "catalyst": "催化劑",
+      "dateTbd": "待公告",
+      "upgradeCta": "升級 Pro 查看"
+    },
+    "proPlus": {
+      "sectionTitle": "Pro+ 深度",
+      "bullBearTitle": "多空對撞",
+      "bull": "看多",
+      "bear": "看空",
+      "bullBearTeaser": "多空對撞 · 看多/看空各 3 條附權重…",
+      "scenarioTeaser": "情景細化 · 觸發價位與時間窗口…",
+      "supplyTeaser": "產業鏈聯動 · 關聯標的獨立評分…",
+      "upgradeCta": "升級 Pro+ 查看"
+    },
+    "upgradeBar": {
+      "unlockHint": "🔒 升級解鎖完整分析",
+      "remaining": "🔒 剩餘 {{count}} 次免費分析",
+      "exhausted": "🔒 免費次數已用完",
+      "cta": "升級 Pro"
+    },
+    "errorTitle": "分析生成失敗",
+    "retry": "重試"
   }
 }

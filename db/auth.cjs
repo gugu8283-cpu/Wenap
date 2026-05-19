@@ -312,11 +312,43 @@ function incrementUserFreeUsage(userId) {
     .run(userId);
 }
 
+const PRO_PLUS_DAILY_CAP = parseInt(String(process.env.WENAP_PRO_PLUS_DAILY_CAP || '30'), 10) || 30;
+
+function checkProPlusDailyLimit(userId) {
+  const db = getDb();
+  const today = new Date().toISOString().slice(0, 10);
+  const row = db
+    .prepare(
+      `SELECT COUNT(*) as cnt FROM analysis_logs WHERE user_id = ? AND DATE(created_at) = ?`,
+    )
+    .get(userId, today);
+  const cnt = Number(row?.cnt || 0);
+  if (cnt >= PRO_PLUS_DAILY_CAP) {
+    return { allowed: false, used: cnt, cap: PRO_PLUS_DAILY_CAP };
+  }
+  return { allowed: true, used: cnt, cap: PRO_PLUS_DAILY_CAP };
+}
+
 function checkUserCanAnalyze(user, fingerprint, ip) {
   const tier = normalizeTier(user.tier);
   const unlimited =
     process.env.WENAP_FREE_UNLIMITED === '1' || process.env.WENAP_FREE_UNLIMITED === 'true';
-  if (unlimited || tier !== 'free') {
+  if (unlimited) {
+    return { allowed: true, tier, reason: null };
+  }
+  if (tier === 'pro_plus') {
+    const dailyCheck = checkProPlusDailyLimit(user.id);
+    if (!dailyCheck.allowed) {
+      return {
+        allowed: false,
+        tier,
+        error: 'PRO_PLUS_DAILY_CAP',
+        message: `Pro+ daily limit reached (${dailyCheck.cap} analyses/day). Resets at midnight UTC.`,
+      };
+    }
+    return { allowed: true, tier, reason: null };
+  }
+  if (tier === 'pro') {
     return { allowed: true, tier, reason: null };
   }
   const u = resetMonthlyFreeIfNeeded(user);
@@ -429,4 +461,39 @@ module.exports = {
   normalizeTier,
   createTestUser,
   utcMonthStartIso,
+  setPasswordResetToken,
+  getUserByPasswordResetToken,
+  consumePasswordResetToken,
+  FREE_MONTHLY_CAP,
 };
+
+function setPasswordResetToken(userId, token) {
+  const db = getDb();
+  const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+  db.prepare(
+    `UPDATE users SET password_reset_token = ?, password_reset_expires = ? WHERE id = ?`,
+  ).run(token, expires, userId);
+}
+
+function getUserByPasswordResetToken(token) {
+  const db = getDb();
+  // Ensure columns exist
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN password_reset_token TEXT`);
+  } catch (e) { if (!/duplicate/i.test(e.message)) throw e; }
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN password_reset_expires TEXT`);
+  } catch (e) { if (!/duplicate/i.test(e.message)) throw e; }
+  if (!token) return null;
+  const row = db.prepare(`SELECT * FROM users WHERE password_reset_token = ?`).get(token);
+  if (!row) return null;
+  if (row.password_reset_expires && new Date(row.password_reset_expires) < new Date()) return null;
+  return row;
+}
+
+function consumePasswordResetToken(userId, newPasswordHash) {
+  const db = getDb();
+  db.prepare(
+    `UPDATE users SET password_hash = ?, password_reset_token = NULL, password_reset_expires = NULL WHERE id = ?`,
+  ).run(newPasswordHash, userId);
+}

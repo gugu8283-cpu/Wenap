@@ -50,9 +50,13 @@
     "errSessionStale": "Session expired. Please sign in again (required after a server redeploy).",
     "errBanned": "This account has been restricted",
     "errLoadHistory": "Failed to load history",
+    "errGeneric": "Something went wrong, please try again",
+    "historyLockedItem": "Full history is a Pro feature — upgrade to unlock",
+    "watchlistFull": "Watchlist full ({{cap}} symbols). Upgrade to Pro for 20, or Pro+ for 100.",
     "upgradeTitle": "Monthly free analyses used up",
-    "upgradePro": "Pro · {{price}} · Unlimited runs + 20 watchlist + full history",
-    "upgradeProPlus": "Pro+ · {{price}} · Claude Sonnet 4.5 + 100 watchlist",
+    "upgradePro": "Pro · {{price}} · Unlimited runs + Claude Haiku 4.5 + full history",
+    "upgradeProPlus": "Pro+ · {{price}} · Claude Sonnet 4.5 + 100 watchlist + critic review",
+    "upgradeBtn": "Upgrade now",
     "metaTime": "Analyzed {{time}} · {{ticker}} · {{asset}} · {{horizon}}",
     "disclaimer": "This tool summarizes public information and scenarios for reference only. Not investment advice. You are responsible for your own decisions.",
     "accuracyLink": "Wenap public prediction track record",
@@ -99,7 +103,22 @@
     "resendVerify": "Resend verification email",
     "showPw": "Show",
     "hidePw": "Hide",
-    "invalidCreds": "Invalid email or password"
+    "invalidCreds": "Invalid email or password",
+    "verifyTitle": "Verify your email",
+    "verifySentTo": "We sent a verification link to {{email}}",
+    "verifyYourEmail": "your email address",
+    "verifyCheckInbox": "Please check your inbox and click the link to verify.",
+    "verifyResend": "Didn't receive it? Resend",
+    "verifyResentCooldown": "Resent ✓ ({{seconds}}s)",
+    "verifySuccess": "Email verified!",
+    "verifyRedirecting": "Redirecting to app…",
+    "backToLogin": "Back to sign in",
+    "forgotTitle": "Reset your password",
+    "forgotSub": "Enter your email to receive a reset link",
+    "forgotBtn": "Send reset link",
+    "forgotSending": "Sending…",
+    "forgotSent": "Reset link sent — check your inbox",
+    "forgotBack": "Back to sign in"
   },
   "protected": {
     "loading": "Loading…"
@@ -158,6 +177,44 @@
     "credLow": "Low",
     "dateUnknown": "Date unknown",
     "triggerAt": "Trigger ${{price}}",
-    "window": "Window {{window}}"
+    "window": "Window {{window}}",
+    "share": "Share",
+    "sharePrompt": "Copy report link",
+    "compareComingSoon": "Compare feature coming soon — available in Pro+",
+    "modelBadge": "{{model}}",
+    "pro": {
+      "sectionTitle": "Pro insights",
+      "actionTitle": "Action · Stop · Catalyst",
+      "actionTeaser": "Suggested action… · Stop $… · Catalyst: …",
+      "eventsTitle": "Key events",
+      "eventsTeaser": "{{count}} events compiled — upgrade to view full timeline",
+      "insiderTitle": "Insider activity",
+      "insiderTeaser": "Form 4 · Net buy/sell trend…",
+      "peerTitle": "Peer comparison",
+      "peerTeaser": "Outperforming / underperforming sector · relative strength…",
+      "suggestion": "Suggestion",
+      "stopLoss": "Stop loss",
+      "catalyst": "Catalyst",
+      "dateTbd": "TBD",
+      "upgradeCta": "Upgrade to Pro"
+    },
+    "proPlus": {
+      "sectionTitle": "Pro+ depth",
+      "bullBearTitle": "Bull vs Bear",
+      "bull": "Bull case",
+      "bear": "Bear case",
+      "bullBearTeaser": "Bull/bear debate · 3 weighted reasons each…",
+      "scenarioTeaser": "Scenario refinement · trigger price & time window…",
+      "supplyTeaser": "Supply chain thesis · linked ticker analysis…",
+      "upgradeCta": "Upgrade to Pro+"
+    },
+    "upgradeBar": {
+      "unlockHint": "🔒 Upgrade for full analysis",
+      "remaining": "🔒 {{count}} free analyses left",
+      "exhausted": "🔒 Free analyses used up",
+      "cta": "Upgrade to Pro"
+    },
+    "errorTitle": "Analysis failed",
+    "retry": "Retry"
   }
 }

@@ -149,6 +149,54 @@ export function snapshotToMobileReport(snapshot, meta = {}) {
 
   const srcN = typeof snapshot.sourcesCount === 'number' ? snapshot.sourcesCount : sources.length
 
+  // Tier-gated fields: pass through from snapshot so Pro/Pro+ sections render
+  const actionLineObj =
+    snapshot.actionLineObj && typeof snapshot.actionLineObj === 'object'
+      ? {
+          suggestion: String(snapshot.actionLineObj.suggestion || '').trim(),
+          stopLoss: String(snapshot.actionLineObj.stopLoss || '').trim(),
+          catalyst: String(snapshot.actionLineObj.catalyst || '').trim(),
+        }
+      : { suggestion: '', stopLoss: '', catalyst: '' }
+
+  const keyEvents = Array.isArray(snapshot.keyEvents)
+    ? snapshot.keyEvents.map((e) => ({
+        date: String(e.date || '').trim(),
+        event: String(e.event || '').trim(),
+      }))
+    : []
+
+  const bullBearDebate =
+    snapshot.bullBearDebate && typeof snapshot.bullBearDebate === 'object'
+      ? snapshot.bullBearDebate
+      : { bull: [], bear: [] }
+
+  // Add triggerPrice / timeWindow to scenarios for Pro+
+  const scenariosWithDetail = []
+  const scSnap = snapshot.scenarios
+  if (scSnap && typeof scSnap === 'object') {
+    const rows = [
+      ['bull', scSnap.bull],
+      ['base', scSnap.base],
+      ['bear', scSnap.bear],
+    ]
+    for (const [type, z] of rows) {
+      if (!z || typeof z !== 'object') continue
+      const { min, max } = parseScenarioRange(z.range)
+      const found = scenarios.find((s) => s.type === type) || {}
+      scenariosWithDetail.push({
+        ...found,
+        type,
+        probability: Math.min(100, Math.max(0, Number(z.p) || 0)),
+        rangeMin: min,
+        rangeMax: max,
+        trigger: String(z.trigger || '').trim(),
+        triggerPrice: Number.isFinite(Number(z.triggerPrice)) ? Number(z.triggerPrice) : null,
+        timeWindow: String(z.timeWindow || '').trim(),
+      })
+    }
+  }
+
   return {
     ticker,
     name,
@@ -165,7 +213,7 @@ export function snapshotToMobileReport(snapshot, meta = {}) {
     summary: String(snapshot.summary || '').trim(),
     technicalSnapshot: String(snapshot.technicalSnapshot || '').trim(),
     dimensions: dims,
-    scenarios,
+    scenarios: scenariosWithDetail.length ? scenariosWithDetail : scenarios,
     supplyChain,
     forecast: String(snapshot.outlook || '').trim(),
     forecastAssumption: String(snapshot.valuationBridge || snapshot.detailAnalysisPreview || '')
@@ -174,6 +222,19 @@ export function snapshotToMobileReport(snapshot, meta = {}) {
     sources,
     sourceCount: srcN,
     timeSaved: timeSavedFromFooter(snapshot.researchFooterLine, srcN),
+    // Pro fields
+    reportTier: String(snapshot.reportTier || 'free'),
+    model: String(snapshot.model || '').trim(),
+    listingCurrency: String(snapshot.listingCurrency || 'USD'),
+    actionLine: String(snapshot.actionLine || '').trim(),
+    actionLineObj,
+    keyEvents,
+    leaderInsiderSummary: String(snapshot.leaderInsiderSummary || '').trim(),
+    peerVsSectorLine: String(snapshot.peerVsSectorLine || '').trim(),
+    proFieldHints: snapshot.proFieldHints || {},
+    // Pro+ fields
+    bullBearDebate,
+    proPlusFieldHints: snapshot.proPlusFieldHints || {},
   }
 }
 

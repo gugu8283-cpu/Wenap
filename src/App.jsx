@@ -83,11 +83,12 @@ function parseSegments(raw) {
   return segs
 }
 
-function formatTs(iso) {
+function formatTs(iso, lang) {
   if (!iso) return ''
   try {
     const d = new Date(iso)
-    return d.toLocaleString('zh-CN', {
+    const loc = lang || 'en'
+    return d.toLocaleString(loc, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -152,27 +153,14 @@ export default function App() {
   const segments = useMemo(() => parseSegments(streamText), [streamText])
 
   const refreshWatchlist = useCallback(async () => {
-    let tier = 'free'
-    let userId = ''
     try {
-      tier = localStorage.getItem('wenap_tier') || 'free'
-      userId = localStorage.getItem('wenap_userId') || ''
-    } catch {
-      /* ignore */
-    }
-    const base = API_BASE.replace(/\/$/, '')
-    const qs = new URLSearchParams({ tier })
-    if (anonId) qs.set('anonId', anonId)
-    if (userId) qs.set('userId', userId)
-    try {
-      const r = await fetch(`${base}/watchlist?${qs}`)
-      const j = await r.json()
+      const j = await apiFetch('/watchlist')
       setWatchlist(j.items || [])
       setWatchlistCap(j.cap || 3)
     } catch {
       /* ignore */
     }
-  }, [anonId])
+  }, [])
 
   useEffect(() => {
     refreshWatchlist()
@@ -344,78 +332,37 @@ export default function App() {
   const addCurrentToWatchlist = useCallback(async () => {
     const sym = ticker.trim().toUpperCase()
     if (!sym) {
-      setError('请输入股票代码')
+      setError(t('app.errTicker'))
       return
     }
-    let tier = 'free'
-    let userId = ''
     try {
-      tier = localStorage.getItem('wenap_tier') || 'free'
-      userId = localStorage.getItem('wenap_userId') || ''
-    } catch {
-      /* ignore */
-    }
-    const base = API_BASE.replace(/\/$/, '')
-    try {
-      const r = await fetch(`${base}/watchlist`, {
+      const j = await apiFetch('/watchlist', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          symbol: sym,
-          assetType,
-          horizon,
-          tier,
-          ...(anonId ? { anonId } : {}),
-          ...(userId ? { userId } : {}),
-        }),
+        body: JSON.stringify({ symbol: sym, assetType, horizon }),
       })
-      const j = await r.json().catch(() => ({}))
-      if (r.status === 403 && j.error === 'WATCHLIST_CAP') {
-        setError(
-          `自选已满（${j.cap} 只）。升级 Pro ${PRICING.pro} 可加 20 只，Pro+ ${PRICING.pro_plus} 加 100 只。`,
-        )
-        return
-      }
-      if (!r.ok) {
-        setError(j.message || j.error || '加入自选失败')
+      if (j.error === 'WATCHLIST_CAP') {
+        setError(t('app.watchlistFull', { cap: j.cap, pro: PRICING.pro, proPlus: PRICING.pro_plus }))
         return
       }
       setWatchlist(j.items || [])
       setWatchlistCap(j.cap || 3)
       setError('')
     } catch {
-      setError('加入自选失败')
+      setError(t('app.errGeneric'))
     }
-  }, [ticker, assetType, horizon, anonId])
+  }, [ticker, assetType, horizon, t])
 
   const removeFromWatchlist = useCallback(
     async (symbol) => {
-      let userId = ''
       try {
-        userId = localStorage.getItem('wenap_userId') || ''
-      } catch {
-        /* ignore */
-      }
-      const base = API_BASE.replace(/\/$/, '')
-      const qs = new URLSearchParams()
-      if (anonId) qs.set('anonId', anonId)
-      if (userId) qs.set('userId', userId)
-      try {
-        const r = await fetch(`${base}/watchlist/${encodeURIComponent(symbol)}?${qs}`, {
-          method: 'DELETE',
-        })
-        const j = await r.json().catch(() => ({}))
-        if (!r.ok) {
-          setError(j.message || '删除失败')
-          return
-        }
+        const j = await apiFetch(`/watchlist/${encodeURIComponent(symbol)}`, { method: 'DELETE' })
         setWatchlist(j.items || [])
         setError('')
       } catch {
-        setError('删除自选失败')
+        setError(t('app.errGeneric'))
       }
     },
-    [anonId],
+    [t],
   )
 
   const runFromWatchlist = useCallback(
@@ -427,52 +374,23 @@ export default function App() {
 
   const openHistory = useCallback(async () => {
     setHistoryOpen(true)
-    let tier = 'free'
-    let userId = ''
     try {
-      tier = localStorage.getItem('wenap_tier') || 'free'
-      userId = localStorage.getItem('wenap_userId') || ''
-    } catch {
-      /* ignore */
-    }
-    const base = API_BASE.replace(/\/$/, '')
-    const qs = new URLSearchParams({ tier })
-    if (anonId) qs.set('anonId', anonId)
-    if (userId) qs.set('userId', userId)
-    try {
-      const r = await fetch(`${base}/history?${qs}`)
-      const j = await r.json().catch(() => ({}))
+      const j = await apiFetch('/history')
       setHistoryItems(j.items || [])
       setHistoryLocked(Boolean(j.locked))
     } catch {
       setHistoryItems([])
     }
-  }, [anonId])
+  }, [])
 
   const loadHistory = useCallback(
     async (id) => {
       setError('')
-      let tier = 'free'
-      let userId = ''
       try {
-        tier = localStorage.getItem('wenap_tier') || 'free'
-        userId = localStorage.getItem('wenap_userId') || ''
-      } catch {
-        /* ignore */
-      }
-      const base = API_BASE.replace(/\/$/, '')
-      const qs = new URLSearchParams({ tier })
-      if (anonId) qs.set('anonId', anonId)
-      if (userId) qs.set('userId', userId)
-      try {
-        const r = await fetch(`${base}/history/${encodeURIComponent(id)}?${qs}`)
-        const j = await r.json().catch(() => ({}))
-        if (r.status === 403 && j.error === 'HISTORY_LOCKED') {
-          setError('历史回看仅限 Pro 及以上')
-          return
-        }
-        if (!r.ok) {
-          setError(j.message || j.error || '加载失败')
+        const locale = resolveAppLanguage(i18n.resolvedLanguage || i18n.language)
+        const j = await apiFetch(`/history/${encodeURIComponent(id)}?locale=${encodeURIComponent(locale)}`)
+        if (j.error === 'HISTORY_LOCKED') {
+          setError(t('app.historyLockedItem'))
           return
         }
         setStreamText(j.markdown || '')
@@ -487,7 +405,7 @@ export default function App() {
         setError(t('app.errLoadHistory'))
       }
     },
-    [anonId],
+    [t, i18n.resolvedLanguage, i18n.language],
   )
 
   const hasStream = streamText.length > 0
@@ -676,6 +594,14 @@ export default function App() {
           <p className="upgrade-title">{t('app.upgradeTitle')}</p>
           <p className="upgrade-row">{t('app.upgradePro', { price: PRICING.pro })}</p>
           <p className="upgrade-row">{t('app.upgradeProPlus', { price: PRICING.pro_plus })}</p>
+          <a
+            href={SUBSCRIBE_URL || '/pricing'}
+            className="upgrade-cta-btn"
+            target={SUBSCRIBE_URL ? '_blank' : undefined}
+            rel={SUBSCRIBE_URL ? 'noopener noreferrer' : undefined}
+          >
+            {t('app.upgradeBtn')}
+          </a>
         </div>
       )}
 
@@ -693,6 +619,7 @@ export default function App() {
               onDevUnlock={
                 DEV_UNLOCK
                   ? () => {
+                      // Dev-only: write localStorage tier for UI preview only (server uses JWT)
                       try {
                         localStorage.setItem('wenap_tier', 'pro_plus')
                       } catch {
@@ -710,7 +637,7 @@ export default function App() {
               {meta?.startedAt && (
                 <p className="meta-line">
                   {t('app.metaTime', {
-                    time: formatTs(meta.startedAt),
+                    time: formatTs(meta.startedAt, i18n.resolvedLanguage || i18n.language),
                     ticker: meta.ticker,
                     asset: t(`asset.${meta.assetType}`, { defaultValue: meta.assetType }),
                     horizon: t(`horizon.${meta.horizon}`, { defaultValue: meta.horizon }),

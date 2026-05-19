@@ -48,9 +48,13 @@
     "errTicker": "종목 코드를 입력하세요",
     "errVerifyEmail": "먼저 이메일 인증을 완료하세요",
     "errLoadHistory": "기록 불러오기 실패",
+    "errGeneric": "오류가 발생했습니다. 다시 시도해 주세요",
+    "historyLockedItem": "기록 조회는 Pro 이상 전용입니다. 업그레이드하여 잠금 해제하세요",
+    "watchlistFull": "관심 목록이 가득 찼습니다 ({{cap}}개). Pro로 20개, Pro+로 100개로 확장하세요.",
     "upgradeTitle": "이번 달 무료 분석 횟수를 모두 사용했습니다",
-    "upgradePro": "Pro · {{price}} · 무제한 + 관심 20 + 전체 기록",
-    "upgradeProPlus": "Pro+ · {{price}} · Claude Sonnet 4.5 + 관심 100",
+    "upgradePro": "Pro · {{price}} · 무제한 + Claude Haiku 4.5 + 전체 기록",
+    "upgradeProPlus": "Pro+ · {{price}} · Claude Sonnet 4.5 + 관심 100 + 비평가 뷰",
+    "upgradeBtn": "지금 업그레이드",
     "metaTime": "분석 {{time}} · {{ticker}} · {{asset}} · {{horizon}}",
     "disclaimer": "공개 정보 정리용이며 투자 조언이 아닙니다. 최종 결정과 책임은 본인에게 있습니다.",
     "accuracyLink": "Wenap 공개 예측 추적 정확도",
@@ -97,7 +101,22 @@
     "resendVerify": "인증 메일 재전송",
     "showPw": "표시",
     "hidePw": "숨기기",
-    "invalidCreds": "이메일 또는 비밀번호가 올바르지 않습니다"
+    "invalidCreds": "이메일 또는 비밀번호가 올바르지 않습니다",
+    "verifyTitle": "이메일 인증",
+    "verifySentTo": "{{email}}으로 인증 링크를 보냈습니다",
+    "verifyYourEmail": "이메일 주소",
+    "verifyCheckInbox": "이메일을 확인하고 링크를 클릭하여 인증하세요",
+    "verifyResend": "이메일이 안 왔나요? 재전송",
+    "verifyResentCooldown": "재전송 완료 ✓（{{seconds}}초）",
+    "verifySuccess": "이메일 인증 완료!",
+    "verifyRedirecting": "앱으로 이동 중…",
+    "backToLogin": "로그인으로 돌아가기",
+    "forgotTitle": "비밀번호 재설정",
+    "forgotSub": "재설정 링크를 받을 이메일을 입력하세요",
+    "forgotBtn": "재설정 링크 보내기",
+    "forgotSending": "전송 중…",
+    "forgotSent": "재설정 링크를 전송했습니다. 이메일을 확인하세요",
+    "forgotBack": "로그인으로 돌아가기"
   },
   "protected": {
     "loading": "로딩 중…"
@@ -156,6 +175,44 @@
     "credLow": "낮음",
     "dateUnknown": "날짜 불명",
     "triggerAt": "트리거 ${{price}}",
-    "window": "기간 {{window}}"
+    "window": "기간 {{window}}",
+    "share": "공유",
+    "sharePrompt": "리포트 링크 복사",
+    "compareComingSoon": "비교 기능 곧 출시 예정 (Pro+ 전용)",
+    "modelBadge": "{{model}}",
+    "pro": {
+      "sectionTitle": "Pro 인사이트",
+      "actionTitle": "액션 · 손절 · 촉매",
+      "actionTeaser": "추천 액션… · 손절 $… · 촉매: …",
+      "eventsTitle": "주요 이벤트",
+      "eventsTeaser": "{{count}}건 이벤트 정리 — Pro로 업그레이드하여 전체 목록 확인",
+      "insiderTitle": "내부자 동향",
+      "insiderTeaser": "Form 4 · 순매수/매도 경향…",
+      "peerTitle": "동종업계 비교",
+      "peerTeaser": "섹터 대비 성과 · 상대 강도…",
+      "suggestion": "추천",
+      "stopLoss": "손절",
+      "catalyst": "촉매",
+      "dateTbd": "미정",
+      "upgradeCta": "Pro로 업그레이드"
+    },
+    "proPlus": {
+      "sectionTitle": "Pro+ 심층 분석",
+      "bullBearTitle": "강세 vs 약세",
+      "bull": "강세 근거",
+      "bear": "약세 근거",
+      "bullBearTeaser": "강세/약세 각 3가지 이유 (가중치 포함)…",
+      "scenarioTeaser": "시나리오 세분화 · 트리거 가격 및 기간…",
+      "supplyTeaser": "공급망 연관 · 관련 종목 분석…",
+      "upgradeCta": "Pro+로 업그레이드"
+    },
+    "upgradeBar": {
+      "unlockHint": "🔒 전체 분석 잠금 해제",
+      "remaining": "🔒 무료 분석 {{count}}회 남음",
+      "exhausted": "🔒 무료 분석 소진",
+      "cta": "Pro로 업그레이드"
+    },
+    "errorTitle": "분석 실패",
+    "retry": "다시 시도"
   }
 }

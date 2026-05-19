@@ -158,11 +158,9 @@ export default function LoginPage() {
 
             <span className="auth-label">{t('auth.password')}</span>
 
-            <span className="auth-top-link" style={{ fontSize: 12 }}>
-
+            <Link to="/forgot-password" className="auth-top-link" style={{ fontSize: 12 }}>
               {t('auth.forgot')}
-
-            </span>
+            </Link>
 
           </div>
 

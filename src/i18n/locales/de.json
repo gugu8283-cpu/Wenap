@@ -48,9 +48,13 @@
     "errTicker": "Bitte Ticker eingeben",
     "errVerifyEmail": "Bitte zuerst E-Mail bestätigen",
     "errLoadHistory": "Verlauf konnte nicht geladen werden",
+    "errGeneric": "Es ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
+    "historyLockedItem": "Verlauf ist nur für Pro und höher verfügbar. Upgraden Sie zum Freischalten.",
+    "watchlistFull": "Watchlist voll ({{cap}} Symbole). Pro = 20, Pro+ = 100.",
     "upgradeTitle": "Monatliches Free-Kontingent aufgebraucht",
-    "upgradePro": "Pro · {{price}} · Unbegrenzt + 20 Watchlist + voller Verlauf",
-    "upgradeProPlus": "Pro+ · {{price}} · Claude Sonnet 4.5 + 100 Watchlist",
+    "upgradePro": "Pro · {{price}} · Unbegrenzt + Claude Haiku 4.5 + voller Verlauf",
+    "upgradeProPlus": "Pro+ · {{price}} · Claude Sonnet 4.5 + 100 Watchlist + Kritiker-Review",
+    "upgradeBtn": "Jetzt upgraden",
     "metaTime": "Analyse {{time}} · {{ticker}} · {{asset}} · {{horizon}}",
     "disclaimer": "Nur Zusammenfassung öffentlicher Informationen – keine Anlageberatung. Entscheidung und Risiko liegen bei Ihnen.",
     "accuracyLink": "Öffentliche Wenap-Prognose-Statistik",
@@ -97,7 +101,22 @@
     "resendVerify": "Bestätigungsmail erneut senden",
     "showPw": "Anzeigen",
     "hidePw": "Ausblenden",
-    "invalidCreds": "E-Mail oder Passwort ungültig"
+    "invalidCreds": "E-Mail oder Passwort ungültig",
+    "verifyTitle": "E-Mail bestätigen",
+    "verifySentTo": "Wir haben einen Bestätigungslink an {{email}} gesendet",
+    "verifyYourEmail": "Ihre E-Mail-Adresse",
+    "verifyCheckInbox": "Bitte überprüfen Sie Ihr Postfach und klicken Sie den Link",
+    "verifyResend": "Nicht erhalten? Erneut senden",
+    "verifyResentCooldown": "Erneut gesendet ✓ ({{seconds}}s)",
+    "verifySuccess": "E-Mail bestätigt!",
+    "verifyRedirecting": "Weiterleitung zur App…",
+    "backToLogin": "Zurück zur Anmeldung",
+    "forgotTitle": "Passwort zurücksetzen",
+    "forgotSub": "E-Mail eingeben, um einen Reset-Link zu erhalten",
+    "forgotBtn": "Reset-Link senden",
+    "forgotSending": "Senden…",
+    "forgotSent": "Reset-Link gesendet — überprüfen Sie Ihren Posteingang",
+    "forgotBack": "Zurück zur Anmeldung"
   },
   "protected": {
     "loading": "Laden…"
@@ -156,6 +175,44 @@
     "credLow": "Niedrig",
     "dateUnknown": "Datum unbekannt",
     "triggerAt": "Trigger ${{price}}",
-    "window": "Fenster {{window}}"
+    "window": "Fenster {{window}}",
+    "share": "Teilen",
+    "sharePrompt": "Berichtslink kopieren",
+    "compareComingSoon": "Vergleichsfunktion demnächst (Pro+)",
+    "modelBadge": "{{model}}",
+    "pro": {
+      "sectionTitle": "Pro Insights",
+      "actionTitle": "Aktion · Stop · Katalysator",
+      "actionTeaser": "Empfehlung… · Stop $… · Katalysator: …",
+      "eventsTitle": "Schlüsselereignisse",
+      "eventsTeaser": "{{count}} Ereignisse zusammengefasst — Pro freischalten für vollständige Liste",
+      "insiderTitle": "Insider-Aktivität",
+      "insiderTeaser": "Form 4 · Netto-Kauf/Verkauf-Tendenz…",
+      "peerTitle": "Peer-Vergleich",
+      "peerTeaser": "Besser/schlechter als Sektor · relative Stärke…",
+      "suggestion": "Empfehlung",
+      "stopLoss": "Stop-Loss",
+      "catalyst": "Katalysator",
+      "dateTbd": "Ausstehend",
+      "upgradeCta": "Auf Pro upgraden"
+    },
+    "proPlus": {
+      "sectionTitle": "Pro+ Tiefenanalyse",
+      "bullBearTitle": "Bull vs. Bear",
+      "bull": "Bull-Argumente",
+      "bear": "Bear-Argumente",
+      "bullBearTeaser": "Bull/Bear-Debatte · je 3 gewichtete Argumente…",
+      "scenarioTeaser": "Szenario-Verfeinerung · Trigger-Preis & Zeitfenster…",
+      "supplyTeaser": "Lieferketten-These · verknüpfte Ticker-Analyse…",
+      "upgradeCta": "Auf Pro+ upgraden"
+    },
+    "upgradeBar": {
+      "unlockHint": "🔒 Vollständige Analyse freischalten",
+      "remaining": "🔒 Noch {{count}} kostenlose Analysen",
+      "exhausted": "🔒 Kostenlose Analysen aufgebraucht",
+      "cta": "Auf Pro upgraden"
+    },
+    "errorTitle": "Analyse fehlgeschlagen",
+    "retry": "Erneut versuchen"
   }
 }

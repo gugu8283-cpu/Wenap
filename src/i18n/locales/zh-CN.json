@@ -45,7 +45,11 @@
       "产业链与走势预判"
     ],
     "waitingOutput": "等待模型输出…",
-    "errTicker": "请输入股票代码",
+    "errTicker": "请输入标的代码",
+    "errGeneric": "操作失败，请重试",
+    "historyLockedItem": "历史回看仅限 Pro 及以上，升级后解锁",
+    "watchlistFull": "自选已满（{{cap}} 只）。升级 Pro 加 20 只，Pro+ 加 100 只。",
+    "upgradeBtn": "立即升级",
     "errVerifyEmail": "请先验证邮箱",
     "errSessionStale": "登录已失效，请重新登录（内测环境重新部署后需重新登录）",
     "errBanned": "账号已被限制",
@@ -99,7 +103,22 @@
     "resendVerify": "重新发送验证邮件",
     "showPw": "显示",
     "hidePw": "隐藏",
-    "invalidCreds": "邮箱或密码不正确"
+    "invalidCreds": "邮箱或密码不正确",
+    "verifyTitle": "验证你的邮箱",
+    "verifySentTo": "我们已向 {{email}} 发送了验证链接",
+    "verifyYourEmail": "你的邮箱",
+    "verifyCheckInbox": "请查收邮件并点击链接完成验证",
+    "verifyResend": "没收到邮件？重新发送",
+    "verifyResentCooldown": "已重新发送 ✓（{{seconds}}s）",
+    "verifySuccess": "邮箱验证成功！",
+    "verifyRedirecting": "正在跳转到主页…",
+    "backToLogin": "返回登录",
+    "forgotTitle": "重置密码",
+    "forgotSub": "输入邮箱以接收重置链接",
+    "forgotBtn": "发送重置链接",
+    "forgotSending": "发送中…",
+    "forgotSent": "重置链接已发送，请查收邮件",
+    "forgotBack": "返回登录"
   },
   "protected": {
     "loading": "加载中…"
@@ -158,6 +177,44 @@
     "credLow": "低",
     "dateUnknown": "日期未知",
     "triggerAt": "触发价 ${{price}}",
-    "window": "窗口 {{window}}"
+    "window": "窗口 {{window}}",
+    "share": "分享",
+    "sharePrompt": "复制分析链接",
+    "compareComingSoon": "对比分析开发中，Pro+ 即将上线",
+    "modelBadge": "{{model}}",
+    "pro": {
+      "sectionTitle": "Pro 增强",
+      "actionTitle": "操作建议 · 止损 · 催化剂",
+      "actionTeaser": "建议持有… · 止损 $… · 催化剂：…",
+      "eventsTitle": "关键时间节点",
+      "eventsTeaser": "已整理 {{count}} 条节点，升级 Pro 查看完整列表",
+      "insiderTitle": "内部人动态",
+      "insiderTeaser": "Form 4 · 净买卖倾向…",
+      "peerTitle": "同行对标",
+      "peerTeaser": "跑赢行业 · 相对强弱…",
+      "suggestion": "建议",
+      "stopLoss": "止损",
+      "catalyst": "催化剂",
+      "dateTbd": "待公告",
+      "upgradeCta": "升级 Pro 查看"
+    },
+    "proPlus": {
+      "sectionTitle": "Pro+ 深度",
+      "bullBearTitle": "多空对撞",
+      "bull": "看多",
+      "bear": "看空",
+      "bullBearTeaser": "多空对撞 · 看多/看空各 3 条附权重…",
+      "scenarioTeaser": "情景细化 · 触发价位与时间窗口…",
+      "supplyTeaser": "产业链联动 · 关联标的独立评分…",
+      "upgradeCta": "升级 Pro+ 查看"
+    },
+    "upgradeBar": {
+      "unlockHint": "🔒 升级解锁完整分析",
+      "remaining": "🔒 剩余 {{count}} 次免费分析",
+      "exhausted": "🔒 免费次数已用完",
+      "cta": "升级 Pro"
+    },
+    "errorTitle": "分析生成失败",
+    "retry": "重试"
   }
 }
