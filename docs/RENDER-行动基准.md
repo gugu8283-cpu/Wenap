@@ -57,7 +57,7 @@
 7. **Advanced** → **Health Check Path**：`/health`
 8. **Create Web Service**，等 Build 绿勾（约 5–10 分钟）。
 9. 打开 `https://wenap-xxxx.onrender.com`；到 **Environment** 把 `APP_PUBLIC_URL` 设为该 **https 地址** → Save（会触发一次 Deploy）。
-10. 验收：`/health`、`/admin`（ADMIN_SECRET）、注册、跑一次分析。
+10. 验收：`/health`、打开 `/admin` 出现登录页（输入 `ADMIN_SECRET`）、注册、跑一次分析。
 
 **内测注意**：Free **不要频繁 Deploy**；要发新版时接受「可能清空用户数据」，或先进入阶段 ②。
 

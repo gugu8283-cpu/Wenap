@@ -2386,8 +2386,15 @@ app.post('/analyze', requireAuth, async (req, res) => {
 });
 
 app.use('/auth', authRouter);
-app.use('/admin', adminRouter);
-app.use('/accuracy', publicAccuracyRouter);
+/** 管理 API 勿挂在 /admin（会与 SPA 路由 /admin 冲突）；前端请求 /api/admin-api/... */
+app.use('/admin-api', adminRouter);
+app.use('/accuracy', (req, res, next) => {
+  const sub = req.path || '/';
+  if ((req.method === 'GET' || req.method === 'HEAD') && (sub === '/' || sub === '')) {
+    return next();
+  }
+  return publicAccuracyRouter(req, res, next);
+});
 startVerifyCron();
 
 if (SPA_MODE) {

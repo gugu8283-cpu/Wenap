@@ -1,6 +1,15 @@
 const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 const STORAGE_KEY = 'wenap_admin_auth'
 
+/** 生产环境 /admin 为 SPA；管理接口统一走 /admin-api */
+function toAdminApiPath(path) {
+  const p = String(path || '').trim()
+  if (!p) return '/admin-api'
+  if (p.startsWith('/admin-api')) return p
+  if (p.startsWith('/admin/')) return `/admin-api/${p.slice(7)}`
+  return p.startsWith('/') ? `/admin-api${p}` : `/admin-api/${p}`
+}
+
 export function getAdminToken() {
   try {
     return sessionStorage.getItem(STORAGE_KEY) || ''
@@ -19,7 +28,7 @@ export function clearAdminToken() {
 
 export async function adminFetch(path, options = {}) {
   const token = getAdminToken()
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(`${API_BASE}${toAdminApiPath(path)}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',

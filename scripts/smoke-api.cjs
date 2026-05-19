@@ -122,13 +122,13 @@ async function main() {
     if (!SECRET || SECRET.length < 8) {
       console.warn('[smoke] ADMIN_SECRET missing — skip admin');
     } else {
-      const overview = await req(port, 'GET', '/admin/stats/overview', {
+      const overview = await req(port, 'GET', '/admin-api/stats/overview', {
         Authorization: `Bearer ${SECRET}`,
       });
-      if (overview.status !== 200) failHttp('/admin/stats/overview', overview);
-      console.log('[smoke] /admin/stats/overview OK');
+      if (overview.status !== 200) failHttp('/admin-api/stats/overview', overview);
+      console.log('[smoke] /admin-api/stats/overview OK');
 
-      const bad = await req(port, 'GET', '/admin/stats/overview', { Authorization: 'Bearer wrong' });
+      const bad = await req(port, 'GET', '/admin-api/stats/overview', { Authorization: 'Bearer wrong' });
       if (bad.status === 401) console.log('[smoke] admin auth OK');
       else console.warn('[smoke] expected 401, got', bad.status);
     }
