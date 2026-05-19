@@ -32,3 +32,6 @@ services:
         sync: false
       - key: ADMIN_SECRET
         sync: false
+      # 内测：设为 1 可在启动时创建 free/pro/proplus 测试账号（无需 Shell）
+      - key: SEED_TEST_ACCOUNTS
+        sync: false

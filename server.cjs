@@ -191,6 +191,17 @@ try {
   console.warn('[Wenap] SQLite 初始化失败（预测追踪不可用）:', e.message);
 }
 
+if (process.env.SEED_TEST_ACCOUNTS === '1') {
+  const { seedTestAccounts } = require('./lib/seedTestAccounts.cjs');
+  seedTestAccounts()
+    .then((emails) => {
+      console.log('[Wenap] 测试账号已就绪（SEED_TEST_ACCOUNTS=1）：', emails.join(', '));
+    })
+    .catch((e) => {
+      console.warn('[Wenap] 测试账号创建失败:', e?.message || e);
+    });
+}
+
 function currentMonthKey() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;

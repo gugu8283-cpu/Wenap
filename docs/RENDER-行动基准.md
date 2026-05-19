@@ -98,21 +98,24 @@ API 费用通常 **大于** 服务器差价。
 
 ---
 
-## 测试账号（仅本机默认没有；线上需执行一次脚本）
+## 测试账号（线上无需 Shell）
 
-本机：`npm run create-test-accounts`
+Render **Free 没有 Shell**，用环境变量在启动时自动创建：
 
-线上 Render 部署成功后 → **Shell** 里执行：
+1. Dashboard → **Environment** → 添加 `SEED_TEST_ACCOUNTS` = `1`
+2. **Manual Deploy** 或等自动部署完成
+3. 在 **Logs** 里确认出现：`测试账号已就绪`
+4. 登录成功后可将该变量删掉（避免每次重启都刷日志；账号会留在库里直到 Free 盘被清空）
 
-```bash
-node scripts/createTestAccounts.cjs
-```
+本机也可：`npm run create-test-accounts`
 
 | 档位 | 邮箱 | 密码 |
 |------|------|------|
 | 免费 | `free@wenap.test` | `Wenap2026Free!` |
 | Pro | `pro@wenap.test` | `Wenap2026Pro!` |
 | Pro+ | `proplus@wenap.test` | `Wenap2026ProPlus!` |
+
+内测结束后请关闭 `SEED_TEST_ACCOUNTS` 并考虑改测试密码。
 
 ## 常用命令
 
