@@ -183,7 +183,20 @@ const authRouter = require('./routes/auth.cjs');
 const publicAccuracyRouter = require('./routes/publicAccuracy.cjs');
 const { requireAuth } = require('./middleware/requireAuth.cjs');
 const { startVerifyCron } = require('./jobs/verifyPredictions.cjs');
-const { normalizeLocale, outputLanguageInstruction } = require('./lib/outputLocale.cjs');
+const {
+  normalizeLocale,
+  outputLanguageInstruction,
+  horizonLabel: horizonLabelLocale,
+  assetLabel: assetLabelLocale,
+  expectedDimensionNames,
+  policyDimensionName,
+  insufficientDataNote,
+  defaultDisclaimer,
+  dimensionJsonSpec,
+  dimensionBoundaryPromptBlock,
+  policyRegulationBlock,
+  signalDisplayLabel,
+} = require('./lib/outputLocale.cjs');
 try {
   store.initDb();
   console.log(`[Wenap] SQLite 已初始化：${store.DB_PATH}`);
@@ -442,25 +455,12 @@ function startSseKeepalive(res) {
   return () => clearInterval(timer);
 }
 
-function horizonLabel(horizon) {
-  const map = {
-    '1m': '1个月',
-    '3m': '3个月',
-    '6m': '6个月',
-    '1y': '1年',
-    '2y': '2年',
-  };
-  return map[horizon] || horizon || '3个月';
+function horizonLabel(horizon, locale = 'zh-CN') {
+  return horizonLabelLocale(horizon, locale);
 }
 
-function assetLabel(assetType) {
-  const map = {
-    stock: '个股',
-    etf: 'ETF',
-    reit: 'REITs',
-    commodity_etf: '商品ETF',
-  };
-  return map[assetType] || '个股';
+function assetLabel(assetType, locale = 'zh-CN') {
+  return assetLabelLocale(assetType, locale);
 }
 
 const ALPHA_VANTAGE_URL = 'https://www.alphavantage.co/query';
@@ -678,30 +678,6 @@ function stockComplianceSnippet(ticker, asOf) {
   return `【个股】有来源才写：拆股/上市规则/近90天重大事件；无则省略。${ticker} · ${asOf}。禁编造文号。`;
 }
 
-function dimensionJsonSpec(assetType) {
-  const noteCap =
-    'note≤48字、只写1–2个硬事实+角标；禁复述 summary/它维；禁套话；score=0 时 note 仅「数据不足」或空。';
-  if (assetType === 'reit') {
-    return `恰好 6 条，name 依次为：「新闻情绪」「利率与融资环境」「区域与资产质量」「宏观经济」「市场情绪」「派息与现金流稳定性」，每条含 score(0-100) 与 note。${noteCap}`;
-  }
-  if (assetType === 'commodity_etf') {
-    return `恰好 6 条：新闻情绪、地缘与供应链、商品基本面、宏观经济、市场情绪、持仓与费率结构；每条 score 0-100 与 note。${noteCap}`;
-  }
-  if (assetType === 'etf') {
-    return `恰好 6 条：新闻情绪、地缘政治、行业趋势、宏观经济、市场情绪、指数编制与重仓股画像；每条 score 0-100 与 note。${noteCap}`;
-  }
-  return `恰好 6 条：新闻情绪、地缘政治、行业趋势、宏观经济、市场情绪、政策法规；每条 score 0-100 与 note。${noteCap}`;
-}
-
-function dimensionBoundaryPromptBlock() {
-  return `【六维边界】每维只计本维定义内信息，禁止重叠打分：
-新闻情绪 → 近期媒体报道、分析师评级、市场热度
-地缘政治 → 国家间关系、战争风险、区域供应链稳定性（非政府对企业监管）
-行业趋势 → 行业增长动能、技术迭代、竞争格局
-宏观经济 → 利率、通胀、GDP、就业、整体市场环境
-市场情绪 → 投资者情绪、估值水平、资金流向、动能
-政策法规 → 政府/监管机构对该公司或行业的监管、立法、执法（出口管制、AI 立法、反垄断、行业专项监管、税务、知识产权等）；勿与地缘政治混淆`;
-}
 
 function horizonWeightHint(horizon) {
   if (horizon === '1m' || horizon === '3m') {
@@ -750,25 +726,24 @@ function buildMainJsonPrompt({
   tier = 'free',
   locale = 'zh-CN',
 }) {
-  const h = horizonLabel(horizon);
-  const a = assetLabel(assetType);
-  const asOf = new Date().toLocaleDateString('zh-CN', {
+  const loc = normalizeLocale(locale);
+  const h = horizonLabel(horizon, loc);
+  const a = assetLabel(assetType, loc);
+  const asOf = new Date().toLocaleDateString(loc.startsWith('zh') ? 'zh-CN' : 'en-US', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
   });
   const stockSnip = assetType === 'stock' ? stockComplianceSnippet(ticker, asOf) : '';
-  const policyDimBlock =
-    assetType === 'stock'
-      ? `
-【第6维·政策法规】评估政府及监管机构对该公司或行业的定向干预风险，包括：出口管制（对华芯片禁令、实体清单）、AI 监管立法（EU AI Act、美国 AI 政策）、反垄断调查、行业专项监管、税务政策变化、知识产权保护。
-与地缘政治边界：地缘政治=国家 vs 国家（战争、外交、区域供应链）；政策法规=政府 vs 企业/行业（监管、立法、执法）。JSON 中 dimensions[5].name 必须为「政策法规」。`
-      : '';
+  const policyDimBlock = assetType === 'stock' ? policyRegulationBlock(loc) : '';
   const hw = horizonWeightHint(horizon);
   const av = alphaContextBlock ? `${alphaContextBlock}\n\n` : '';
   const curBlock = scenarioCurrencyPromptBlock(listingCurrency || 'USD', exchangeHint || '');
 
-  return `你是专业股票分析师。须联网核验。**极简：只写重点**——数字、事件、判断；删形容词、背景铺垫、同义重复。无材料则字段留空，禁止「未检索到/暂无/待核验」。
+  const langBlock = outputLanguageInstruction(loc);
+
+  return `${langBlock}
+你是专业股票分析师。须联网核验。**极简：只写重点**——数字、事件、判断；删形容词、背景铺垫、同义重复。无材料则字段留空，禁止「未检索到/暂无/待核验」。
 
 标的 ${ticker} · ${a} · ${h} · ${asOf}
 ${hw}
@@ -776,14 +751,13 @@ ${curBlock}
 
 ${av}${stockSnip}
 
-${dimensionBoundaryPromptBlock()}
+${dimensionBoundaryPromptBlock(loc)}
 
 【实体】identityCheck≤28字：全称+上市地/代码是否与 ${ticker} 一致。
 
 【书写】禁 URL；角标仅 [SEC][交易所][IR][新闻][披露][行情][研报]。**同一事实只出现一次**（summary/六维/detail/outlook 互斥，勿复述）。无数据填空串。
 
 ${policyDimBlock}
-${outputLanguageInstruction(locale)}
 只输出一个合法 JSON（禁止 Markdown 围栏与 JSON 外字符）。
 
 JSON 字段与要求：
@@ -796,7 +770,7 @@ JSON 字段与要求：
   "riskReward": "如 1:2.5；无法估计留空",
   "summary": "≤28字，一句结论",
   "analystPriceLine": "单行：目标价/现价/空间%；无则空",
-  "dimensions": [ ${dimensionJsonSpec(assetType)} 6 条 name 顺序与上文一致 ],
+  "dimensions": [ ${dimensionJsonSpec(assetType, loc)} ],
   "detailAnalysis": "**260–360字**；仅写六维/summary 未覆盖的硬事实+1条反方；每句句号收束；禁复述六维",
   "sources": [ 最多 **5** 条 JSON 数组；每项 { "text": "≤40字", "url": "真实 http(s)", "time": "", "credibility": "高|中|低", "cite": "短角标" }；禁止 markdown 表格 ],
   "supplyChain": [
@@ -810,7 +784,7 @@ JSON 字段与要求：
   "valuationBridge": "≤36字或空",
   "technicalSnapshot": "≤56字或空",
   "outlook": "≤120字；与期限 ${h} 一致",
-  "disclaimer": "本分析仅供参考，不构成投资建议。"
+  "disclaimer": "${defaultDisclaimer(loc).replace(/"/g, '\\"')}"
 }
 
 硬性：supplyChain≥2，每项 **ticker 必填**。sources 必须 JSON 数组，禁 markdown 表格。scenarios p 之和=100。valuationBridge/假设类字段≤50字。
@@ -1077,7 +1051,11 @@ function researchFooterLine(sourceCount) {
 
 function extractPolicyRegulationDimension(dimensions) {
   const arr = Array.isArray(dimensions) ? dimensions : [];
-  const idx = arr.findIndex((d) => /政策法规|监管|立法|领导人|治理/.test(String(d?.name || '')));
+  const idx = arr.findIndex((d) =>
+    /政策法规|政策法規|Policy|Regulation|規制|규제|Regulierung|监管|立法|领导人|治理/.test(
+      String(d?.name || ''),
+    ),
+  );
   return idx >= 0 ? arr[idx] : arr[5] || null;
 }
 
@@ -1086,7 +1064,8 @@ function mainPolicyDimensionSufficient(dim) {
   if (!dim || typeof dim !== 'object') return false;
   const score = Number(dim.score) || 0;
   const note = String(dim.note || '').trim();
-  if (score < 45 || note === '数据不足' || note.length < 18) return false;
+  if (score < 45 || /数据不足|Insufficient data|データ不足|데이터 부족|Unzureichende/i.test(note) || note.length < 18)
+    return false;
   if (/(管制|监管|立法|反垄断|出口限制|实体清单|禁令|执法|合规|税务|知识产权|AI Act|芯片禁令)/i.test(note))
     return true;
   if (/(regulation|antitrust|export control|sanction|compliance|entity list)/i.test(note)) return true;
@@ -1095,7 +1074,10 @@ function mainPolicyDimensionSufficient(dim) {
   return note.length >= 28;
 }
 
-async function fetchPolicyRegulationDimension(apiKey, ticker, hLabel, ctx = {}, model) {
+async function fetchPolicyRegulationDimension(apiKey, ticker, hLabel, ctx = {}, model, locale = 'zh-CN') {
+  const loc = normalizeLocale(locale);
+  const policyName = policyDimensionName(loc);
+  const insuf = insufficientDataNote(loc);
   const policyModel =
     String(model || '').trim() || MODEL_FLASH;
   const companyName = String(ctx.companyName || '').trim();
@@ -1111,13 +1093,21 @@ async function fetchPolicyRegulationDimension(apiKey, ticker, hLabel, ctx = {}, 
     const retryBlock = retry
       ? `\n\n【再次尝试】上一轮 score=0；换检索词（出口管制、实体清单、反垄断、行业监管、AI 立法、SEC/FTC 执法）再试。仍无可核验监管信息才 score=0 且 note 仅「数据不足」。`
       : '';
-    const prompt = `你是监管政策分析师。标的：${ticker}；期限：${hLabel}。
+    const prompt =
+      loc === 'en'
+        ? `${outputLanguageInstruction(loc)}
+You are a regulatory policy analyst. Ticker: ${ticker}; horizon: ${hLabel}.
 ${hint ? `${hint}\n` : ''}
-第 6 维「政策法规」：评估政府及监管机构对该公司或行业的定向干预风险，包括出口管制（对华芯片禁令、实体清单）、AI 监管立法（EU AI Act、美国 AI 政策）、反垄断调查、行业专项监管、税务政策变化、知识产权保护。
-边界：地缘政治=国家 vs 国家（战争、外交、区域供应链）；政策法规=政府 vs 企业/行业（监管、立法、执法）。勿写 CEO/管理层人事。
-规则：1）单一普通股/行业主体才写；note≤72字，可核验监管要点+角标。2）ETF/基金：score=0，note「数据不足」。3）禁编造。${retryBlock}
+Dimension 6 "${policyName}": government/regulator risk (export controls, entity lists, AI regulation, antitrust, sector rules, tax, IP). Geopolitics ≠ ${policyName}. No CEO/management focus.
+Rules: verifiable facts + [cite] in note≤72 words; ETFs/funds → score 0, note "${insuf}". No fabrication.${retryBlock}
+Output JSON only: {"name":"${policyName}","score":0-100,"note":"…"}`
+        : `你是监管政策分析师。标的：${ticker}；期限：${hLabel}。
+${hint ? `${hint}\n` : ''}
+第 6 维「${policyName}」：评估政府及监管机构对该公司或行业的定向干预风险，包括出口管制、AI 监管立法、反垄断、行业专项监管、税务政策变化、知识产权保护。
+边界：地缘政治=国家 vs 国家；${policyName}=政府 vs 企业/行业。勿写 CEO/管理层人事。
+规则：1）单一普通股/行业主体才写；note≤72字，可核验监管要点+角标。2）ETF/基金：score=0，note「${insuf}」。3）禁编造。${retryBlock}
 
-只输出一个 JSON：{"name":"政策法规","score":0-100,"note":"…"}`;
+只输出一个 JSON：{"name":"${policyName}","score":0-100,"note":"…"}`;
     const policyWeb = openRouterLeaderUseWeb();
     const { content: raw, usage } = await openRouterChat(apiKey, {
       model: policyModel,
@@ -1128,9 +1118,9 @@ ${hint ? `${hint}\n` : ''}
     });
     const obj = extractJsonObject(raw);
     return {
-      name: '政策法规',
+      name: policyName,
       score: Math.min(100, Math.max(0, Number(obj.score) || 0)),
-      note: String(obj.note || '数据不足').trim() || '数据不足',
+      note: String(obj.note || insuf).trim() || insuf,
       _usage: usage,
       _usedWeb: policyWeb,
     };
@@ -1148,39 +1138,28 @@ ${hint ? `${hint}\n` : ''}
   return row;
 }
 
-function mergePolicyRegulationIntoDimensions(dimensions, policyRow) {
+function mergePolicyRegulationIntoDimensions(dimensions, policyRow, locale = 'zh-CN') {
   const arr = Array.isArray(dimensions) ? dimensions.map((d) => ({ ...d })) : [];
-  const idx = arr.findIndex((d) => /政策法规|监管|立法|领导人|治理/.test(String(d?.name || '')));
-  const slot = { name: '政策法规', score: policyRow.score, note: policyRow.note };
+  const idx = arr.findIndex((d) =>
+    /政策法规|政策法規|Policy|Regulation|規制|규제|Regulierung|监管|立法|领导人|治理/.test(
+      String(d?.name || ''),
+    ),
+  );
+  const slot = {
+    name: policyRow.name || policyDimensionName(locale),
+    score: policyRow.score,
+    note: policyRow.note,
+  };
   if (idx >= 0) {
     arr[idx] = slot;
   } else if (arr.length >= 6) {
     arr[5] = slot;
   } else {
-    while (arr.length < 5) arr.push({ name: '—', score: 0, note: '数据不足' });
+    while (arr.length < 5)
+      arr.push({ name: '—', score: 0, note: insufficientDataNote(locale) });
     arr.push(slot);
   }
   return arr.slice(0, 6);
-}
-
-function expectedDimensionNames(assetType) {
-  if (assetType === 'reit') {
-    return [
-      '新闻情绪',
-      '利率与融资环境',
-      '区域与资产质量',
-      '宏观经济',
-      '市场情绪',
-      '派息与现金流稳定性',
-    ];
-  }
-  if (assetType === 'commodity_etf') {
-    return ['新闻情绪', '地缘与供应链', '商品基本面', '宏观经济', '市场情绪', '持仓与费率结构'];
-  }
-  if (assetType === 'etf') {
-    return ['新闻情绪', '地缘政治', '行业趋势', '宏观经济', '市场情绪', '指数编制与重仓股画像'];
-  }
-  return ['新闻情绪', '地缘政治', '行业趋势', '宏观经济', '市场情绪', '政策法规'];
 }
 
 function stripHttpUrls(s) {
@@ -1275,8 +1254,10 @@ function fillRiskRewardIfEmpty(data) {
   data.riskReward = rr;
 }
 
-function alignDimensionSlots(dimensions, assetType) {
-  const names = expectedDimensionNames(assetType);
+function alignDimensionSlots(dimensions, assetType, locale = 'zh-CN') {
+  const loc = normalizeLocale(locale);
+  const names = expectedDimensionNames(assetType, loc);
+  const insuf = insufficientDataNote(loc);
   const src = Array.isArray(dimensions) ? dimensions : [];
   return names.map((canonical, i) => {
     const d = src[i] || {};
@@ -1285,7 +1266,7 @@ function alignDimensionSlots(dimensions, assetType) {
     score = Math.min(100, Math.max(0, Math.round(score)));
     let note = String(d.note || '').trim();
     if (score === 0) {
-      note = '数据不足';
+      note = insuf;
     } else {
       note = stripHttpUrls(note);
       note = scrubNotFoundMetaPhrases(note);
@@ -1680,30 +1661,66 @@ function clampVerboseChineseFields(data) {
   }
 }
 
-function jsonToMarkdownFourParts(data, tier = 'free') {
-  const sig = signalToZh(data.signal);
+function jsonToMarkdownFourParts(data, tier = 'free', locale = 'zh-CN') {
+  const loc = normalizeLocale(locale);
+  const sig = signalDisplayLabel(data.signal, loc);
+  const insuf = insufficientDataNote(loc);
+  const L =
+    loc === 'en'
+      ? {
+          dataAsOf: 'Data as of',
+          identity: 'Entity & ticker check',
+          score: 'Actionability score',
+          tendency: 'Stance',
+          risk: 'Risk level',
+          rr: 'Risk/reward',
+          price: 'Price vs target',
+          tech: 'Technical snapshot',
+          dims: 'Six dimensions',
+          sources: 'Sources',
+          chain: 'Supply chain / related names',
+          scenarios: 'Scenarios & probabilities',
+          val: 'Valuation bridge (illustrative)',
+          outlook: 'Outlook',
+        }
+      : {
+          dataAsOf: '数据与事实口径截至',
+          identity: '实体与代码核验',
+          score: '可买性评分',
+          tendency: '投资倾向',
+          risk: '风险等级',
+          rr: '风险收益比',
+          price: '价格与目标价',
+          tech: '行情/技术面快照',
+          dims: '六维评分',
+          sources: '信息来源',
+          chain: '产业链 / 关联标的',
+          scenarios: '情景与概率',
+          val: '估值反推（推演，非目标价）',
+          outlook: '走势预判',
+        };
   const idc = trimSuspensionSuffix(scrubNotFoundMetaPhrases(stripHttpUrls(String(data.identityCheck || ''))));
   const summ = trimSuspensionSuffix(scrubNotFoundMetaPhrases(stripHttpUrls(String(data.summary || ''))));
   let ts = scrubNotFoundMetaPhrases(stripHttpUrls(String(data.technicalSnapshot || '')));
   if (!ts.replace(/[—\-\s.]/g, '')) ts = '';
 
-  let s1 = `数据与事实口径截至：${data.dataAsOf || '未标注'}\n\n实体与代码核验：${idc || '—'}\n\n**可买性评分：${data.score}/100**\n**投资倾向：${sig}**\n**风险等级：${data.risk || '—'}**\n`;
+  let s1 = `${L.dataAsOf}: ${data.dataAsOf || '—'}\n\n${L.identity}: ${idc || '—'}\n\n**${L.score}: ${data.score}/100**\n**${L.tendency}: ${sig}**\n**${L.risk}: ${data.risk || '—'}**\n`;
   if (data.riskReward) {
     const rr = scrubNotFoundMetaPhrases(stripHttpUrls(String(data.riskReward)));
-    if (rr) s1 += `**风险收益比：** ${rr}\n`;
+    if (rr) s1 += `**${L.rr}:** ${rr}\n`;
   }
   const apl = trimSuspensionSuffix(String(data.analystPriceLine || '').trim());
-  if (apl) s1 += `\n**价格与目标价：** ${apl}\n`;
+  if (apl) s1 += `\n**${L.price}:** ${apl}\n`;
   if (summ) s1 += `\n${summ}\n`;
-  if (ts) s1 += `\n**行情/技术面快照：**\n${ts}\n`;
+  if (ts) s1 += `\n**${L.tech}:**\n${ts}\n`;
   s1 += markdownCatalystForTier(data, tier);
 
-  let s2 = '**六维评分：**\n\n';
+  let s2 = `**${L.dims}:**\n\n`;
   (data.dimensions || []).forEach((d, i) => {
     const name = d.name || '—';
     const sc = Math.min(100, Math.max(0, Math.round(Number(d.score) || 0)));
     if (sc === 0) {
-      s2 += `${i + 1}. **${name}** — 数据不足\n`;
+      s2 += `${i + 1}. **${name}** — ${insuf}\n`;
     } else {
       const note = trimSuspensionSuffix(String(d.note || '').trim());
       s2 += `${i + 1}. **${name} ${sc}** — ${note}\n`;
@@ -1712,7 +1729,7 @@ function jsonToMarkdownFourParts(data, tier = 'free') {
 
   const detBody = buildDetailBodyForMarkdown(data);
 
-  let s3 = `${detBody}\n\n**信息来源**\n\n`;
+  let s3 = `${detBody}\n\n**${L.sources}**\n\n`;
   s3 += '| 角标 | 摘要 | 时间 | 可信度 | 链接 |\n';
   s3 += '| --- | --- | --- | --- | --- |\n';
   (data.sources || []).forEach((src) => {
@@ -1728,21 +1745,28 @@ function jsonToMarkdownFourParts(data, tier = 'free') {
     s3 += `| ${cite} | ${text} | ${ti} | ${cred} | ${url} |\n`;
   });
 
-  let s4 = '**产业链 / 关联标的：**\n';
+  let s4 = `**${L.chain}:**\n`;
   (data.supplyChain || []).forEach((c) => {
     let reason = stripHttpUrls(String(c.reason || '')).trim();
     reason = reason.replace(/[。.；;、，,\s]+$/u, '');
     s4 += `- **${c.ticker || '—'}** ${c.name || ''}（关联：${reason}；评分 ${c.score}/100）\n`;
   });
-  s4 += '\n**情景与概率：**\n';
+  s4 += `\n**${L.scenarios}:**\n`;
   const sc = data.scenarios;
   const notes = data.scenarioPriceNotes && typeof data.scenarioPriceNotes === 'object' ? data.scenarioPriceNotes : {};
   if (sc && typeof sc === 'object') {
-    const rows = [
-      ['牛势', sc.bull, 'bull'],
-      ['基准', sc.base, 'base'],
-      ['熊势', sc.bear, 'bear'],
-    ];
+    const rows =
+      loc === 'en'
+        ? [
+            ['Bull', sc.bull, 'bull'],
+            ['Base', sc.base, 'base'],
+            ['Bear', sc.bear, 'bear'],
+          ]
+        : [
+            ['牛势', sc.bull, 'bull'],
+            ['基准', sc.base, 'base'],
+            ['熊势', sc.bear, 'bear'],
+          ];
     rows.forEach(([label, x, key]) => {
       if (x && typeof x === 'object') {
         const ann = String(notes[key] || '').trim();
@@ -1755,11 +1779,11 @@ function jsonToMarkdownFourParts(data, tier = 'free') {
   }
   let vb = trimSuspensionSuffix(scrubNotFoundMetaPhrases(stripHttpUrls(String(data.valuationBridge || '').trim())));
   if (vb) {
-    s4 += `\n**估值反推（推演，非目标价）：** ${vb}\n`;
+    s4 += `\n**${L.val}:** ${vb}\n`;
   }
   const out = trimSuspensionSuffix(scrubNotFoundMetaPhrases(stripHttpUrls(String(data.outlook || '').trim())));
-  s4 += `\n**走势预判：**\n${out || '—'}\n`;
-  s4 += `\n${data.disclaimer || '本分析仅供参考，不构成投资建议。'}\n`;
+  s4 += `\n**${L.outlook}:**\n${out || '—'}\n`;
+  s4 += `\n${data.disclaimer || defaultDisclaimer(loc)}\n`;
   const srcN = Array.isArray(data.sources) ? data.sources.length : 0;
   s4 += `\n${researchFooterLine(srcN)}\n`;
   if (tier === 'free') {
@@ -1989,15 +2013,16 @@ async function runAnalyzePipeline(
           const policyRow = await fetchPolicyRegulationDimension(
             apiKey,
             symbol,
-            horizonLabel(horizon),
+            horizonLabel(horizon, locale),
             {
               identityCheck: data.identityCheck,
               companyName: alphaOverview?.Name ? String(alphaOverview.Name).trim() : '',
             },
             mainModel,
+            locale,
           );
           usageLog.leader = policyRow._usage || null;
-          data.dimensions = mergePolicyRegulationIntoDimensions(data.dimensions, policyRow);
+          data.dimensions = mergePolicyRegulationIntoDimensions(data.dimensions, policyRow, locale);
           console.log(`[Wenap] ${symbol}：政策法规维补刀（${mainModel}）`);
         } catch (e) {
           console.warn('[Wenap] 政策法规维补刀失败，保留主模型结果：', e.message);
@@ -2010,7 +2035,7 @@ async function runAnalyzePipeline(
     ensureSupplyChainAndScenarios(data, symbol);
     enrichSourcesForOutput(data);
     polishDomainBracketCites(data);
-    data.dimensions = alignDimensionSlots(data.dimensions, effectiveAssetType);
+    data.dimensions = alignDimensionSlots(data.dimensions, effectiveAssetType, locale);
     if (tier === 'pro' || tier === 'pro_plus') {
       mergePeerLineIntoDimensions(data.dimensions, data.peerVsSectorLine);
     }
@@ -2019,7 +2044,7 @@ async function runAnalyzePipeline(
     clampVerboseChineseFields(data);
     sanitizeRiskRewardField(data);
     fillRiskRewardIfEmpty(data);
-    const md = jsonToMarkdownFourParts(data, tier);
+    const md = jsonToMarkdownFourParts(data, tier, locale);
     const vizSnapshot = stripDataForViz(data, { tier, latestPrice });
     if (!writeSse(res, { type: 'viz', snapshot: vizSnapshot })) return;
     if (bailIfClientGone('before-stream')) return;
@@ -2104,7 +2129,7 @@ async function runAnalyzePipeline(
 function serverInfoPayload() {
   return {
     status: 'Wenap server running',
-    apiVersion: 8,
+    apiVersion: 9,
     adminApiMount: '/admin-api',
     adminSpaPaths: ['/admin', '/admin/*'],
     openRouterKeyConfigured: Boolean(getOpenRouterKey()),
