@@ -2104,7 +2104,9 @@ async function runAnalyzePipeline(
 function serverInfoPayload() {
   return {
     status: 'Wenap server running',
-    apiVersion: 7,
+    apiVersion: 8,
+    adminApiMount: '/admin-api',
+    adminSpaPaths: ['/admin', '/admin/*'],
     openRouterKeyConfigured: Boolean(getOpenRouterKey()),
     alphaVantageConfigured: Boolean(getAlphaVantageKey()),
     pricing: PRICING_USD,
@@ -2385,6 +2387,17 @@ app.post('/analyze', requireAuth, async (req, res) => {
   });
 });
 
+/** 生产环境：/admin 为 React 管理页，必须在任何管理 API 之前返回 index.html */
+if (SPA_MODE) {
+  const distIndex = path.join(__dirname, 'dist', 'index.html');
+  app.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+    if (!/^\/admin(\/.*)?$/.test(req.path || '')) return next();
+    if (!fs.existsSync(distIndex)) return next();
+    return res.sendFile(distIndex);
+  });
+}
+
 app.use('/auth', authRouter);
 /** 管理 API 勿挂在 /admin（会与 SPA 路由 /admin 冲突）；前端请求 /api/admin-api/... */
 app.use('/admin-api', adminRouter);
@@ -2414,7 +2427,15 @@ if (SPA_MODE) {
       if (req.method !== 'GET' && req.method !== 'HEAD') return next();
       const idxFile = path.join(distPath, 'index.html');
       if (!fs.existsSync(idxFile)) return next();
-      res.sendFile(idxFile);
+      const p = req.path || '';
+      if (
+        /^\/admin(\/.*)?$/.test(p) ||
+        /^\/(accuracy|login|register|verify-email)(\/.*)?$/.test(p)
+      ) {
+        return res.sendFile(idxFile);
+      }
+      if (!p.includes('.')) return res.sendFile(idxFile);
+      return next();
     });
   }
 }
