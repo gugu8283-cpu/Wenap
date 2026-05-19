@@ -6,6 +6,7 @@ import AnalysisViz from './AnalysisViz.jsx'
 import EconomicsPanel from './EconomicsPanel.jsx'
 import LanguageSwitcher from './components/LanguageSwitcher.jsx'
 import QuotaStrip from './components/QuotaStrip.jsx'
+import NotificationCenter from './components/NotificationCenter.jsx'
 import { resolveAppLanguage } from './i18n/index.js'
 import { useAuth } from './context/AuthContext.jsx'
 import { apiFetch, getToken } from './lib/api.js'
@@ -140,9 +141,12 @@ export default function App() {
   const [loadLineIndex, setLoadLineIndex] = useState(0)
   const [watchlist, setWatchlist] = useState([])
   const [watchlistCap, setWatchlistCap] = useState(3)
+  const [watchlistQuotes, setWatchlistQuotes] = useState({})
   const [historyOpen, setHistoryOpen] = useState(false)
   const [historyItems, setHistoryItems] = useState([])
   const [historyLocked, setHistoryLocked] = useState(false)
+  const [historySearch, setHistorySearch] = useState('')
+  const [historySignalFilter, setHistorySignalFilter] = useState('')
   const [showUpgradeCta, setShowUpgradeCta] = useState(false)
   const [vizSnapshot, setVizSnapshot] = useState(null)
   const [quotaBanner, setQuotaBanner] = useState(null)
@@ -155,10 +159,20 @@ export default function App() {
 
   const segments = useMemo(() => parseSegments(streamText), [streamText])
 
+  const refreshWatchlistPrices = useCallback(async (items) => {
+    if (!items || !items.length) return
+    const symbols = items.map((w) => w.symbol).join(',')
+    try {
+      const q = await apiFetch(`/market/snapshot?symbols=${encodeURIComponent(symbols)}`)
+      if (q.quotes) setWatchlistQuotes(q.quotes)
+    } catch { /* ignore */ }
+  }, [])
+
   const refreshWatchlist = useCallback(async () => {
     try {
       const j = await apiFetch('/watchlist')
       setWatchlist(j.items || [])
+      refreshWatchlistPrices(j.items || [])
       setWatchlistCap(j.cap || 3)
     } catch {
       /* ignore */
@@ -434,6 +448,7 @@ export default function App() {
         <div className="header-top">
           <p className="brand">Wenap</p>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            {user && <NotificationCenter />}
             <LanguageSwitcher />
             {user?.email ? (
               <Link to="/settings" className="tagline" style={{ margin: 0, fontSize: 12, textDecoration: 'none' }}>
@@ -480,11 +495,18 @@ export default function App() {
           <p className="segment-placeholder">{t('app.watchlistEmpty')}</p>
         ) : (
           <ul className="watchlist-list">
-            {watchlist.map((w) => (
+            {watchlist.map((w) => {
+              const q = watchlistQuotes[w.symbol]
+              return (
               <li key={`${w.symbol}-${w.assetType}`} className="watchlist-item">
                 <span className="watchlist-sym">{w.symbol}</span>
                 <span className="watchlist-meta">
                   {w.assetType} · {w.horizon}
+                  {q && (
+                    <span style={{ marginLeft: 6, color: q.changePct >= 0 ? '#4ade80' : '#f87171', fontWeight: 600 }}>
+                      {q.changePct >= 0 ? '+' : ''}{q.changePct.toFixed(2)}%
+                    </span>
+                  )}
                 </span>
                 <button type="button" className="pill" onClick={() => runFromWatchlist(w)}>
                   {t('common.analyze')}
@@ -498,7 +520,8 @@ export default function App() {
                   ×
                 </button>
               </li>
-            ))}
+              )
+            })}
           </ul>
         )}
       </section>
@@ -578,12 +601,38 @@ export default function App() {
             {historyLocked && (
               <p className="upgrade-hint">{t('app.historyLocked', { pro: PRICING.pro })}</p>
             )}
+            {historyItems.length > 0 && (
+              <div className="history-filters">
+                <input
+                  className="history-search"
+                  value={historySearch}
+                  onChange={(e) => setHistorySearch(e.target.value)}
+                  placeholder={t('app.historySearch', { defaultValue: 'Search ticker…' })}
+                />
+                <select
+                  className="history-signal-filter"
+                  value={historySignalFilter}
+                  onChange={(e) => setHistorySignalFilter(e.target.value)}
+                >
+                  <option value="">{t('app.historyAllSignals', { defaultValue: 'All signals' })}</option>
+                  {['STRONG_BUY','BUY','HOLD','SELL','STRONG_SELL'].map((s) => (
+                    <option key={s} value={s}>{s.replace('_',' ')}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             {historyItems.length === 0 ? (
               <p className="segment-placeholder">{t('app.historyEmpty')}</p>
             ) : (
               <ul className="history-list">
-                {historyItems.map((h) => (
-                  <li key={h.id} className="history-item" onClick={() => loadHistory(h.id)}>
+                {historyItems
+                  .filter((h) => {
+                    if (historySearch && !h.symbol?.toLowerCase().includes(historySearch.toLowerCase())) return false
+                    if (historySignalFilter && h.signal !== historySignalFilter) return false
+                    return true
+                  })
+                  .map((h) => (
+                  <li key={h.id} className={`history-item${h.locked ? ' history-item--locked' : ''}`} onClick={() => !h.locked && loadHistory(h.id)}>
                     <div className="history-row1">
                       <strong>{h.symbol}</strong>
                       <span className={`pill score-${signalToClass(h.signal)}`}>

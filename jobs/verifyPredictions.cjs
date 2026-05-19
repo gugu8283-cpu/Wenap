@@ -22,8 +22,9 @@ async function runVerificationBatch() {
 }
 
 function startVerifyCron() {
-  if (process.env.CRON_ENABLED !== 'true') {
-    console.log('[Wenap] CRON_ENABLED!=true，跳过预测验证定时任务');
+  // Default ON unless explicitly disabled
+  if (process.env.CRON_ENABLED === 'false') {
+    console.log('[Wenap] CRON_ENABLED=false, skipping cron jobs');
     return;
   }
   cron.schedule(

@@ -185,9 +185,11 @@ const authDb = require('./db/auth.cjs');
 const adminRouter = require('./routes/admin.cjs');
 const authRouter = require('./routes/auth.cjs');
 const billingRouter = require('./routes/billing.cjs');
+const notificationsRouter = require('./routes/notifications.cjs');
 const publicAccuracyRouter = require('./routes/publicAccuracy.cjs');
 const { requireAuth } = require('./middleware/requireAuth.cjs');
 const { startVerifyCron } = require('./jobs/verifyPredictions.cjs');
+const { startWeeklyAutoAnalysis } = require('./jobs/weeklyAutoAnalysis.cjs');
 const {
   normalizeLocale,
   outputLanguageInstruction,
@@ -2164,6 +2166,17 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
           authContext.fingerprint,
           authContext.ip,
         );
+        // Send quota reminder when only 1 analysis remains
+        try {
+          const u = authDb.getUserById(authContext.userId);
+          const used = Number(u?.free_trials_used) || 0;
+          const cap = 5;
+          const remaining = cap - used;
+          if (remaining === 1 && u?.email) {
+            const { sendQuotaReminderEmail } = require('./lib/emailSend.cjs');
+            sendQuotaReminderEmail({ to: u.email, remaining: 1, locale: normalizeLocale(authContext.locale) }).catch(() => {});
+          }
+        } catch { /* non-fatal */ }
       } else {
         incrementFreeMonthlyUsage(userKey);
       }
@@ -2533,6 +2546,7 @@ if (SPA_MODE) {
 
 app.use('/auth', authRouter);
 app.use('/billing', billingRouter);
+app.use('/notifications', notificationsRouter);
 /** 管理 API 勿挂在 /admin（会与 SPA 路由 /admin 冲突）；前端请求 /api/admin-api/... */
 app.use('/admin-api', adminRouter);
 app.use('/accuracy', (req, res, next) => {
@@ -2543,6 +2557,7 @@ app.use('/accuracy', (req, res, next) => {
   return publicAccuracyRouter(req, res, next);
 });
 startVerifyCron();
+startWeeklyAutoAnalysis();
 
 if (SPA_MODE) {
   const distPath = path.join(__dirname, 'dist');
@@ -2573,6 +2588,38 @@ if (SPA_MODE) {
     });
   }
 }
+
+// ── Market snapshot batch endpoint for Watchlist price refresh ────────────
+app.get('/market/snapshot', requireAuth, async (req, res) => {
+  const symbols = String(req.query.symbols || '').split(',').map((s) => s.trim().toUpperCase().replace(/[^A-Z0-9.^-]/g, '')).filter(Boolean).slice(0, 20);
+  if (!symbols.length) return res.json({ quotes: {} });
+
+  const avKey = getAlphaVantageKey();
+  if (!avKey) {
+    return res.json({ quotes: {}, note: 'Alpha Vantage key not configured' });
+  }
+
+  const quotes = {};
+  // Fetch up to 5 symbols (AV free tier rate limit)
+  for (const sym of symbols.slice(0, 5)) {
+    try {
+      const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(sym)}&apikey=${encodeURIComponent(avKey)}`;
+      const r = await fetch(url);
+      if (!r.ok) continue;
+      const j = await r.json();
+      const q = j['Global Quote'];
+      if (!q || !q['05. price']) continue;
+      quotes[sym] = {
+        price: parseFloat(q['05. price']) || 0,
+        change: parseFloat(q['09. change']) || 0,
+        changePct: parseFloat(String(q['10. change percent'] || '').replace('%', '')) || 0,
+        volume: parseInt(q['06. volume']) || 0,
+      };
+    } catch { /* ignore */ }
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  res.json({ quotes });
+});
 
 // ── Public sample report endpoint ─────────────────────────────────────────
 // Returns the most recent stored analysis for a tracked ticker (no auth required).

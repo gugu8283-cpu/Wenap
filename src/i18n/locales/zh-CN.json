@@ -203,6 +203,12 @@
     "referralNote": "分享您的链接。好友注册后，双方各获得 1 个月 Pro 套餐。",
     "referralCopy": "复制链接"
   },
+  "notifications": {
+    "title": "通知",
+    "readAll": "全部标为已读",
+    "loading": "加载中…",
+    "empty": "暂无通知。"
+  },
   "sample": {
     "banner": "这是公开样本报告。注册后可对任意标的进行分析。",
     "ctaSignup": "免费试用",

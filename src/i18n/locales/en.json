@@ -203,6 +203,12 @@
     "referralNote": "Share your link. Both you and your friend get 1 month Pro when they sign up.",
     "referralCopy": "Copy link"
   },
+  "notifications": {
+    "title": "Notifications",
+    "readAll": "Mark all read",
+    "loading": "Loading…",
+    "empty": "No notifications yet."
+  },
   "sample": {
     "banner": "This is a public sample report. Sign up to run analyses on any ticker.",
     "ctaSignup": "Try free",

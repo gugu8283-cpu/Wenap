@@ -118,4 +118,51 @@ router.get('/system/costs', (req, res) => {
   res.json({ monthCost: h.monthCost, byModel: h.byModel, dailyCost: h.dailyCost });
 });
 
+// Conversion funnel endpoint
+router.get('/stats/funnel', (req, res) => {
+  try {
+    const db = store.initDb();
+    const totalRegistered = db.prepare('SELECT COUNT(*) as n FROM users').get()?.n || 0;
+    const totalVerified = db.prepare('SELECT COUNT(*) as n FROM users WHERE email_verified = 1').get()?.n || 0;
+    const totalAnalyzed = db.prepare('SELECT COUNT(DISTINCT user_id) as n FROM analysis_logs WHERE user_id IS NOT NULL').get()?.n || 0;
+    const totalPaid = db.prepare("SELECT COUNT(*) as n FROM users WHERE tier IN ('pro', 'pro_plus', 'proplus')").get()?.n || 0;
+    const mrrData = (() => {
+      try {
+        return db.prepare("SELECT tier, COUNT(*) as n FROM users WHERE tier IN ('pro', 'pro_plus', 'proplus') GROUP BY tier").all();
+      } catch { return []; }
+    })();
+    const proCount = mrrData.find((r) => r.tier === 'pro')?.n || 0;
+    const proPlusCount = mrrData.find((r) => r.tier === 'pro_plus' || r.tier === 'proplus')?.n || 0;
+    const estimatedMrr = proCount * 9.99 + proPlusCount * 19.99;
+
+    // Weekly registrations (last 4 weeks)
+    const weeklyRegs = db.prepare(`
+      SELECT strftime('%Y-W%W', created_at) as week, COUNT(*) as n
+      FROM users
+      WHERE created_at >= datetime('now', '-28 days')
+      GROUP BY week ORDER BY week
+    `).all();
+
+    res.json({
+      funnel: {
+        registered: totalRegistered,
+        verified: totalVerified,
+        firstAnalysis: totalAnalyzed,
+        paid: totalPaid,
+        verifiedRate: totalRegistered ? (totalVerified / totalRegistered * 100).toFixed(1) : '0',
+        analysisRate: totalVerified ? (totalAnalyzed / totalVerified * 100).toFixed(1) : '0',
+        paidRate: totalAnalyzed ? (totalPaid / totalAnalyzed * 100).toFixed(1) : '0',
+      },
+      mrr: {
+        pro: proCount,
+        proPlus: proPlusCount,
+        estimated: estimatedMrr.toFixed(2),
+      },
+      weeklyRegistrations: weeklyRegs,
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 module.exports = router;
