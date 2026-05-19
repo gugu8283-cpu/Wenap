@@ -771,8 +771,8 @@ JSON 字段与要求：
   "summary": "≤28字，一句结论",
   "analystPriceLine": "单行：目标价/现价/空间%；无则空",
   "dimensions": [ ${dimensionJsonSpec(assetType, loc)} ],
-  "detailAnalysis": "**260–360字**；仅写六维/summary 未覆盖的硬事实+1条反方；每句句号收束；禁复述六维",
-  "sources": [ 最多 **5** 条 JSON 数组；每项 { "text": "≤40字", "url": "真实 http(s)", "time": "", "credibility": "高|中|低", "cite": "短角标" }；禁止 markdown 表格 ],
+  "detailAnalysis": "260-360 chars; new facts only; escape quotes in JSON",
+  "sources": [ { "text": "", "url": "https://...", "time": "", "credibility": "高|中|低", "cite": "SEC" } ],
   "supplyChain": [
     { "ticker": "TSM", "name": "台积电", "exchange": "NYSE", "relation": "AI芯片代工制造，NVDA最大晶圆代工商", "score": 0-100 }
   ],
@@ -829,14 +829,7 @@ async function openRouterChat(apiKey, { model, userContent, stream, useWeb, maxO
   return { content, usage };
 }
 
-function extractJsonObject(text) {
-  let t = String(text || '').trim();
-  t = t.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
-  const start = t.indexOf('{');
-  const end = t.lastIndexOf('}');
-  if (start === -1 || end === -1 || end <= start) throw new Error('响应中无 JSON 对象');
-  return JSON.parse(t.slice(start, end + 1));
-}
+const { extractJsonObject } = require('./lib/parseModelJson.cjs');
 
 const DETAIL_MARKDOWN_MAX_CHARS = 380;
 
@@ -2001,7 +1994,28 @@ async function runAnalyzePipeline(
       maxOutputTokens: openRouterMaxOutputTokensMain(),
     });
     usageLog.main = mainResult.usage;
-    const data = extractJsonObject(mainResult.content);
+    let data;
+    try {
+      data = extractJsonObject(mainResult.content);
+    } catch (parseErr) {
+      console.warn(`[Wenap] ${symbol} JSON 解析失败，重试一次:`, parseErr.message);
+      if (bailIfClientGone('json-retry')) return;
+      const fixPrompt = `Fix the following broken JSON. Return ONLY one valid JSON object, same schema, no markdown.
+Rules: escape " inside strings; no trailing commas; complete all brackets.
+Broken output:
+${String(mainResult.content || '').slice(0, 12000)}`;
+      const retry = await openRouterChat(apiKey, {
+        model: mainModel,
+        userContent: fixPrompt,
+        stream: false,
+        useWeb: false,
+        maxOutputTokens: openRouterMaxOutputTokensMain(),
+      });
+      if (retry.usage) {
+        usageLog.main = retry.usage;
+      }
+      data = extractJsonObject(retry.content);
+    }
     if (assetType === 'stock' && !looksLikeFund) {
       const mainPolicy = extractPolicyRegulationDimension(data.dimensions);
       if (mainPolicyDimensionSufficient(mainPolicy)) {
@@ -2113,9 +2127,15 @@ async function runAnalyzePipeline(
       durationMs: Date.now() - pipelineStarted,
     });
     if (!sseClientGone(res)) {
+      const rawMsg = e?.message || '分析管线失败';
+      const friendly =
+        /JSON|position \d+/i.test(rawMsg)
+          ? '模型返回格式异常，请重试一次；若仍失败可换 3 个月期限或稍后再试。'
+          : rawMsg;
       writeSse(res, {
         type: 'error',
-        message: e?.message || '分析管线失败',
+        message: friendly,
+        code: /JSON/i.test(rawMsg) ? 'JSON_PARSE' : undefined,
       });
     } else {
       console.warn('[Wenap] 分析失败且客户端已断开:', e.message);
@@ -2129,7 +2149,7 @@ async function runAnalyzePipeline(
 function serverInfoPayload() {
   return {
     status: 'Wenap server running',
-    apiVersion: 9,
+    apiVersion: 10,
     adminApiMount: '/admin-api',
     adminSpaPaths: ['/admin', '/admin/*'],
     openRouterKeyConfigured: Boolean(getOpenRouterKey()),
