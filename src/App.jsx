@@ -102,6 +102,23 @@ function formatTs(iso) {
 export default function App() {
   const { t, i18n } = useTranslation()
   const { user, logout, refreshUser } = useAuth()
+
+  const handleAuthFailure = useCallback(
+    (j) => {
+      if (j?.error === 'SESSION_STALE' || j?.error === 'UNAUTHORIZED') {
+        logout()
+        setError(j.message || t('app.errSessionStale'))
+        return true
+      }
+      if (j?.error === 'BANNED') {
+        logout()
+        setError(j.message || t('app.errBanned'))
+        return true
+      }
+      return false
+    },
+    [logout, t],
+  )
   const loadingLines = useMemo(
     () => t('app.loadingLines', { returnObjects: true }),
     [t, i18n.language],
@@ -236,7 +253,9 @@ export default function App() {
             if (j.error === 'FREE_QUOTA_EXCEEDED') {
               setShowUpgradeCta(true)
             }
-            if (j.error === 'EMAIL_NOT_VERIFIED') {
+            if (handleAuthFailure(j)) {
+              /* cleared stale session */
+            } else if (j.error === 'EMAIL_NOT_VERIFIED') {
               setError(j.message || t('app.errVerifyEmail'))
             } else if (j.error === 'RATE_LIMIT') {
               setError(j.message || '请求过于频繁，请稍后再试')

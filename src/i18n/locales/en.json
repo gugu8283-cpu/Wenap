@@ -47,6 +47,8 @@
     "waitingOutput": "Waiting for model output…",
     "errTicker": "Enter a ticker symbol",
     "errVerifyEmail": "Please verify your email first",
+    "errSessionStale": "Session expired. Please sign in again (required after a server redeploy).",
+    "errBanned": "This account has been restricted",
     "errLoadHistory": "Failed to load history",
     "upgradeTitle": "Monthly free analyses used up",
     "upgradePro": "Pro · {{price}} · Unlimited runs + 20 watchlist + full history",

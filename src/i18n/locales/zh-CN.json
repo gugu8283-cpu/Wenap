@@ -47,6 +47,8 @@
     "waitingOutput": "等待模型输出…",
     "errTicker": "请输入股票代码",
     "errVerifyEmail": "请先验证邮箱",
+    "errSessionStale": "登录已失效，请重新登录（内测环境重新部署后需重新登录）",
+    "errBanned": "账号已被限制",
     "errLoadHistory": "加载历史失败",
     "upgradeTitle": "本月 5 次免费分析已用完",
     "upgradePro": "Pro · {{price}} · 无限次 + 20 只自选 + 全部历史",
