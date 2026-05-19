@@ -48,7 +48,7 @@ export default function LoginPage() {
 
       await login(email.trim(), password)
 
-      navigate('/', { replace: true })
+      navigate('/app', { replace: true })
 
     } catch (err) {
 

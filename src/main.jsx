@@ -9,12 +9,15 @@ import { AuthProvider } from './context/AuthContext.jsx'
 import AppShell from './AppShell.jsx'
 import AdminApp from './admin/AdminApp.jsx'
 import AccuracyPage from './pages/AccuracyPage.jsx'
+import LandingPage from './pages/LandingPage.jsx'
 import RegisterPage from './pages/auth/RegisterPage.jsx'
 import LoginPage from './pages/auth/LoginPage.jsx'
 import VerifyEmailPage from './pages/auth/VerifyEmailPage.jsx'
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage.jsx'
 import PricingPage from './pages/PricingPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
+import SampleReportPage from './pages/SampleReportPage.jsx'
+import ComparePage from './pages/ComparePage.jsx'
 
 migrateLegacyStorage()
 applyTheme(getTheme())
@@ -24,6 +27,7 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          <Route path="/" element={<LandingPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
@@ -32,6 +36,10 @@ createRoot(document.getElementById('root')).render(
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/admin/*" element={<AdminApp />} />
           <Route path="/accuracy" element={<AccuracyPage />} />
+          <Route path="/sample/:ticker" element={<SampleReportPage />} />
+          <Route path="/compare" element={<ComparePage />} />
+          <Route path="/app" element={<AppShell />} />
+          <Route path="/app/*" element={<AppShell />} />
           <Route path="/*" element={<AppShell />} />
         </Routes>
       </AuthProvider>

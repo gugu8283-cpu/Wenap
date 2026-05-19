@@ -23,7 +23,7 @@ export default function VerifyEmailPage() {
         if (data?.token) setToken(data.token)
         setSuccess(true)
         await refreshUser()
-        setTimeout(() => navigate('/'), 2000)
+        setTimeout(() => navigate('/app'), 2000)
       })
       .catch(() => {})
   }, [token, navigate, refreshUser])

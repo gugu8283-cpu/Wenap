@@ -27,7 +27,8 @@ export default function ProtectedRoute({ children }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />
+    // If user visits /app directly while unauthenticated, send to landing
+    return <Navigate to="/" replace state={{ from: location.pathname }} />
   }
 
   if (!user.emailVerified) {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import './App.css'
 import AnalysisViz from './AnalysisViz.jsx'
 import EconomicsPanel from './EconomicsPanel.jsx'
@@ -105,6 +105,7 @@ function formatTs(iso, lang) {
 export default function App() {
   const { t, i18n } = useTranslation()
   const { user, logout, refreshUser } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const handleAuthFailure = useCallback(
     (j) => {
@@ -167,6 +168,19 @@ export default function App() {
   useEffect(() => {
     refreshWatchlist()
   }, [refreshWatchlist])
+
+  // Auto-fill and trigger from ?symbol= query param (share links)
+  useEffect(() => {
+    const sym = searchParams.get('symbol')
+    if (sym) {
+      const clean = sym.trim().toUpperCase()
+      setTicker(clean)
+      setSearchParams({}, { replace: true })
+      // Auto-run analysis if symbol provided
+      runAnalyze({ ticker: clean })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const refreshQuota = useCallback(async () => {
     try {
@@ -427,6 +441,11 @@ export default function App() {
                 {user.tier && user.tier !== 'free' ? ` · ${user.tier.replace('_', '+')}` : ''}
               </Link>
             ) : null}
+            {(user?.tier === 'pro_plus' || user?.tier === 'proplus') && (
+              <Link to="/compare" className="theme-toggle" style={{ textDecoration: 'none' }}>
+                {t('compare.title', { defaultValue: 'Compare' })}
+              </Link>
+            )}
             {!user && (
               <Link to="/pricing" className="theme-toggle" style={{ textDecoration: 'none' }}>
                 {t('app.upgradeBtn', { defaultValue: 'Pricing' })}

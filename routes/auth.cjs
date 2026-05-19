@@ -54,13 +54,38 @@ router.post('/register', async (req, res) => {
     }
 
     const ip = getClientIp(req);
+    const referralCode = String(req.body?.referralCode || '').trim().slice(0, 64);
     const { user, verifyToken } = await createUserWithPassword({ email, password, ip });
     setVerifyEmailSent(user.id);
     await sendVerificationEmail({ to: email, token: verifyToken });
 
+    // Process referral if provided
+    if (referralCode) {
+      try {
+        const referrer = getUserByEmail(referralCode) || (() => {
+          // Try by user ID
+          const db = require('../db/store.cjs').initDb();
+          return db.prepare('SELECT * FROM users WHERE id = ?').get(referralCode);
+        })();
+        if (referrer && referrer.id !== user.id) {
+          // Record referral (both get 1 month Pro - store in DB for manual processing)
+          const db = require('../db/store.cjs').initDb();
+          try {
+            db.exec('CREATE TABLE IF NOT EXISTS referrals (id TEXT PRIMARY KEY, referrer_id TEXT, referee_id TEXT, created_at TEXT)');
+          } catch { /* ignore */ }
+          db.prepare('INSERT OR IGNORE INTO referrals (id, referrer_id, referee_id, created_at) VALUES (?, ?, ?, datetime(\'now\'))').run(
+            crypto.randomUUID(), referrer.id, user.id,
+          );
+          console.log(`[Wenap] Referral: ${referrer.id} referred ${user.id}`);
+        }
+      } catch (e) {
+        console.warn('[Wenap] Referral processing failed (non-fatal):', e.message);
+      }
+    }
+
     res.status(201).json({
       ok: true,
-      message: '注册成功，请查收验证邮件',
+      message: 'Registration successful. Please check your email to verify.',
       email,
       requiresVerification: true,
     });
@@ -206,6 +231,14 @@ router.post('/reset-password', async (req, res) => {
     console.error('[Wenap] reset-password:', e);
     res.status(500).json({ error: 'SERVER_ERROR' });
   }
+});
+
+// Get referral link for current user
+router.get('/referral-link', requireAuth, (req, res) => {
+  const userId = req.authUser.id;
+  const appUrl = (process.env.APP_PUBLIC_URL || 'http://localhost:5173').replace(/\/$/, '');
+  const link = `${appUrl}/register?ref=${encodeURIComponent(userId)}`;
+  res.json({ link, userId });
 });
 
 module.exports = router;

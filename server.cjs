@@ -2564,7 +2564,7 @@ if (SPA_MODE) {
       const p = req.path || '';
       if (
         /^\/admin(\/.*)?$/.test(p) ||
-        /^\/(accuracy|login|register|verify-email)(\/.*)?$/.test(p)
+        /^\/(accuracy|login|register|verify-email|forgot-password|pricing|settings|sample|compare)(\/.*)?$/.test(p)
       ) {
         return res.sendFile(idxFile);
       }
@@ -2573,6 +2573,104 @@ if (SPA_MODE) {
     });
   }
 }
+
+// ── Public sample report endpoint ─────────────────────────────────────────
+// Returns the most recent stored analysis for a tracked ticker (no auth required).
+// Only serves the 10 "featured" tickers to avoid data leakage.
+const FEATURED_TICKERS = ['NVDA', 'AAPL', 'JPM', 'UNH', 'SPY', 'QQQ', 'VTI', 'O', 'PLD', 'GLD'];
+const SAMPLE_SYSTEM_USER_KEY = 'uid:cron'; // cron job uses this key
+
+app.get('/sample/:ticker', (req, res) => {
+  const sym = String(req.params.ticker || '').toUpperCase().replace(/[^A-Z0-9.^-]/g, '').slice(0, 16);
+  if (!FEATURED_TICKERS.includes(sym)) {
+    return res.status(404).json({ error: 'NOT_FOUND', message: 'Sample only available for featured tickers' });
+  }
+
+  // Try to find the most recent history entry for the cron user or any user with this ticker
+  const idx = readHistoryIndex();
+  let targetEntry = null;
+  let targetUserKey = null;
+
+  // First check the cron/system user key
+  for (const [userKey, entries] of Object.entries(idx.byUser || {})) {
+    const match = (Array.isArray(entries) ? entries : []).find((e) => e.symbol === sym);
+    if (match) {
+      if (!targetEntry || match.ts > (targetEntry?.ts || 0)) {
+        targetEntry = match;
+        targetUserKey = userKey;
+      }
+    }
+  }
+
+  if (!targetEntry || !targetUserKey) {
+    return res.status(404).json({ error: 'NOT_FOUND', message: 'No sample report available yet for this ticker' });
+  }
+
+  const filePath = path.join(HISTORY_DIR, userKeyHash(targetUserKey), `${targetEntry.id}.json`);
+  try {
+    const raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    // Strip private user info and downgrade to free-tier view for public sample
+    const locale = normalizeLocale(req.query?.locale);
+    if (raw.vizSnapshot && Array.isArray(raw.vizSnapshot.dimensions)) {
+      raw.vizSnapshot.dimensions = alignDimensionSlots(raw.vizSnapshot.dimensions, raw.assetType || 'stock', locale);
+    }
+    // Redact to free tier (no pro/pro+ fields)
+    if (raw.vizSnapshot) {
+      raw.vizSnapshot.bullBearDebate = undefined;
+      raw.vizSnapshot.secondPassCritique = undefined;
+    }
+    return res.json({ ...raw, isSample: true, sampleTicker: sym });
+  } catch {
+    return res.status(404).json({ error: 'NOT_FOUND' });
+  }
+});
+
+// ── OG image endpoint (SVG-based, no puppeteer) ───────────────────────────
+app.get('/og/:ticker', (req, res) => {
+  const sym = String(req.params.ticker || '').toUpperCase().replace(/[^A-Z0-9.^-]/g, '').slice(0, 16);
+  const score = String(req.query.score || '').replace(/[^0-9]/g, '').slice(0, 3);
+  const signal = String(req.query.signal || 'BUY').replace(/[^A-Z_]/g, '').slice(0, 10);
+  const company = String(req.query.company || sym).slice(0, 40).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  const scoreNum = parseInt(score, 10) || 0;
+  const signalColor = signal === 'BUY' || signal === 'STRONG_BUY'
+    ? '#22c55e'
+    : signal === 'SELL' || signal === 'STRONG_SELL'
+    ? '#ef4444'
+    : '#f59e0b';
+
+  const radius = 54;
+  const circumference = 2 * Math.PI * radius;
+  const dashOffset = circumference - (scoreNum / 100) * circumference;
+
+  const svg = `<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e1b4b"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <text x="80" y="80" font-family="system-ui,sans-serif" font-size="28" fill="rgba(255,255,255,0.4)" font-weight="500">Wenap · AI Investment Research</text>
+  <text x="80" y="200" font-family="system-ui,sans-serif" font-size="72" fill="white" font-weight="700">${sym}</text>
+  <text x="80" y="260" font-family="system-ui,sans-serif" font-size="30" fill="rgba(255,255,255,0.6)">${company}</text>
+  <rect x="80" y="320" width="160" height="56" rx="12" fill="${signalColor}22"/>
+  <text x="160" y="356" text-anchor="middle" font-family="system-ui,sans-serif" font-size="28" fill="${signalColor}" font-weight="700">${signal.replace('_', ' ')}</text>
+  ${scoreNum > 0 ? `
+  <circle cx="980" cy="315" r="${radius}" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="10"/>
+  <circle cx="980" cy="315" r="${radius}" fill="none" stroke="${signalColor}" stroke-width="10"
+    stroke-dasharray="${circumference}" stroke-dashoffset="${dashOffset}"
+    stroke-linecap="round" transform="rotate(-90 980 315)"/>
+  <text x="980" y="325" text-anchor="middle" font-family="system-ui,sans-serif" font-size="42" fill="white" font-weight="700">${scoreNum}</text>
+  <text x="980" y="355" text-anchor="middle" font-family="system-ui,sans-serif" font-size="18" fill="rgba(255,255,255,0.5)">/ 100</text>
+  ` : ''}
+  <text x="80" y="560" font-family="system-ui,sans-serif" font-size="22" fill="rgba(255,255,255,0.3)">wenap.com · AI-powered · Not financial advice</text>
+</svg>`;
+
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.send(svg);
+});
 
 app.listen(PORT, () => {
   const key = getOpenRouterKey();

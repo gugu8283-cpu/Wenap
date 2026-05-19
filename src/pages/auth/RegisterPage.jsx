@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '../../components/LanguageSwitcher.jsx'
 import { apiFetch } from '../../lib/api.js'
@@ -20,6 +20,9 @@ const STRENGTH_COLORS = ['#2a2a2a', '#e24b4a', '#f5a623', '#00d4aa', '#00d4aa']
 export default function RegisterPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const referralCode = searchParams.get('ref') || ''
+  const prefilledSymbol = searchParams.get('symbol') || ''
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -41,9 +44,15 @@ export default function RegisterPage() {
     try {
       await apiFetch('/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ email, password, passwordConfirm: confirm }),
+        body: JSON.stringify({
+          email,
+          password,
+          passwordConfirm: confirm,
+          ...(referralCode ? { referralCode } : {}),
+        }),
       })
-      navigate(`/verify-email?email=${encodeURIComponent(email)}`)
+      const verifyUrl = `/verify-email?email=${encodeURIComponent(email)}${prefilledSymbol ? `&symbol=${encodeURIComponent(prefilledSymbol)}` : ''}`
+      navigate(verifyUrl)
     } catch (err) {
       setError(err.message || t('auth.registerFail'))
     } finally {

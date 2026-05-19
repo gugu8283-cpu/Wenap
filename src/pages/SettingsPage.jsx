@@ -11,10 +11,24 @@ export default function SettingsPage() {
   const [billing, setBilling] = useState(null)
   const [portalLoading, setPortalLoading] = useState(false)
   const [error, setError] = useState('')
+  const [referralLink, setReferralLink] = useState('')
+  const [referralCopied, setReferralCopied] = useState(false)
 
   useEffect(() => {
     apiFetch('/billing/config').then(setBilling).catch(() => {})
+    apiFetch('/auth/referral-link').then((j) => setReferralLink(j.link || '')).catch(() => {})
   }, [])
+
+  async function copyReferral() {
+    if (!referralLink) return
+    try {
+      await navigator.clipboard.writeText(referralLink)
+      setReferralCopied(true)
+      setTimeout(() => setReferralCopied(false), 2000)
+    } catch {
+      window.prompt(t('settings.referralCopy'), referralLink)
+    }
+  }
 
   async function openPortal() {
     setPortalLoading(true)
@@ -89,6 +103,19 @@ export default function SettingsPage() {
               {t('settings.stripeNotConfigured', { email: 'support@wenap.app' })}
             </p>
           )}
+        </div>
+      )}
+
+      {referralLink && (
+        <div className="settings-card">
+          <h2 className="settings-section-title">{t('settings.referralTitle')}</h2>
+          <p className="settings-sub-note">{t('settings.referralNote')}</p>
+          <div className="settings-referral-row">
+            <code className="settings-referral-link">{referralLink}</code>
+            <button type="button" className="settings-portal-btn" onClick={copyReferral} style={{ marginLeft: 8, flexShrink: 0 }}>
+              {referralCopied ? '✓' : t('settings.referralCopy')}
+            </button>
+          </div>
         </div>
       )}
 
