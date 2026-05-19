@@ -1,0 +1,13 @@
+# 复制到 /etc/caddy/Caddyfile，把域名改成你的
+# HTTPS 由 Caddy 自动申请 Let's Encrypt
+
+wenap.example.com {
+	encode gzip
+	reverse_proxy 127.0.0.1:3002 {
+		flush_interval -1
+		transport http {
+			read_timeout 600s
+			write_timeout 600s
+		}
+	}
+}

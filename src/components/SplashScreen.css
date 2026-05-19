@@ -1,0 +1,333 @@
+@keyframes wenap-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes wenap-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes wenap-drift {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  33% {
+    transform: translate(12px, -8px);
+  }
+  66% {
+    transform: translate(-8px, 12px);
+  }
+}
+
+@keyframes wenap-spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes wenap-pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.7);
+  }
+}
+
+@keyframes wenap-fill-progress {
+  0% {
+    width: 0;
+  }
+  60% {
+    width: 70%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+.wenap-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #080b14;
+  color: #fff;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.wenap-splash__grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 45%, #000 20%, transparent 72%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 45%, #000 20%, transparent 72%);
+  pointer-events: none;
+}
+
+.wenap-splash__glow {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(40px);
+}
+
+.wenap-splash__glow--tl {
+  top: 8%;
+  left: 6%;
+  width: 280px;
+  height: 280px;
+  background: rgba(180, 0, 255, 0.12);
+  animation: wenap-drift 6s ease-in-out infinite;
+}
+
+.wenap-splash__glow--br {
+  right: 8%;
+  bottom: 12%;
+  width: 220px;
+  height: 220px;
+  background: rgba(0, 212, 170, 0.1);
+  animation: wenap-drift 6s ease-in-out infinite reverse;
+}
+
+.wenap-splash__glow--center {
+  top: 50%;
+  left: 50%;
+  width: 200px;
+  height: 200px;
+  margin: -100px 0 0 -100px;
+  background: rgba(0, 100, 255, 0.06);
+}
+
+.wenap-splash__status {
+  position: absolute;
+  top: 48px;
+  left: 32px;
+  right: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 2;
+}
+
+.wenap-splash__status-label {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.1);
+  letter-spacing: 0.06em;
+}
+
+.wenap-splash__status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00d4aa;
+  box-shadow: 0 0 8px rgba(0, 212, 170, 0.8);
+  animation: wenap-pulse-dot 2s ease-in-out infinite;
+}
+
+.wenap-splash__hero {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.wenap-splash__icon-wrap {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wenap-splash__icon-ring {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(0, 212, 170, 0.2);
+  border-radius: 50%;
+  animation: wenap-spin-slow 8s linear infinite;
+}
+
+.wenap-splash__icon-dot {
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  border-radius: 50%;
+  background: #00d4aa;
+  box-shadow: 0 0 10px rgba(0, 212, 170, 0.9);
+}
+
+.wenap-splash__icon-chart {
+  position: relative;
+  z-index: 1;
+}
+
+.wenap-splash__logo {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.wenap-splash__logo-w {
+  color: #ffffff;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.35);
+}
+
+.wenap-splash__logo-rest {
+  color: #00d4aa;
+  text-shadow:
+    0 0 24px rgba(0, 212, 170, 0.9),
+    0 0 48px rgba(0, 212, 170, 0.5),
+    0 0 80px rgba(0, 212, 170, 0.2);
+}
+
+.wenap-splash__divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 200px;
+  margin: 16px auto;
+}
+
+.wenap-splash__divider-line {
+  flex: 1;
+  height: 1px;
+}
+
+.wenap-splash__divider-line--l {
+  background: linear-gradient(90deg, transparent, rgba(180, 0, 255, 0.4));
+}
+
+.wenap-splash__divider-line--r {
+  background: linear-gradient(90deg, rgba(0, 212, 170, 0.4), transparent);
+}
+
+.wenap-splash__divider-diamond {
+  width: 5px;
+  height: 5px;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #b400ff, #00d4aa);
+  transform: rotate(45deg);
+}
+
+.wenap-splash__tagline {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.18);
+  letter-spacing: 0.22em;
+}
+
+.wenap-splash__progress-wrap {
+  position: absolute;
+  bottom: 52px;
+  left: 32px;
+  right: 32px;
+  z-index: 2;
+}
+
+.wenap-splash__progress-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.12);
+  letter-spacing: 0.08em;
+}
+
+.wenap-splash__progress-track {
+  height: 2px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.wenap-splash__progress-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #b400ff, #00d4aa);
+  box-shadow: 0 0 10px rgba(0, 212, 170, 0.5);
+  animation: wenap-fill-progress 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.wenap-splash__version {
+  position: absolute;
+  bottom: 24px;
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.05);
+  letter-spacing: 0.06em;
+  z-index: 2;
+}
+
+.wenap-splash__anim-icon {
+  opacity: 0;
+  animation: wenap-fade-up 0.7s ease forwards;
+  animation-delay: 0s;
+}
+
+.wenap-splash__anim-logo {
+  opacity: 0;
+  animation: wenap-fade-up 0.7s ease forwards;
+  animation-delay: 0.15s;
+}
+
+.wenap-splash__anim-divider {
+  opacity: 0;
+  animation: wenap-fade-in 0.7s ease forwards;
+  animation-delay: 0.3s;
+}
+
+.wenap-splash__anim-tagline {
+  opacity: 0;
+  animation: wenap-fade-in 0.7s ease forwards;
+  animation-delay: 0.4s;
+}
+
+.wenap-splash__anim-progress {
+  opacity: 0;
+  animation: wenap-fade-in 0.6s ease forwards;
+  animation-delay: 0.5s;
+}

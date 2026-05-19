@@ -1,0 +1,34 @@
+# Render Blueprint — 内测默认 Free（无磁盘）
+# 有收入后：Dashboard 升 Starter + 挂盘 /var/data，并设 SQLITE_PATH=/var/data/wenap.db
+# 详见 docs/RENDER-行动基准.md
+services:
+  - type: web
+    name: wenap
+    runtime: node
+    region: singapore
+    plan: free
+    buildCommand: npm ci && npm rebuild better-sqlite3 && npm run build
+    startCommand: node server.cjs
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: NODE_ENV
+        value: production
+      - key: SERVE_DIST
+        value: "1"
+      - key: TRUST_PROXY
+        value: "1"
+      - key: CRON_ENABLED
+        value: "true"
+      - key: PREDICTION_VERIFY_DAYS
+        value: "30"
+      - key: APP_PUBLIC_URL
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ADMIN_SECRET
+        sync: false

@@ -1,0 +1,162 @@
+const express = require('express');
+const {
+  getUserByEmail,
+  getUserById,
+  publicUser,
+  verifyPassword,
+  createUserWithPassword,
+  verifyEmailByToken,
+  refreshVerifyToken,
+  canResendVerifyEmail,
+  setVerifyEmailSent,
+  getClientIp,
+} = require('../db/auth.cjs');
+const { signAccessToken } = require('../lib/jwtAuth.cjs');
+const { isDisposableEmail } = require('../lib/disposableEmail.cjs');
+const { sendVerificationEmail } = require('../lib/emailSend.cjs');
+const { requireAuth } = require('../middleware/requireAuth.cjs');
+
+const router = express.Router();
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function validPassword(pw) {
+  return typeof pw === 'string' && pw.length >= 8;
+}
+
+router.post('/register', async (req, res) => {
+  try {
+    const email = String(req.body?.email || '')
+      .trim()
+      .toLowerCase();
+    const password = String(req.body?.password || '');
+    const password2 = String(req.body?.passwordConfirm || req.body?.confirmPassword || '');
+
+    if (!EMAIL_RE.test(email)) {
+      return res.status(400).json({ error: 'INVALID_EMAIL', message: '请输入有效邮箱' });
+    }
+    if (isDisposableEmail(email)) {
+      return res.status(400).json({
+        error: 'DISPOSABLE_EMAIL',
+        message: '不支持一次性邮箱，请使用常用邮箱注册',
+      });
+    }
+    if (!validPassword(password)) {
+      return res.status(400).json({ error: 'WEAK_PASSWORD', message: '密码至少 8 位' });
+    }
+    if (password !== password2) {
+      return res.status(400).json({ error: 'PASSWORD_MISMATCH', message: '密码不一致' });
+    }
+
+    const ip = getClientIp(req);
+    const { user, verifyToken } = await createUserWithPassword({ email, password, ip });
+    setVerifyEmailSent(user.id);
+    await sendVerificationEmail({ to: email, token: verifyToken });
+
+    res.status(201).json({
+      ok: true,
+      message: '注册成功，请查收验证邮件',
+      email,
+      requiresVerification: true,
+    });
+  } catch (e) {
+    if (e.code === 'EMAIL_EXISTS') {
+      return res.status(409).json({ error: 'EMAIL_EXISTS', message: '该邮箱已注册' });
+    }
+    if (e.code === 'IP_REGISTER_LIMIT') {
+      return res.status(429).json({
+        error: 'IP_REGISTER_LIMIT',
+        message: '请求过于频繁，请稍后再试',
+      });
+    }
+    console.error('[Wenap] register:', e);
+    res.status(500).json({ error: 'SERVER_ERROR', message: '注册失败，请稍后重试' });
+  }
+});
+
+router.post('/login', async (req, res) => {
+  try {
+    const email = String(req.body?.email || '')
+      .trim()
+      .toLowerCase();
+    const password = String(req.body?.password || '');
+
+    const user = getUserByEmail(email);
+    if (!user || !(await verifyPassword(password, user.password_hash))) {
+      return res.status(401).json({
+        error: 'INVALID_CREDENTIALS',
+        message: '邮箱或密码不正确',
+      });
+    }
+    if (user.is_banned) {
+      return res.status(403).json({ error: 'BANNED', message: '账号已被限制' });
+    }
+    if (!user.email_verified) {
+      return res.status(403).json({
+        error: 'EMAIL_NOT_VERIFIED',
+        message: '请先验证邮箱',
+        email: user.email,
+      });
+    }
+
+    const token = signAccessToken(user);
+    res.json({ token, user: publicUser(user) });
+  } catch (e) {
+    console.error('[Wenap] login:', e);
+    res.status(500).json({ error: 'SERVER_ERROR', message: '登录失败' });
+  }
+});
+
+router.post('/logout', requireAuth, (req, res) => {
+  res.json({ ok: true });
+});
+
+router.get('/verify-email', (req, res) => {
+  try {
+    const token = String(req.query?.token || '').trim();
+    if (!token) {
+      return res.status(400).json({ error: 'MISSING_TOKEN', message: '缺少验证令牌' });
+    }
+    const user = verifyEmailByToken(token);
+    const jwt = signAccessToken(user);
+    res.json({ ok: true, message: '邮箱验证成功', token: jwt, user: publicUser(user) });
+  } catch (e) {
+    const code = e.code || 'INVALID_TOKEN';
+    const msg =
+      code === 'TOKEN_EXPIRED' ? '验证链接已过期，请重新发送' : '验证链接无效';
+    res.status(400).json({ error: code, message: msg });
+  }
+});
+
+router.post('/resend-verify', async (req, res) => {
+  try {
+    const email = String(req.body?.email || '')
+      .trim()
+      .toLowerCase();
+    const user = getUserByEmail(email);
+    if (!user) {
+      return res.json({ ok: true, message: '若邮箱存在，将发送验证邮件' });
+    }
+    if (user.email_verified) {
+      return res.json({ ok: true, message: '邮箱已验证' });
+    }
+    if (!canResendVerifyEmail(user)) {
+      return res.status(429).json({
+        error: 'RATE_LIMIT',
+        message: '请 60 秒后再试',
+      });
+    }
+    const verifyToken = refreshVerifyToken(user.id);
+    await sendVerificationEmail({ to: email, token: verifyToken });
+    res.json({ ok: true, message: '验证邮件已发送' });
+  } catch (e) {
+    console.error('[Wenap] resend-verify:', e);
+    res.status(500).json({ error: 'SERVER_ERROR', message: '发送失败' });
+  }
+});
+
+router.get('/me', requireAuth, (req, res) => {
+  res.json({ user: req.authPublic });
+});
+
+module.exports = router;

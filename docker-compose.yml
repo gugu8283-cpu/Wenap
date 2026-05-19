@@ -1,0 +1,18 @@
+services:
+  wenap:
+    build: .
+    ports:
+      - "3002:3002"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      SERVE_DIST: "1"
+      SQLITE_PATH: /app/data/wenap.db
+      CRON_ENABLED: "true"
+    volumes:
+      - wenap-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  wenap-data:

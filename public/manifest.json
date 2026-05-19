@@ -1,0 +1,17 @@
+{
+  "name": "Wenap",
+  "short_name": "Wenap",
+  "description": "Wenap：联网投研报告、六维评分、情景与产业链",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080B14",
+  "theme_color": "#080B14",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

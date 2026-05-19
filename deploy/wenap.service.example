@@ -1,0 +1,19 @@
+[Unit]
+Description=Wenap API + SPA
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/wenap
+EnvironmentFile=/opt/wenap/.env
+Environment=NODE_ENV=production
+Environment=SERVE_DIST=1
+Environment=TRUST_PROXY=1
+Environment=PORT=3002
+ExecStart=/usr/bin/node server.cjs
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
