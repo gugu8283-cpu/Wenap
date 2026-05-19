@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import './App.css'
 import AnalysisViz from './AnalysisViz.jsx'
 import EconomicsPanel from './EconomicsPanel.jsx'
 import LanguageSwitcher from './components/LanguageSwitcher.jsx'
+import QuotaStrip from './components/QuotaStrip.jsx'
 import { resolveAppLanguage } from './i18n/index.js'
 import { useAuth } from './context/AuthContext.jsx'
 import { apiFetch, getToken } from './lib/api.js'
@@ -413,17 +415,23 @@ export default function App() {
 
   return (
     <div className="app">
+      <QuotaStrip quotaBanner={quotaBanner} />
       <header className="header">
         <div className="header-top">
           <p className="brand">Wenap</p>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <LanguageSwitcher />
             {user?.email ? (
-              <span className="tagline" style={{ margin: 0, fontSize: 12 }}>
+              <Link to="/settings" className="tagline" style={{ margin: 0, fontSize: 12, textDecoration: 'none' }}>
                 {user.email}
-                {user.tier && user.tier !== 'free' ? ` · ${user.tier}` : ''}
-              </span>
+                {user.tier && user.tier !== 'free' ? ` · ${user.tier.replace('_', '+')}` : ''}
+              </Link>
             ) : null}
+            {!user && (
+              <Link to="/pricing" className="theme-toggle" style={{ textDecoration: 'none' }}>
+                {t('app.upgradeBtn', { defaultValue: 'Pricing' })}
+              </Link>
+            )}
             <button
               type="button"
               className="theme-toggle"

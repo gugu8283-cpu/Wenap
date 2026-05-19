@@ -13,6 +13,8 @@ import RegisterPage from './pages/auth/RegisterPage.jsx'
 import LoginPage from './pages/auth/LoginPage.jsx'
 import VerifyEmailPage from './pages/auth/VerifyEmailPage.jsx'
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage.jsx'
+import PricingPage from './pages/PricingPage.jsx'
+import SettingsPage from './pages/SettingsPage.jsx'
 
 migrateLegacyStorage()
 applyTheme(getTheme())
@@ -26,6 +28,8 @@ createRoot(document.getElementById('root')).render(
           <Route path="/login" element={<LoginPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
           <Route path="/admin/*" element={<AdminApp />} />
           <Route path="/accuracy" element={<AccuracyPage />} />
           <Route path="/*" element={<AppShell />} />

@@ -1,0 +1,212 @@
+/**
+ * Stripe billing routes.
+ * Requires env vars:
+ *   STRIPE_SECRET_KEY       - Stripe secret key (sk_live_... or sk_test_...)
+ *   STRIPE_PUBLISHABLE_KEY  - For frontend (returned via /billing/config)
+ *   STRIPE_WEBHOOK_SECRET   - whsec_... from Stripe dashboard
+ *   STRIPE_PRICE_PRO        - price_... monthly Pro plan
+ *   STRIPE_PRICE_PRO_PLUS   - price_... monthly Pro+ plan
+ *   APP_PUBLIC_URL          - e.g. https://wenap.app
+ *
+ * Without STRIPE_SECRET_KEY, all endpoints return 503 with { error: 'STRIPE_NOT_CONFIGURED' }
+ * so the frontend can fall back to a "contact us" CTA.
+ */
+
+const express = require('express');
+const { requireAuth } = require('../middleware/requireAuth.cjs');
+const { getUserById } = require('../db/auth.cjs');
+const { getDb } = require('./billingDb.cjs');
+
+const router = express.Router();
+
+const APP_URL = (process.env.APP_PUBLIC_URL || 'http://localhost:5173').replace(/\/$/, '');
+const STRIPE_SECRET = (process.env.STRIPE_SECRET_KEY || '').trim();
+const STRIPE_WEBHOOK_SECRET = (process.env.STRIPE_WEBHOOK_SECRET || '').trim();
+const STRIPE_PRICE = {
+  pro: (process.env.STRIPE_PRICE_PRO || '').trim(),
+  pro_plus: (process.env.STRIPE_PRICE_PRO_PLUS || '').trim(),
+};
+
+function getStripe() {
+  if (!STRIPE_SECRET) return null;
+  try {
+    return require('stripe')(STRIPE_SECRET);
+  } catch {
+    return null;
+  }
+}
+
+function noStripe(res) {
+  return res.status(503).json({
+    error: 'STRIPE_NOT_CONFIGURED',
+    message: 'Stripe is not configured. To upgrade, email support@wenap.app.',
+    contactEmail: 'support@wenap.app',
+  });
+}
+
+// Public: return Stripe publishable key so frontend can init Stripe.js
+router.get('/config', (req, res) => {
+  res.json({
+    publishableKey: (process.env.STRIPE_PUBLISHABLE_KEY || '').trim() || null,
+    prices: {
+      pro: STRIPE_PRICE.pro || null,
+      pro_plus: STRIPE_PRICE.pro_plus || null,
+    },
+    configured: Boolean(STRIPE_SECRET),
+  });
+});
+
+// Create a Checkout Session for the requested tier
+router.post('/create-checkout-session', requireAuth, async (req, res) => {
+  const stripe = getStripe();
+  if (!stripe) return noStripe(res);
+
+  const tier = String(req.body?.tier || '').toLowerCase();
+  const priceId = STRIPE_PRICE[tier === 'pro_plus' ? 'pro_plus' : 'pro'];
+  if (!priceId) {
+    return res.status(400).json({ error: 'INVALID_TIER', message: 'Tier must be pro or pro_plus.' });
+  }
+
+  const user = getUserById(req.authUser.id);
+  if (!user) return res.status(401).json({ error: 'UNAUTHORIZED' });
+
+  try {
+    const db = getDb();
+    const existingCustomerId = db
+      .prepare('SELECT stripe_customer_id FROM billing WHERE user_id = ?')
+      .get(user.id)?.stripe_customer_id;
+
+    const sessionParams = {
+      mode: 'subscription',
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${APP_URL}/?checkout=success&tier=${tier}`,
+      cancel_url: `${APP_URL}/pricing?checkout=cancelled`,
+      metadata: { userId: user.id, tier },
+      subscription_data: { metadata: { userId: user.id, tier } },
+    };
+
+    if (existingCustomerId) {
+      sessionParams.customer = existingCustomerId;
+    } else {
+      sessionParams.customer_email = user.email;
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
+    res.json({ url: session.url, sessionId: session.id });
+  } catch (e) {
+    console.error('[Wenap] Stripe checkout error:', e.message);
+    res.status(500).json({ error: 'STRIPE_ERROR', message: e.message });
+  }
+});
+
+// Stripe Customer Portal (manage subscription / cancel / change card)
+router.post('/portal-session', requireAuth, async (req, res) => {
+  const stripe = getStripe();
+  if (!stripe) return noStripe(res);
+
+  try {
+    const db = getDb();
+    const row = db
+      .prepare('SELECT stripe_customer_id FROM billing WHERE user_id = ?')
+      .get(req.authUser.id);
+
+    if (!row?.stripe_customer_id) {
+      return res.status(400).json({ error: 'NO_SUBSCRIPTION', message: 'No active Stripe subscription found.' });
+    }
+
+    const session = await stripe.billingPortal.sessions.create({
+      customer: row.stripe_customer_id,
+      return_url: `${APP_URL}/settings`,
+    });
+    res.json({ url: session.url });
+  } catch (e) {
+    console.error('[Wenap] Stripe portal error:', e.message);
+    res.status(500).json({ error: 'STRIPE_ERROR', message: e.message });
+  }
+});
+
+// Stripe Webhook handler (raw body required - set up in server.cjs before json middleware)
+router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const stripe = getStripe();
+  if (!stripe) return res.sendStatus(200);
+
+  let event;
+  try {
+    event = STRIPE_WEBHOOK_SECRET
+      ? stripe.webhooks.constructEvent(req.body, req.headers['stripe-signature'], STRIPE_WEBHOOK_SECRET)
+      : JSON.parse(req.body.toString());
+  } catch (e) {
+    console.error('[Wenap] Stripe webhook signature verification failed:', e.message);
+    return res.status(400).json({ error: 'WEBHOOK_SIGNATURE_INVALID' });
+  }
+
+  const db = getDb();
+
+  try {
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object;
+      const userId = session.metadata?.userId;
+      const tier = session.metadata?.tier || 'pro';
+      const customerId = session.customer;
+      const subscriptionId = session.subscription;
+
+      if (userId) {
+        // Update user tier in main DB
+        const authDb = require('../db/store.cjs').initDb();
+        authDb.prepare(`UPDATE users SET tier = ? WHERE id = ?`).run(tier, userId);
+
+        // Upsert billing row
+        db.prepare(`
+          INSERT INTO billing (user_id, stripe_customer_id, stripe_subscription_id, tier, status, updated_at)
+          VALUES (?, ?, ?, ?, 'active', datetime('now'))
+          ON CONFLICT(user_id) DO UPDATE SET
+            stripe_customer_id = excluded.stripe_customer_id,
+            stripe_subscription_id = excluded.stripe_subscription_id,
+            tier = excluded.tier,
+            status = 'active',
+            updated_at = datetime('now')
+        `).run(userId, customerId, subscriptionId, tier);
+
+        console.log(`[Wenap] Stripe: user ${userId} upgraded to ${tier}`);
+      }
+    } else if (event.type === 'customer.subscription.updated') {
+      const sub = event.data.object;
+      const customerId = sub.customer;
+      const status = sub.status;
+      const renewsAt = sub.current_period_end
+        ? new Date(sub.current_period_end * 1000).toISOString()
+        : null;
+
+      const billingRow = db.prepare('SELECT user_id, tier FROM billing WHERE stripe_customer_id = ?').get(customerId);
+      if (billingRow) {
+        db.prepare(`
+          UPDATE billing SET status = ?, subscription_renews_at = ?, updated_at = datetime('now')
+          WHERE stripe_customer_id = ?
+        `).run(status, renewsAt, customerId);
+
+        if (status === 'active') {
+          const authDb = require('../db/store.cjs').initDb();
+          authDb.prepare(`UPDATE users SET tier = ? WHERE id = ?`).run(billingRow.tier, billingRow.user_id);
+        }
+        console.log(`[Wenap] Stripe: subscription ${status} for customer ${customerId}`);
+      }
+    } else if (event.type === 'customer.subscription.deleted') {
+      const sub = event.data.object;
+      const customerId = sub.customer;
+      const billingRow = db.prepare('SELECT user_id FROM billing WHERE stripe_customer_id = ?').get(customerId);
+
+      if (billingRow) {
+        db.prepare(`UPDATE billing SET status = 'cancelled', updated_at = datetime('now') WHERE stripe_customer_id = ?`).run(customerId);
+        const authDb = require('../db/store.cjs').initDb();
+        authDb.prepare(`UPDATE users SET tier = 'free' WHERE id = ?`).run(billingRow.user_id);
+        console.log(`[Wenap] Stripe: subscription cancelled for customer ${customerId}, user downgraded to free`);
+      }
+    }
+  } catch (e) {
+    console.error('[Wenap] Stripe webhook processing error:', e.message);
+  }
+
+  res.sendStatus(200);
+});
+
+module.exports = router;

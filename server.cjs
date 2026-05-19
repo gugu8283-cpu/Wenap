@@ -184,6 +184,7 @@ const store = require('./db/store.cjs');
 const authDb = require('./db/auth.cjs');
 const adminRouter = require('./routes/admin.cjs');
 const authRouter = require('./routes/auth.cjs');
+const billingRouter = require('./routes/billing.cjs');
 const publicAccuracyRouter = require('./routes/publicAccuracy.cjs');
 const { requireAuth } = require('./middleware/requireAuth.cjs');
 const { startVerifyCron } = require('./jobs/verifyPredictions.cjs');
@@ -2531,6 +2532,7 @@ if (SPA_MODE) {
 }
 
 app.use('/auth', authRouter);
+app.use('/billing', billingRouter);
 /** 管理 API 勿挂在 /admin（会与 SPA 路由 /admin 冲突）；前端请求 /api/admin-api/... */
 app.use('/admin-api', adminRouter);
 app.use('/accuracy', (req, res, next) => {
