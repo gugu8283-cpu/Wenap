@@ -98,6 +98,22 @@ API 费用通常 **大于** 服务器差价。
 
 ---
 
+## 测试账号（仅本机默认没有；线上需执行一次脚本）
+
+本机：`npm run create-test-accounts`
+
+线上 Render 部署成功后 → **Shell** 里执行：
+
+```bash
+node scripts/createTestAccounts.cjs
+```
+
+| 档位 | 邮箱 | 密码 |
+|------|------|------|
+| 免费 | `free@wenap.test` | `Wenap2026Free!` |
+| Pro | `pro@wenap.test` | `Wenap2026Pro!` |
+| Pro+ | `proplus@wenap.test` | `Wenap2026ProPlus!` |
+
 ## 常用命令
 
 ```bash
