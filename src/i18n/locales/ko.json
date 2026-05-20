@@ -144,6 +144,57 @@
     "dedup2": "검증 후 새 예측 기록 가능",
     "backHome": "Wenap 홈으로"
   },
+  "landing": {
+    "signIn": "로그인",
+    "getStarted": "무료로 시작",
+    "kicker": "AI 주식 분석",
+    "headline": "60초 만에 종목 심층 분석",
+    "subheadline": "실적·뉴스·기술·공급망을 구조화 리포트로 — 시나리오, 리스크, 명확한 시그널.",
+    "accuracyLabel": "검증된 예측 {{count}}건 추적",
+    "searchPlaceholder": "티커 입력 (예: NVDA)",
+    "analyzeBtn": "분석하기 →",
+    "fineprint": "월 5회 무료 분석. 신용카드 불필요.",
+    "featuresTitle": "더 빠른 결정을 위한 모든 것",
+    "featureFastTitle": "60초 심층 리서치",
+    "featureFastSub": "다중 소스를 하나의 구조화 리포트로.",
+    "featureScenarioTitle": "강세 / 기준 / 약세 시나리오",
+    "featureScenarioSub": "확률, 가격 구간, 트리거 조건.",
+    "featureSixTitle": "6차원 레이더",
+    "featureSixSub": "수익·성장·밸류·모멘텀·정책·심리.",
+    "featureSupplyTitle": "공급망 맵",
+    "featureSupplySub": "주요 공급사·고객·경쟁사 점수 연동.",
+    "featureAccuracyTitle": "공개 정확도 추적",
+    "featureAccuracySub": "모든 예측 기록. 만기 검증. 선별 없음.",
+    "featureLanguagesTitle": "6개 언어",
+    "featureLanguagesSub": "English, 中文, 日本語, 한국어, Deutsch, 繁體中文.",
+    "pricingTitle": "투자자를 위한 플랜",
+    "freeFeatures": [
+      "월 5회 분석",
+      "6차원·시나리오 리포트 (핵심)",
+      "관심 3종목 · 기록은 최근 1건만"
+    ],
+    "proFeatures": [
+      "무제한 분석",
+      "액션 뷰 · 이벤트 · 동종 비교",
+      "관심 50종목 · 전체 기록"
+    ],
+    "proPlusFeatures": [
+      "일일 심층 분석 한도 확대",
+      "비평가 시각 · 강약 대조 · 공급망 상세",
+      "PDF · 2종목 비교 · 관심 200"
+    ],
+    "upgradeBtn": "플랜 보기",
+    "sampleTitle": "샘플 리포트",
+    "sampleNote": "AI 리포트 샘플 — 가입 없이 확인."
+  },
+  "pricing": {
+    "title": "투명한 요금",
+    "mostPopular": "가장 인기",
+    "freeName": "무료",
+    "freePrice": "$0/월",
+    "proPrice": "$9.99/월",
+    "proPlusPrice": "$19.99/월"
+  },
   "report": {
     "radar": "6차원 레이더",
     "scenario": "시나리오 확률",

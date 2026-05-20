@@ -8,14 +8,47 @@ const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 
 const DEMO_TICKER = 'NVDA'
 
+function RadarChartIcon() {
+  return (
+    <svg className="landing-radar-icon" viewBox="0 0 24 24" width="28" height="28" aria-hidden>
+      <circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" strokeWidth="1.25" opacity="0.35" />
+      <circle cx="12" cy="12" r="5.5" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.25" />
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+      <path d="M12 12 L12 2.5 A9.5 9.5 0 0 1 19.2 7.8 Z" fill="currentColor" opacity="0.45" />
+      <line x1="12" y1="12" x2="12" y2="2.5" stroke="currentColor" strokeWidth="1" />
+      <line x1="12" y1="12" x2="19.5" y2="12" stroke="currentColor" strokeWidth="0.75" opacity="0.35" />
+      <line x1="12" y1="12" x2="4.5" y2="12" stroke="currentColor" strokeWidth="0.75" opacity="0.35" />
+      <line x1="12" y1="12" x2="12" y2="21.5" stroke="currentColor" strokeWidth="0.75" opacity="0.35" />
+    </svg>
+  )
+}
+
 const FEATURE_TIERS = [
   { icon: '⚡', key: 'featureFast' },
   { icon: '🎯', key: 'featureScenario' },
-  { icon: '🔬', key: 'featureSix' },
+  { icon: 'radar', key: 'featureSix' },
   { icon: '🔗', key: 'featureSupply' },
   { icon: '📊', key: 'featureAccuracy' },
   { icon: '🌍', key: 'featureLanguages' },
 ]
+
+const PRICING_TEASERS = [
+  { id: 'free', nameKey: 'pricing.freeName', priceKey: 'pricing.freePrice', featuresKey: 'landing.freeFeatures', ctaClass: 'landing-tier-cta--free', to: '/register', ctaKey: 'landing.getStarted' },
+  { id: 'pro', name: 'Pro', priceKey: 'pricing.proPrice', featuresKey: 'landing.proFeatures', cardClass: 'landing-tier-card--pro', to: '/pricing', ctaKey: 'landing.upgradeBtn' },
+  { id: 'pro_plus', name: 'Pro+', priceKey: 'pricing.proPlusPrice', featuresKey: 'landing.proPlusFeatures', cardClass: 'landing-tier-card--proplus', badgeKey: 'pricing.mostPopular', to: '/pricing', ctaKey: 'landing.upgradeBtn' },
+]
+
+function TierFeatureList({ featuresKey, t }) {
+  const items = t(featuresKey, { returnObjects: true })
+  if (!Array.isArray(items)) return null
+  return (
+    <ul className="landing-tier-features">
+      {items.map((line) => (
+        <li key={line}>{line}</li>
+      ))}
+    </ul>
+  )
+}
 
 export default function LandingPage() {
   const { t } = useTranslation()
@@ -93,7 +126,9 @@ export default function LandingPage() {
         <div className="landing-features-grid">
           {FEATURE_TIERS.map((f) => (
             <div key={f.key} className="landing-feature-card">
-              <span className="landing-feature-icon">{f.icon}</span>
+              <span className="landing-feature-icon">
+                {f.icon === 'radar' ? <RadarChartIcon /> : f.icon}
+              </span>
               <div>
                 <strong>{t(`landing.${f.key}Title`)}</strong>
                 <p>{t(`landing.${f.key}Sub`)}</p>
@@ -106,25 +141,20 @@ export default function LandingPage() {
       <section className="landing-pricing-teaser">
         <h2 className="landing-section-title">{t('landing.pricingTitle')}</h2>
         <div className="landing-tier-grid">
-          <div className="landing-tier-card">
-            <div className="landing-tier-name">{t('pricing.freeName')}</div>
-            <div className="landing-tier-price">{t('pricing.freePrice')}</div>
-            <p className="landing-tier-desc">{t('landing.freeDesc')}</p>
-            <Link to="/register" className="landing-tier-cta landing-tier-cta--free">{t('landing.getStarted')}</Link>
-          </div>
-          <div className="landing-tier-card landing-tier-card--pro">
-            <div className="landing-tier-name">Pro</div>
-            <div className="landing-tier-price">{t('pricing.proPrice')}</div>
-            <p className="landing-tier-desc">{t('landing.proDesc')}</p>
-            <Link to="/pricing" className="landing-tier-cta">{t('landing.upgradeBtn')}</Link>
-          </div>
-          <div className="landing-tier-card landing-tier-card--proplus">
-            <div className="landing-tier-badge">{t('pricing.mostPopular')}</div>
-            <div className="landing-tier-name">Pro+</div>
-            <div className="landing-tier-price">{t('pricing.proPlusPrice')}</div>
-            <p className="landing-tier-desc">{t('landing.proPlusDesc')}</p>
-            <Link to="/pricing" className="landing-tier-cta landing-tier-cta--proplus">{t('landing.upgradeBtn')}</Link>
-          </div>
+          {PRICING_TEASERS.map((plan) => (
+            <div key={plan.id} className={`landing-tier-card${plan.cardClass ? ` ${plan.cardClass}` : ''}`}>
+              {plan.badgeKey ? <div className="landing-tier-badge">{t(plan.badgeKey)}</div> : null}
+              <div className="landing-tier-name">{plan.nameKey ? t(plan.nameKey) : plan.name}</div>
+              <div className="landing-tier-price">{t(plan.priceKey)}</div>
+              <TierFeatureList featuresKey={plan.featuresKey} t={t} />
+              <Link
+                to={plan.to}
+                className={`landing-tier-cta${plan.ctaClass ? ` ${plan.ctaClass}` : ''}${plan.id === 'pro_plus' ? ' landing-tier-cta--proplus' : ''}`}
+              >
+                {t(plan.ctaKey)}
+              </Link>
+            </div>
+          ))}
         </div>
       </section>
 

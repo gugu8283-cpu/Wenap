@@ -170,9 +170,21 @@
     "featureLanguagesTitle": "6 种语言",
     "featureLanguagesSub": "英文、中文、日文、韩文、德文、繁中。",
     "pricingTitle": "适合每位投资者的套餐",
-    "freeDesc": "每月 5 次分析，使用 Gemini Flash Lite，入门首选。",
-    "proDesc": "无限次分析，Gemini Flash Lite，Pro 字段与完整历史。",
-    "proPlusDesc": "Claude Haiku 4.5、批评家视角、PDF 导出、200 只自选股。",
+    "freeFeatures": [
+      "每月 5 次分析",
+      "核心六维与情景报告（精简展示）",
+      "自选 3 只 · 历史仅首条可阅"
+    ],
+    "proFeatures": [
+      "不限次数分析",
+      "操作建议 · 事件日历 · 同业对比",
+      "自选 50 只 · 完整历史记录"
+    ],
+    "proPlusFeatures": [
+      "更高频深度分析（每日额度）",
+      "批评家视角 · 多空对撞 · 产业链详解",
+      "PDF 导出 · 双标的对比 · 自选 200 只"
+    ],
     "upgradeBtn": "查看套餐"
   },
   "quotaStrip": {

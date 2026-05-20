@@ -170,9 +170,21 @@
     "featureLanguagesTitle": "6 languages",
     "featureLanguagesSub": "English, 中文, 日本語, 한국어, Deutsch, 繁體中文.",
     "pricingTitle": "Plans for every investor",
-    "freeDesc": "5 analyses/month with Gemini Flash Lite. Great for getting started.",
-    "proDesc": "Unlimited analyses with Gemini Flash Lite. Pro fields and full history.",
-    "proPlusDesc": "Claude Haiku 4.5, critic review, PDF export, 200 watchlist symbols.",
+    "freeFeatures": [
+      "5 analyses per month",
+      "Core six-dimension & scenario report (essentials)",
+      "3 watchlist symbols · first history entry only"
+    ],
+    "proFeatures": [
+      "Unlimited analyses",
+      "Action view · events · peer comparison",
+      "50 watchlist symbols · full history"
+    ],
+    "proPlusFeatures": [
+      "Higher daily depth allowance",
+      "Critic pass · bull/bear clash · supply-chain detail",
+      "PDF export · side-by-side compare · 200 watchlist"
+    ],
     "upgradeBtn": "See plans"
   },
   "quotaStrip": {

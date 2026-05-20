@@ -144,6 +144,57 @@
     "dedup2": "驗證完成後解鎖，可記錄新一條",
     "backHome": "返回 Wenap 首頁"
   },
+  "landing": {
+    "signIn": "登入",
+    "getStarted": "免費開始",
+    "kicker": "AI 驅動的股票分析",
+    "headline": "60 秒深度研究任何標的",
+    "subheadline": "Wenap 將財報、新聞、技術面與產業鏈數據整合為結構化報告——附情境分析、風險提示與明確訊號。",
+    "accuracyLabel": "已追蹤 {{count}} 條預測驗證",
+    "searchPlaceholder": "輸入股票代碼，如 NVDA",
+    "analyzeBtn": "開始分析 →",
+    "fineprint": "每月 5 次免費分析，無需信用卡。",
+    "featuresTitle": "一切你需要的，幫助更快做決策",
+    "featureFastTitle": "60 秒深度研究",
+    "featureFastSub": "多源整合，一份結構化報告。",
+    "featureScenarioTitle": "牛勢 / 基準 / 熊勢情境",
+    "featureScenarioSub": "機率、價格區間與觸發條件。",
+    "featureSixTitle": "六維雷達圖",
+    "featureSixSub": "盈利、成長、估值、動量、政策、情緒。",
+    "featureSupplyTitle": "產業鏈圖譜",
+    "featureSupplySub": "關鍵供應商、客戶與競爭對手，聯動評分。",
+    "featureAccuracyTitle": "公開準確率追蹤",
+    "featureAccuracySub": "每條預測都有記錄，到期驗證，不挑選。",
+    "featureLanguagesTitle": "6 種語言",
+    "featureLanguagesSub": "英文、中文、日文、韓文、德文、繁中。",
+    "pricingTitle": "適合每位投資者的套餐",
+    "freeFeatures": [
+      "每月 5 次分析",
+      "核心六維與情境報告（精簡展示）",
+      "自選 3 檔 · 歷史僅首條可閱"
+    ],
+    "proFeatures": [
+      "不限次數分析",
+      "操作建議 · 事件日曆 · 同業對比",
+      "自選 50 檔 · 完整歷史記錄"
+    ],
+    "proPlusFeatures": [
+      "更高頻深度分析（每日額度）",
+      "批評家視角 · 多空對撞 · 產業鏈詳解",
+      "PDF 匯出 · 雙標的對比 · 自選 200 檔"
+    ],
+    "upgradeBtn": "查看套餐",
+    "sampleTitle": "樣本報告",
+    "sampleNote": "公開 AI 報告樣本 — 無需註冊。"
+  },
+  "pricing": {
+    "title": "簡單透明的定價",
+    "mostPopular": "最受歡迎",
+    "freeName": "免費",
+    "freePrice": "$0/月",
+    "proPrice": "$9.99/月",
+    "proPlusPrice": "$19.99/月"
+  },
   "report": {
     "radar": "六維雷達",
     "scenario": "情景機率",

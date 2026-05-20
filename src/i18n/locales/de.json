@@ -144,6 +144,57 @@
     "dedup2": "Nach Verifikation kann eine neue Prognose erfasst werden",
     "backHome": "Zurück zu Wenap"
   },
+  "landing": {
+    "signIn": "Anmelden",
+    "getStarted": "Kostenlos starten",
+    "kicker": "KI-gestützte Aktienanalyse",
+    "headline": "Jede Aktie in 60 Sekunden recherchieren",
+    "subheadline": "Earnings, News, Technik und Lieferkette in einem strukturierten Report — mit Szenarien, Risiken und klarem Signal.",
+    "accuracyLabel": "{{count}} verifizierte Prognosen verfolgt",
+    "searchPlaceholder": "Ticker eingeben, z. B. NVDA",
+    "analyzeBtn": "Analysieren →",
+    "fineprint": "5 kostenlose Analysen/Monat. Keine Kreditkarte.",
+    "featuresTitle": "Alles für schnellere Entscheidungen",
+    "featureFastTitle": "60-Sekunden-Deep-Dive",
+    "featureFastSub": "Multi-Source-Synthese in einem Report.",
+    "featureScenarioTitle": "Bull / Base / Bear-Szenarien",
+    "featureScenarioSub": "Wahrscheinlichkeiten, Preisbänder, Trigger.",
+    "featureSixTitle": "Sechs-Dimensionen-Radar",
+    "featureSixSub": "Ertrag, Wachstum, Bewertung, Momentum, Politik, Sentiment.",
+    "featureSupplyTitle": "Lieferketten-Karte",
+    "featureSupplySub": "Lieferanten, Kunden, Wettbewerber — verknüpft und bewertet.",
+    "featureAccuracyTitle": "Öffentliche Genauigkeitsverfolgung",
+    "featureAccuracySub": "Jede Prognose protokolliert. Verifiziert bei Fälligkeit.",
+    "featureLanguagesTitle": "6 Sprachen",
+    "featureLanguagesSub": "English, 中文, 日本語, 한국어, Deutsch, 繁體中文.",
+    "pricingTitle": "Pläne für jeden Investor",
+    "freeFeatures": [
+      "5 Analysen pro Monat",
+      "Kern-Sechs-Dimensionen- & Szenario-Report",
+      "3 Watchlist-Symbole · nur letzter Verlauf"
+    ],
+    "proFeatures": [
+      "Unbegrenzte Analysen",
+      "Action-View · Events · Peer-Vergleich",
+      "50 Watchlist-Symbole · voller Verlauf"
+    ],
+    "proPlusFeatures": [
+      "Höheres Tageskontingent für Tiefe",
+      "Kritiker-Pass · Bull/Bear-Clash · Lieferkette im Detail",
+      "PDF · Side-by-Side-Vergleich · 200 Watchlist"
+    ],
+    "upgradeBtn": "Pläne ansehen",
+    "sampleTitle": "Beispiel-Reports",
+    "sampleNote": "KI-Report als öffentliches Sample — ohne Anmeldung."
+  },
+  "pricing": {
+    "title": "Einfache, transparente Preise",
+    "mostPopular": "Am beliebtesten",
+    "freeName": "Kostenlos",
+    "freePrice": "$0/Monat",
+    "proPrice": "$9.99/Monat",
+    "proPlusPrice": "$19.99/Monat"
+  },
   "report": {
     "radar": "Sechs-Dimensionen-Radar",
     "scenario": "Szenario-Wahrscheinlichkeiten",

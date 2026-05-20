@@ -19,7 +19,7 @@ export const SUPPORTED_LANGS = ['zh-CN', 'zh-TW', 'en', 'ja', 'ko', 'de']
 /** Map browser / legacy codes to one of SUPPORTED_LANGS (avoids en-US UI with zh-CN in dropdown). */
 export function resolveAppLanguage(raw) {
   const s = String(raw || '').trim()
-  if (!s) return 'zh-CN'
+  if (!s) return 'en'
   if (SUPPORTED_LANGS.includes(s)) return s
   const lower = s.toLowerCase().replace(/_/g, '-')
   if (lower.startsWith('zh-tw') || lower.startsWith('zh-hk') || lower === 'zh-hant') return 'zh-TW'
@@ -28,7 +28,7 @@ export function resolveAppLanguage(raw) {
   if (lower.startsWith('ko')) return 'ko'
   if (lower.startsWith('de')) return 'de'
   if (lower.startsWith('en')) return 'en'
-  return 'zh-CN'
+  return 'en'
 }
 
 const resources = {
@@ -45,16 +45,22 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
+    lng: 'en',
     fallbackLng: {
-      'zh-TW': ['zh-TW', 'zh-CN'],
-      default: ['zh-CN'],
+      'zh-CN': ['zh-CN', 'en'],
+      'zh-TW': ['zh-TW', 'en'],
+      ja: ['ja', 'en'],
+      ko: ['ko', 'en'],
+      de: ['de', 'en'],
+      en: ['en'],
+      default: ['en'],
     },
     supportedLngs: SUPPORTED_LANGS,
     nonExplicitSupportedLngs: false,
     load: 'currentOnly',
     interpolation: { escapeValue: false },
     detection: {
-      order: ['localStorage', 'navigator'],
+      order: ['localStorage'],
       lookupLocalStorage: 'wenap_lang',
       caches: ['localStorage'],
       convertDetectedLanguage: (lng) => resolveAppLanguage(lng),
