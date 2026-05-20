@@ -41,15 +41,16 @@ Copy `.env.example` to `.env` and fill in:
 | `SMTP_PASS` | Alt to Resend | SMTP password |
 | **AI Models** | | |
 | `OPENROUTER_MAIN_MODEL` | Optional | Free tier model (default: google/gemini-2.5-flash-lite) |
-| `OPENROUTER_PRO_MODEL` | Optional | Pro tier model (default: anthropic/claude-haiku-4-5) |
-| `OPENROUTER_PRO_PLUS_MODEL` | Optional | Pro+ tier model (default: anthropic/claude-sonnet-4-5) |
+| `OPENROUTER_PRO_MODEL` | Optional | Pro tier model (default: google/gemini-2.5-flash-lite) |
+| `OPENROUTER_PRO_PLUS_MODEL` | Optional | Pro+ tier model (default: anthropic/claude-haiku-4-5) |
 | **App** | | |
 | `APP_PUBLIC_URL` | Production | Public URL (e.g. https://wenap.com) |
 | `PORT` | Optional | Server port (default: 3002) |
 | `CRON_ENABLED` | Optional | Set `false` to disable all cron jobs |
 | `CRON_AUTO_ANALYSIS` | Optional | Set `false` to disable weekly auto-analysis |
 | `WENAP_FREE_UNLIMITED` | Dev only | Set `1` to disable free quota enforcement |
-| `WENAP_PRO_PLUS_DAILY_CAP` | Optional | Pro+ daily analysis cap (default: 30) |
+| `WENAP_PRO_PLUS_DAILY_CAP` | Optional | Pro+ max analyses per **UTC calendar day** (default **80**; blocks runaway abuse, normal users rarely hit it) |
+| `WENAP_REFERRAL_REWARDS` | Optional | Set `0` / `false` / `off` to disable referral Pro bonus (no per-user fee; only affects DB tier) |
 
 ---
 
@@ -125,7 +126,9 @@ Two cron jobs run automatically (unless disabled):
 To disable all cron: `CRON_ENABLED=false`  
 To disable only weekly auto-analysis: `CRON_AUTO_ANALYSIS=false`
 
-The weekly auto-analysis feeds the `/sample/:ticker` public reports and `/accuracy` data.
+**Weekly job authentication:** the server calls `POST /analyze` on itself using header `X-Wenap-Cron-Secret` (must match `WENAP_CRON_SECRET`, ≥8 characters) and impersonates user `CRON_SERVICE_USER_ID` (a real `users.id` in your database, e.g. a dedicated service account). If either variable is missing, the weekly job does not schedule (safe default).
+
+The weekly auto-analysis feeds the `/sample/:ticker` public reports and prediction data. See also `docs/DEPLOYMENT.md`.
 
 ---
 
@@ -134,10 +137,10 @@ The weekly auto-analysis feeds the `/sample/:ticker` public reports and `/accura
 | Tier | Model | Sources | Monthly cap |
 |---|---|---|---|
 | Free | Gemini 2.5 Flash Lite | 5 | 5 |
-| Pro | Claude Haiku 4.5 | 8 | Unlimited |
-| Pro+ | Claude Sonnet 4.5 | 8 | 30/day |
+| Pro | Gemini 2.5 Flash Lite | 8 | Unlimited |
+| Pro+ | Claude Haiku 4.5 | 8 | **80/day** cap (UTC) |
 
-Override models via environment variables. Pro+ daily cap: `WENAP_PRO_PLUS_DAILY_CAP` (default: 30).
+Override models via environment variables. Pro+ daily cap: `WENAP_PRO_PLUS_DAILY_CAP` (default **80**, UTC day). Raise to `200`+ only if you accept higher API cost.
 
 ---
 

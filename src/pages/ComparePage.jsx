@@ -1,9 +1,10 @@
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { apiFetch, apiUrl, getToken } from '../lib/api.js'
+import { apiUrl, getToken } from '../lib/api.js'
+import { consumeAnalyzeStream } from '../lib/consumeAnalyzeStream.js'
 import { useAuth } from '../context/AuthContext.jsx'
-import snapshotToMobileReport from '../utils/snapshotToMobileReport.js'
+import { snapshotToMobileReport } from '../utils/snapshotToMobileReport.js'
 import './ComparePage.css'
 
 const ASSET_TYPE_IDS = ['stock', 'etf', 'reit', 'commodity_etf']
@@ -138,24 +139,21 @@ export default function ComparePage() {
     setReport(null)
     try {
       const token = getToken()
-      const eventSource = new EventSource(
-        `${apiUrl('/analyze')}?ticker=${encodeURIComponent(sym)}&assetType=${assetType}&horizon=${horizon}&locale=${locale}&stream=1`,
-      )
-      // Use fetch instead of EventSource for POST
       const resp = await fetch(apiUrl('/analyze'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ ticker: sym, assetType, horizon, locale }),
       })
-      eventSource.close()
+      const ctype = resp.headers.get('content-type') || ''
       if (!resp.ok) {
-        const data = await resp.json().catch(() => ({}))
-        throw new Error(data.message || data.error || `HTTP ${resp.status}`)
+        if (ctype.includes('application/json')) {
+          const data = await resp.json().catch(() => ({}))
+          throw new Error(data.message || data.error || `HTTP ${resp.status}`)
+        }
+        throw new Error(`HTTP ${resp.status}`)
       }
-      // Not streaming – wait for response
-      const data = await resp.json().catch(() => null)
-      if (!data) throw new Error('Empty response')
-      const r = snapshotToMobileReport(data.vizSnapshot || data, locale)
+      const { vizSnapshot, meta: streamMeta } = await consumeAnalyzeStream(resp)
+      const r = snapshotToMobileReport(vizSnapshot, { ticker: sym, startedAt: streamMeta?.startedAt })
       setReport({ ...r, symbol: sym })
     } catch (e) {
       setError(e.message || 'Error')
@@ -167,8 +165,10 @@ export default function ComparePage() {
   async function runCompare() {
     const s1 = ticker1.trim().toUpperCase()
     const s2 = ticker2.trim().toUpperCase()
-    if (s1) runAnalysis(s1, setReport1, setLoading1, setError1)
-    if (s2) runAnalysis(s2, setReport2, setLoading2, setError2)
+    await Promise.all([
+      s1 ? runAnalysis(s1, setReport1, setLoading1, setError1) : Promise.resolve(),
+      s2 ? runAnalysis(s2, setReport2, setLoading2, setError2) : Promise.resolve(),
+    ])
   }
 
   const tier = user?.tier || 'free'

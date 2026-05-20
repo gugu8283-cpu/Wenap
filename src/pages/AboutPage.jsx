@@ -44,13 +44,13 @@ export default function AboutPage() {
               </tr>
               <tr>
                 <td><strong>Pro</strong></td>
-                <td>Claude Haiku 4.5</td>
+                <td>Gemini 2.5 Flash Lite</td>
                 <td>8</td>
-                <td>+ Action line, key events, insider summary, peer comparison</td>
+                <td>+ Unlimited runs, action line, key events, insider summary, peer comparison</td>
               </tr>
               <tr>
                 <td><strong>Pro+</strong></td>
-                <td>Claude Sonnet 4.5</td>
+                <td>Claude Haiku 4.5</td>
                 <td>8</td>
                 <td>+ Bull/Bear debate, Critic's corner, PDF export, Compare</td>
               </tr>

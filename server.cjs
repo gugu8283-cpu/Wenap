@@ -155,12 +155,12 @@ const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 /** Free 主模型：联网 + 低成本（可用 OPENROUTER_MAIN_MODEL 覆盖） */
 const MODEL_FLASH =
   String(process.env.OPENROUTER_MAIN_MODEL || '').trim() || 'google/gemini-2.5-flash-lite';
-/** Pro 主分析模型（比 Free 更强的推理能力） */
-const MODEL_PRO = String(process.env.OPENROUTER_PRO_MODEL || '').trim() || 'anthropic/claude-haiku-4-5';
-/** Pro+ 主分析模型：兑现宣传，真 Sonnet */
-const MODEL_PRO_PLUS = String(process.env.OPENROUTER_PRO_PLUS_MODEL || '').trim() || 'anthropic/claude-sonnet-4-5';
-/** Pro+ 每日硬上限（防止成本爆炸），可用 WENAP_PRO_PLUS_DAILY_CAP 覆盖 */
-const PRO_PLUS_DAILY_CAP = parseInt(String(process.env.WENAP_PRO_PLUS_DAILY_CAP || '30'), 10) || 30;
+/** Pro 主分析模型（与 Free 同 Flash Lite，解锁次数与 Pro 字段） */
+const MODEL_PRO = String(process.env.OPENROUTER_PRO_MODEL || '').trim() || 'google/gemini-2.5-flash-lite';
+/** Pro+ 主分析模型 */
+const MODEL_PRO_PLUS = String(process.env.OPENROUTER_PRO_PLUS_MODEL || '').trim() || 'anthropic/claude-haiku-4-5';
+/** Pro+ 每日硬上限（防刷爆 API），默认 80/天 UTC；可用 WENAP_PRO_PLUS_DAILY_CAP 覆盖 */
+const PRO_PLUS_DAILY_CAP = parseInt(String(process.env.WENAP_PRO_PLUS_DAILY_CAP || '80'), 10) || 80;
 
 const MODEL_MAP = {
   free: MODEL_FLASH,
@@ -2130,7 +2130,7 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
     let secondCritique = null;
     if (tier === 'pro_plus') {
       try {
-        secondCritique = await runSecondPassCritique(apiKey, data, symbol, locale, MODEL_PRO);
+        secondCritique = await runSecondPassCritique(apiKey, data, symbol, locale, MODEL_PRO_PLUS);
         if (secondCritique?.weaknesses?.length) {
           data.secondPassCritique = secondCritique;
         }
@@ -2260,14 +2260,14 @@ function serverInfoPayload() {
         mainModel: MODEL_PRO,
         policyFallback: 'same as main when dim insufficient',
         monthlyUnlimited: true,
-        note: 'Claude Haiku 4.5 — deeper reasoning than Free',
+        note: 'Gemini 2.5 Flash Lite — unlimited + Pro fields',
       },
       pro_plus: {
         mainModel: MODEL_PRO_PLUS,
         policyFallback: 'same as main when dim insufficient',
         monthlyUnlimited: true,
         dailyCap: PRO_PLUS_DAILY_CAP,
-        note: 'Claude Sonnet 4.5 — highest quality + critique pass',
+        note: 'Claude Haiku 4.5 — critique pass + Pro+ fields',
       },
     },
     models: {

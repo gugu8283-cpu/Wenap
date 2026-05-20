@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wenap / StockAI：用户与管理员功能说明</title>
+  <style>
+    :root {
+      --text: #1a1a1a;
+      --muted: #555;
+      --border: #ccc;
+      --bg: #fff;
+      --thead: #f0f4f8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+      line-height: 1.55;
+      color: var(--text);
+      background: var(--bg);
+      margin: 0 auto;
+      padding: 2rem 1.25rem 3rem;
+      max-width: 900px;
+    }
+    h1 { font-size: 1.65rem; margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; }
+    h2 { font-size: 1.2rem; margin-top: 2rem; color: #0d47a1; }
+    p, li { font-size: 0.95rem; }
+    .meta { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.75rem 0 1.25rem;
+      font-size: 0.9rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.65rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: var(--thead); font-weight: 600; }
+    .tip {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.85rem 1rem;
+      margin: 1rem 0;
+    }
+    ul { padding-left: 1.25rem; }
+    @media print {
+      body { padding: 0; max-width: none; }
+      h2 { page-break-after: avoid; }
+      table { page-break-inside: avoid; }
+      .tip { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Wenap / StockAI：用户与管理员功能说明</h1>
+  <p class="meta">文档日期：2026-05-20 · 与当前代码行为对齐；环境变量可改变部分默认值。</p>
+
+  <div class="tip">
+    <strong>如何得到 PDF：</strong>按 <kbd>Ctrl</kbd>+<kbd>P</kbd>（Mac：<kbd>Cmd</kbd>+<kbd>P</kbd>），打印机选「另存为 PDF」或「Microsoft Print to PDF」。<br />
+    <strong>如何得到 Word：</strong>用 Word 打开本 HTML 文件，另存为「Word 文档（*.docx）」；或打开同目录下的 <code>用户与管理员功能说明.md</code>。
+  </div>
+
+  <h2>一、未登录访客</h2>
+  <table>
+    <thead><tr><th>功能</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>首页 <code>/</code></td><td>产品介绍、定价入口、公开准确率、样本入口等</td></tr>
+      <tr><td><code>/pricing</code></td><td>查看价格；若已配置 Stripe 可走结账，否则为降级提示</td></tr>
+      <tr><td><code>/accuracy</code></td><td>公开预测准确率等统计</td></tr>
+      <tr><td><code>/sample/:ticker</code></td><td>固定一批标的的公开只读样本报告</td></tr>
+      <tr><td><code>/about</code>、<code>/methodology</code></td><td>产品与方法论说明</td></tr>
+      <tr><td>登录相关路由</td><td><code>/login</code>、<code>/register</code>、<code>/verify-email</code>、<code>/forgot-password</code></td></tr>
+    </tbody>
+  </table>
+  <p>访客<strong>不能</strong>：调用需登录的 <code>/analyze</code>、自选股、个人历史等。</p>
+
+  <h2>二、免费档（<code>free</code>）登录用户</h2>
+  <p><strong>额度与门槛：</strong></p>
+  <ul>
+    <li>每月分析次数默认 <strong>5 次/月</strong>（UTC 月重置；开发可用 <code>WENAP_FREE_UNLIMITED</code> 放开）。</li>
+    <li>须<strong>验证邮箱</strong>后才能发起分析。</li>
+    <li>存在基于 <strong>IP</strong> 的注册/分析频率限制（防刷）。</li>
+  </ul>
+  <p><strong>模型与报告：</strong>主模型默认 Gemini 2.5 Flash Lite；前端经 <code>stripDataForViz</code> 等隐藏 Pro/Pro+ 专属块；来源条数展示 <strong>5 条</strong>（Pro/Pro+ 为 8 条）。</p>
+  <p><strong>自选与历史：</strong>自选上限 <strong>3 只</strong>；历史仅<strong>第 1 条</strong>可完整查看，其余锁定。<code>/market/snapshot</code> 为自选批量行情（需后端数据源）。</p>
+  <p><strong>其它：</strong>语言、主题、登出；免费用户可见 QuotaStrip；通知中心 <code>/notifications</code>。</p>
+
+  <h2>三、Pro 档（<code>pro</code>）</h2>
+  <ul>
+    <li><strong>额度：</strong>无 Pro+ 的「每日上限」；月额度按付费无限处理（以 <code>checkUserCanAnalyze</code> 为准）。</li>
+    <li><strong>模型：</strong>默认与免费相同（Gemini 2.5 Flash Lite，<code>OPENROUTER_PRO_MODEL</code> 可改）。</li>
+    <li><strong>报告：</strong>合并同业/板块进六维；保留更多 Pro 字段；仍剥离部分 Pro+ 展示（多空对撞、情景触发价/时间窗、产业链长文等）。</li>
+    <li><strong>自选上限 50 只</strong>；<strong>历史全部</strong>可浏览。</li>
+  </ul>
+
+  <h2>四、Pro+ 档（<code>pro_plus</code>）</h2>
+  <ul>
+    <li><strong>每日上限：</strong>每个 UTC 自然日最多 <code>WENAP_PRO_PLUS_DAILY_CAP</code> 次（默认 <strong>80</strong>）。</li>
+    <li><strong>模型：</strong>默认 Claude Haiku 4.5；含 <code>secondPassCritique</code> 第二遍批评视角。</li>
+    <li><strong>功能：</strong>完整 Pro+ 报告字段、PDF 导出、对比页 <code>/compare</code>。</li>
+    <li><strong>自选上限 200 只</strong>。</li>
+  </ul>
+
+  <h2>五、所有已登录用户共通</h2>
+  <table>
+    <thead><tr><th>功能</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td><code>/app</code></td><td>Splash 后主应用：周期、代码、流式分析、报告、自选、历史</td></tr>
+      <tr><td><code>/settings</code></td><td>邮箱、档位；Stripe 时 Customer Portal；邀请链接 <code>/register?ref=</code></td></tr>
+      <tr><td><code>/pricing</code></td><td>随时打开</td></tr>
+      <tr><td>主题 / 语言</td><td>深色浅色、多语言</td></tr>
+    </tbody>
+  </table>
+
+  <h2>六、管理员（<code>/admin</code> + <code>/admin-api</code>）</h2>
+  <p>浏览器访问 <code>/admin</code>；使用环境变量 <code>ADMIN_SECRET</code> 作为 Bearer Token。前端请求 <code>/api/admin-api/...</code>（开发时由 Vite 代理）。</p>
+  <table>
+    <thead><tr><th>页面</th><th>能力概要</th></tr></thead>
+    <tbody>
+      <tr><td>Overview</td><td>总览指标</td></tr>
+      <tr><td>Predictions</td><td>预测列表、筛选、准确度</td></tr>
+      <tr><td>Users</td><td>用户列表、改 tier、重置试用、封禁</td></tr>
+      <tr><td>Analysis logs</td><td>分析日志（模型、成本、状态）</td></tr>
+      <tr><td>Revenue</td><td>收入统计</td></tr>
+      <tr><td>System</td><td>API 健康、成本曲线</td></tr>
+    </tbody>
+  </table>
+  <p>后端另有 <code>GET /admin-api/stats/funnel</code> 等接口；预测可手动验证、跳过等。管理员不能替用户完成 Stripe 支付，但可改用户 <code>tier</code>、查日志。</p>
+
+  <h2>七、环境变量速查</h2>
+  <table>
+    <thead><tr><th>变量</th><th>作用</th></tr></thead>
+    <tbody>
+      <tr><td><code>WENAP_PRO_PLUS_DAILY_CAP</code></td><td>Pro+ 每日分析次数上限</td></tr>
+      <tr><td><code>WENAP_REFERRAL_REWARDS</code></td><td><code>0</code>/<code>false</code>/<code>off</code> 关闭推荐送 tier</td></tr>
+      <tr><td><code>WENAP_CRON_SECRET</code> + <code>CRON_SERVICE_USER_ID</code></td><td>每周自动分析内部任务</td></tr>
+      <tr><td><code>WENAP_FREE_UNLIMITED</code></td><td>开发用免费不限次（若启用）</td></tr>
+    </tbody>
+  </table>
+
+  <p class="meta">代码变更后请以 <code>server.cjs</code>、<code>db/auth.cjs</code>、<code>routes/admin.cjs</code>、<code>stripDataForViz</code> 为准更新本文档。</p>
+</body>
+</html>

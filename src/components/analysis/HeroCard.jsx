@@ -152,7 +152,11 @@ export default function HeroCard({ report, onShare, showCompare, onCompare, onRe
         {report.riskReward ? <span className="ma-pill">RR {report.riskReward}</span> : null}
         {report.model ? (
           <span className="ma-pill ma-pill--model" title={t('report.modelBadge', { model: report.model })}>
-            {report.model.includes('sonnet') ? '✦ Sonnet' : report.model.includes('haiku') ? '✦ Haiku' : '✦ Flash'}
+            {report.model.includes('sonnet')
+              ? '✦ Sonnet'
+              : report.model.includes('haiku')
+                ? '✦ Haiku'
+                : '✦ Flash'}
           </span>
         ) : null}
       </div>

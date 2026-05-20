@@ -151,9 +151,9 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
       const subscriptionId = session.subscription;
 
       if (userId) {
-        // Update user tier in main DB
-        const authDb = require('../db/store.cjs').initDb();
-        authDb.prepare(`UPDATE users SET tier = ? WHERE id = ?`).run(tier, userId);
+        const { initDb } = require('../db/store.cjs');
+        const adb = initDb();
+        adb.prepare(`UPDATE users SET tier = ?, referral_bonus_until = NULL WHERE id = ?`).run(tier, userId);
 
         // Upsert billing row
         db.prepare(`
@@ -185,8 +185,9 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         `).run(status, renewsAt, customerId);
 
         if (status === 'active') {
-          const authDb = require('../db/store.cjs').initDb();
-          authDb.prepare(`UPDATE users SET tier = ? WHERE id = ?`).run(billingRow.tier, billingRow.user_id);
+          const { initDb } = require('../db/store.cjs');
+          const adb = initDb();
+          adb.prepare(`UPDATE users SET tier = ?, referral_bonus_until = NULL WHERE id = ?`).run(billingRow.tier, billingRow.user_id);
         }
         console.log(`[Wenap] Stripe: subscription ${status} for customer ${customerId}`);
       }
@@ -197,8 +198,9 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
 
       if (billingRow) {
         db.prepare(`UPDATE billing SET status = 'cancelled', updated_at = datetime('now') WHERE stripe_customer_id = ?`).run(customerId);
-        const authDb = require('../db/store.cjs').initDb();
-        authDb.prepare(`UPDATE users SET tier = 'free' WHERE id = ?`).run(billingRow.user_id);
+        const { initDb } = require('../db/store.cjs');
+        const adb = initDb();
+        adb.prepare(`UPDATE users SET tier = 'free', referral_bonus_until = NULL WHERE id = ?`).run(billingRow.user_id);
         console.log(`[Wenap] Stripe: subscription cancelled for customer ${customerId}, user downgraded to free`);
       }
     }

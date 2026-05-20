@@ -14,6 +14,7 @@ const {
   setPasswordResetToken,
   getUserByPasswordResetToken,
   consumePasswordResetToken,
+  recordPendingReferral,
 } = require('../db/auth.cjs');
 const bcrypt = require('bcryptjs');
 const { signAccessToken } = require('../lib/jwtAuth.cjs');
@@ -59,24 +60,14 @@ router.post('/register', async (req, res) => {
     setVerifyEmailSent(user.id);
     await sendVerificationEmail({ to: email, token: verifyToken });
 
-    // Process referral if provided
     if (referralCode) {
       try {
-        const referrer = getUserByEmail(referralCode) || (() => {
-          // Try by user ID
-          const db = require('../db/store.cjs').initDb();
-          return db.prepare('SELECT * FROM users WHERE id = ?').get(referralCode);
-        })();
+        const referrer =
+          getUserById(referralCode) ||
+          getUserByEmail(referralCode);
         if (referrer && referrer.id !== user.id) {
-          // Record referral (both get 1 month Pro - store in DB for manual processing)
-          const db = require('../db/store.cjs').initDb();
-          try {
-            db.exec('CREATE TABLE IF NOT EXISTS referrals (id TEXT PRIMARY KEY, referrer_id TEXT, referee_id TEXT, created_at TEXT)');
-          } catch { /* ignore */ }
-          db.prepare('INSERT OR IGNORE INTO referrals (id, referrer_id, referee_id, created_at) VALUES (?, ?, ?, datetime(\'now\'))').run(
-            crypto.randomUUID(), referrer.id, user.id,
-          );
-          console.log(`[Wenap] Referral: ${referrer.id} referred ${user.id}`);
+          recordPendingReferral({ refereeId: user.id, referrerId: referrer.id });
+          console.log(`[Wenap] Referral pending: ${referrer.id} → ${user.id}`);
         }
       } catch (e) {
         console.warn('[Wenap] Referral processing failed (non-fatal):', e.message);

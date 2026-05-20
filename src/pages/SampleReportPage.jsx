@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import MobileAnalysisReport from '../components/analysis/MobileAnalysisReport.jsx'
-import snapshotToMobileReport from '../utils/snapshotToMobileReport.js'
+import { snapshotToMobileReport } from '../utils/snapshotToMobileReport.js'
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 const FEATURED = ['NVDA', 'AAPL', 'JPM', 'UNH', 'SPY', 'QQQ', 'VTI', 'O', 'PLD', 'GLD']
@@ -12,7 +12,7 @@ export default function SampleReportPage() {
   const { t, i18n } = useTranslation()
   const sym = (ticker || '').toUpperCase()
 
-  const [report, setReport] = useState(null)
+  const [vizSnapshot, setVizSnapshot] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -27,8 +27,7 @@ export default function SampleReportPage() {
         return r.json()
       })
       .then((data) => {
-        const r = snapshotToMobileReport(data.vizSnapshot || data, locale)
-        setReport({ ...r, isSample: true })
+        setVizSnapshot(data.vizSnapshot || data)
       })
       .catch((e) => setError(e.message || 'Error'))
       .finally(() => setLoading(false))
@@ -36,6 +35,8 @@ export default function SampleReportPage() {
 
   // Update OG meta tags dynamically
   useEffect(() => {
+    if (!vizSnapshot) return
+    const report = snapshotToMobileReport(vizSnapshot, { ticker: sym })
     if (!report) return
     const title = `${sym} Analysis – Wenap`
     document.title = title
@@ -60,7 +61,7 @@ export default function SampleReportPage() {
     setMeta('twitter:card', 'summary_large_image')
     setMeta('twitter:title', title)
     setMeta('twitter:image', ogImg)
-  }, [report, sym])
+  }, [vizSnapshot, sym])
 
   return (
     <div style={{ minHeight: '100vh', background: '#0f172a', color: 'white' }}>
@@ -107,8 +108,12 @@ export default function SampleReportPage() {
             ))}
           </div>
         )}
-        {report && !loading && (
-          <MobileAnalysisReport report={report} />
+        {vizSnapshot && !loading && (
+          <MobileAnalysisReport
+            snapshot={vizSnapshot}
+            meta={{ ticker: sym }}
+            ticker={sym}
+          />
         )}
       </div>
     </div>

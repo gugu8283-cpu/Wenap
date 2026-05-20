@@ -54,6 +54,33 @@ function migrateAuthSchema(dbIn) {
   }
   if (!userCols.includes('device_fingerprint')) addCol('ALTER TABLE users ADD COLUMN device_fingerprint TEXT');
   if (!userCols.includes('verify_email_sent_at')) addCol('ALTER TABLE users ADD COLUMN verify_email_sent_at TEXT');
+  if (!userCols.includes('referrer_id')) addCol('ALTER TABLE users ADD COLUMN referrer_id TEXT');
+  if (!userCols.includes('referral_bonus_until')) addCol('ALTER TABLE users ADD COLUMN referral_bonus_until TEXT');
+
+  try {
+    db.exec(`CREATE TABLE IF NOT EXISTS referrals (
+      id TEXT PRIMARY KEY,
+      referrer_id TEXT NOT NULL,
+      referee_id TEXT NOT NULL,
+      rewarded INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now'))
+    )`);
+  } catch (e) {
+    if (!/already exists/i.test(e.message)) throw e;
+  }
+  try {
+    const refCols = db.prepare('PRAGMA table_info(referrals)').all().map((c) => c.name);
+    if (refCols.length && !refCols.includes('rewarded')) {
+      addCol('ALTER TABLE referrals ADD COLUMN rewarded INTEGER DEFAULT 0');
+    }
+  } catch {
+    /* ignore */
+  }
+  try {
+    db.exec('CREATE UNIQUE INDEX IF NOT EXISTS ux_referrals_referee ON referrals(referee_id)');
+  } catch {
+    /* ignore */
+  }
 
   const authSql = require('fs').readFileSync(require('path').join(__dirname, 'schema-auth.sql'), 'utf8');
   db.exec(authSql);
@@ -82,6 +109,94 @@ function resetMonthlyFreeIfNeeded(user) {
     return { ...user, free_trials_used: 0, free_trials_reset_at: monthStart };
   }
   return user;
+}
+
+function hasPaidStripeSubscription(userId) {
+  if (!userId) return false;
+  try {
+    const { getBillingByUserId } = require('../routes/billingDb.cjs');
+    const b = getBillingByUserId(userId);
+    if (!b?.stripe_subscription_id) return false;
+    const st = String(b.status || '').toLowerCase();
+    return st === 'active' || st === 'trialing' || st === 'past_due';
+  } catch {
+    return false;
+  }
+}
+
+/** Downgrade referral-granted Pro when bonus window ended (Stripe Pro unchanged). */
+function enforceReferralProExpiryIfNeeded(user) {
+  if (!user) return user;
+  const tier = normalizeTier(user.tier);
+  if (tier !== 'pro') return user;
+  if (!user.referral_bonus_until) return user;
+  if (hasPaidStripeSubscription(user.id)) return user;
+  const now = new Date().toISOString();
+  if (user.referral_bonus_until >= now) return user;
+  getDb().prepare(`UPDATE users SET tier = 'free', referral_bonus_until = NULL WHERE id = ?`).run(user.id);
+  return getUserById(user.id);
+}
+
+function recordPendingReferral({ refereeId, referrerId }) {
+  if (!refereeId || !referrerId || refereeId === referrerId) return;
+  initDb();
+  const db = getDb();
+  db.prepare(`UPDATE users SET referrer_id = ? WHERE id = ?`).run(referrerId, refereeId);
+  try {
+    db.prepare(
+      `INSERT OR IGNORE INTO referrals (id, referrer_id, referee_id, rewarded, created_at)
+       VALUES (?, ?, ?, 0, datetime('now'))`,
+    ).run(uuid(), referrerId, refereeId);
+  } catch (e) {
+    if (!/UNIQUE|unique/i.test(e.message)) console.warn('[Wenap] recordPendingReferral:', e.message);
+  }
+}
+
+function applyReferralRewardsOnVerify(refereeId) {
+  initDb();
+  const db = getDb();
+  const refUser = getUserById(refereeId);
+  if (!refUser?.referrer_id) return;
+  const refRow = db
+    .prepare('SELECT * FROM referrals WHERE referee_id = ? AND (rewarded IS NULL OR rewarded = 0)')
+    .get(refereeId);
+  if (!refRow) return;
+
+  /** 关闭推荐送 Pro：不占额度、不写 tier；仍标记已处理避免重复跑 */
+  const rewardsOff = ['0', 'false', 'off', 'no'].includes(String(process.env.WENAP_REFERRAL_REWARDS || '').trim().toLowerCase());
+  if (rewardsOff) {
+    db.prepare(`UPDATE referrals SET rewarded = 1 WHERE id = ?`).run(refRow.id);
+    return;
+  }
+
+  const referrer = getUserById(refUser.referrer_id);
+  if (!referrer || referrer.id === refereeId) return;
+
+  const defaultUntil = new Date(Date.now() + 30 * 86400000).toISOString();
+
+  function grantOrExtend(u) {
+    if (!u) return;
+    if (normalizeTier(u.tier) === 'pro_plus') return;
+    if (hasPaidStripeSubscription(u.id)) return;
+    const t = normalizeTier(u.tier);
+    if (t === 'free') {
+      db.prepare(
+        `UPDATE users SET tier = 'pro', referral_bonus_until = ?, last_active_at = datetime('now') WHERE id = ?`,
+      ).run(defaultUntil, u.id);
+      return;
+    }
+    if (t === 'pro') {
+      const prevMs = u.referral_bonus_until ? new Date(u.referral_bonus_until).getTime() : 0;
+      const nextUntil = new Date(Math.max(Date.now(), prevMs) + 30 * 86400000).toISOString();
+      db.prepare(
+        `UPDATE users SET tier = 'pro', referral_bonus_until = ?, last_active_at = datetime('now') WHERE id = ?`,
+      ).run(nextUntil, u.id);
+    }
+  }
+
+  grantOrExtend(referrer);
+  grantOrExtend(refUser);
+  db.prepare(`UPDATE referrals SET rewarded = 1 WHERE id = ?`).run(refRow.id);
 }
 
 function publicUser(row) {
@@ -300,6 +415,11 @@ function verifyEmailByToken(token) {
   db.prepare(
     `UPDATE users SET email_verified = 1, email_verify_token = NULL, email_verify_expires = NULL WHERE id = ?`,
   ).run(row.id);
+  try {
+    applyReferralRewardsOnVerify(row.id);
+  } catch (e) {
+    console.warn('[Wenap] referral reward:', e.message);
+  }
   return getUserById(row.id);
 }
 
@@ -312,7 +432,7 @@ function incrementUserFreeUsage(userId) {
     .run(userId);
 }
 
-const PRO_PLUS_DAILY_CAP = parseInt(String(process.env.WENAP_PRO_PLUS_DAILY_CAP || '30'), 10) || 30;
+const PRO_PLUS_DAILY_CAP = parseInt(String(process.env.WENAP_PRO_PLUS_DAILY_CAP || '80'), 10) || 80;
 
 function checkProPlusDailyLimit(userId) {
   const db = getDb();
@@ -443,6 +563,7 @@ module.exports = {
   migrateAuthSchema,
   FREE_MONTHLY_CAP,
   DEVICE_FREE_CAP,
+  DEVICE_FINGERPRINT_ENABLED,
   getUserById,
   getUserByEmail,
   publicUser,
@@ -464,7 +585,8 @@ module.exports = {
   setPasswordResetToken,
   getUserByPasswordResetToken,
   consumePasswordResetToken,
-  FREE_MONTHLY_CAP,
+  recordPendingReferral,
+  enforceReferralProExpiryIfNeeded,
 };
 
 function setPasswordResetToken(userId, token) {
