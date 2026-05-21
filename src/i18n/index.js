@@ -13,6 +13,10 @@ import adminEn from './locales/admin-en.json'
 import adminJa from './locales/admin-ja.json'
 import adminKo from './locales/admin-ko.json'
 import adminDe from './locales/admin-de.json'
+import legalZhCN from './locales/legal-zh-CN.json'
+import legalZhTW from './locales/legal-zh-TW.json'
+import legalEn from './locales/legal-en.json'
+import legalJa from './locales/legal-ja.json'
 
 export const SUPPORTED_LANGS = ['zh-CN', 'zh-TW', 'en', 'ja', 'ko', 'de']
 
@@ -32,12 +36,12 @@ export function resolveAppLanguage(raw) {
 }
 
 const resources = {
-  'zh-CN': { translation: { ...zhCN, admin: adminZhCN } },
-  'zh-TW': { translation: { ...zhTW, admin: adminZhTW } },
-  en: { translation: { ...en, admin: adminEn } },
-  ja: { translation: { ...ja, admin: adminJa } },
-  ko: { translation: { ...ko, admin: adminKo } },
-  de: { translation: { ...de, admin: adminDe } },
+  'zh-CN': { translation: { ...zhCN, admin: adminZhCN, legal: legalZhCN } },
+  'zh-TW': { translation: { ...zhTW, admin: adminZhTW, legal: legalZhTW } },
+  en: { translation: { ...en, admin: adminEn, legal: legalEn } },
+  ja: { translation: { ...ja, admin: adminJa, legal: legalJa } },
+  ko: { translation: { ...ko, admin: adminKo, legal: legalEn } },
+  de: { translation: { ...de, admin: adminDe, legal: legalEn } },
 }
 
 i18n

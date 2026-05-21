@@ -19,6 +19,7 @@ import SettingsPage from './pages/SettingsPage.jsx'
 import SampleReportPage from './pages/SampleReportPage.jsx'
 import ComparePage from './pages/ComparePage.jsx'
 import AboutPage from './pages/AboutPage.jsx'
+import LegalPage from './pages/legal/LegalPage.jsx'
 
 migrateLegacyStorage()
 applyTheme(getTheme())
@@ -48,6 +49,9 @@ createRoot(document.getElementById('root')).render(
           <Route path="/compare" element={<ComparePage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/methodology" element={<AboutPage />} />
+          <Route path="/privacy" element={<LegalPage kind="privacy" />} />
+          <Route path="/terms" element={<LegalPage kind="terms" />} />
+          <Route path="/disclaimer" element={<LegalPage kind="disclaimer" />} />
           <Route path="/app" element={<AppShell />} />
           <Route path="/app/*" element={<AppShell />} />
           <Route path="/*" element={<AppShell />} />

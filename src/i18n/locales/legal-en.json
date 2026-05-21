@@ -1,0 +1,225 @@
+{
+  "nav": {
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "disclaimer": "Investment Disclaimer",
+    "contact": "Contact support",
+    "all": "Legal"
+  },
+  "registerAgreePrefix": "I have read and agree to the",
+  "registerAgreeJoin": "and",
+  "registerAgreeSuffix": ". I understand Wenap does not provide personalized investment advice.",
+  "registerMustAgree": "Please accept the Terms and Privacy Policy to continue.",
+  "lastUpdated": "Last updated: {{date}}",
+  "backHome": "Back to home",
+  "privacy": {
+    "title": "Privacy Policy",
+    "updated": "May 21, 2026",
+    "intro": "This policy describes how Wenap (https://wenap.app, the \"Service\") collects, uses, and protects personal information. The operator is the individual/business providing the Service through this website (\"we\", \"us\").",
+    "sections": [
+      {
+        "title": "1. Information we collect",
+        "paragraphs": [
+          "Account: email, password (stored only as a secure hash), optional referral source.",
+          "Usage: tickers analyzed, timestamps, subscription tier, feature usage, device fingerprint (if anti-abuse is enabled), registration IP, and country code from Cloudflare (CF-IPCountry).",
+          "Payments: processed by Stripe; we do not store full card numbers—only Stripe customer IDs, subscription status, and billing country where needed.",
+          "Communications: emails you send to support@wenap.app.",
+          "Technical logs: server errors and webhook summaries for security and reliability."
+        ]
+      },
+      {
+        "title": "2. How we use information",
+        "paragraphs": [
+          "To provide, maintain, and improve AI research reports and analysis.",
+          "Authentication, email verification, password reset, and subscription management.",
+          "Fraud prevention, rate limits, legal compliance, and enforcement of our Terms.",
+          "Service emails (verification, quota notices) where permitted.",
+          "Aggregated anonymous statistics (e.g. public accuracy page)."
+        ]
+      },
+      {
+        "title": "3. Third parties",
+        "paragraphs": [
+          "We rely on OpenRouter (AI), Alpha Vantage (market data), Stripe (payments), Resend (transactional email), Render (hosting), and Cloudflare (CDN/DNS/security), each under their own policies.",
+          "Content sent to AI models may include your ticker query and report context—do not submit unnecessary sensitive personal data.",
+          "We do not sell your email list."
+        ]
+      },
+      {
+        "title": "4. Retention",
+        "paragraphs": [
+          "Account data is kept while your account is active; after deletion we may retain or anonymize data as required by law.",
+          "Analysis and prediction records may be kept long-term for accuracy tracking with minimal personal linkage.",
+          "Stripe billing records follow Stripe and tax retention rules."
+        ]
+      },
+      {
+        "title": "5. Your rights",
+        "paragraphs": [
+          "Contact support@wenap.app to access, correct, or delete account-related data where applicable.",
+          "Japan residents: handled in line with APPI and related principles.",
+          "EEA/UK users (if applicable): rights of access, erasure, restriction, etc., where legally required."
+        ]
+      },
+      {
+        "title": "6. Security & cross-border transfers",
+        "paragraphs": [
+          "We use HTTPS, access controls, and standard secret management; absolute security cannot be guaranteed.",
+          "Data may be processed in the US, Singapore, or other regions where our providers operate."
+        ]
+      },
+      {
+        "title": "7. Cookies & local storage",
+        "paragraphs": [
+          "We use localStorage for login tokens and language preference—not for cross-site ad tracking.",
+          "Clearing browser data may require you to sign in again."
+        ]
+      },
+      {
+        "title": "8. Minors",
+        "paragraphs": [
+          "The Service is for users aged 18+ (or legal majority in your jurisdiction). We do not knowingly collect data from children."
+        ]
+      },
+      {
+        "title": "9. Changes",
+        "paragraphs": [
+          "We may update this policy with a new date on this page. Material changes will be notified reasonably via the site or email. Continued use means acceptance."
+        ]
+      },
+      {
+        "title": "10. Contact",
+        "paragraphs": [
+          "Privacy inquiries: support@wenap.app",
+          "Website: https://wenap.app"
+        ]
+      }
+    ]
+  },
+  "terms": {
+    "title": "Terms of Service",
+    "updated": "May 21, 2026",
+    "intro": "By using Wenap (https://wenap.app) you agree to these Terms. If you do not agree, do not register or use the Service.",
+    "sections": [
+      {
+        "title": "1. The Service",
+        "paragraphs": [
+          "Wenap provides AI-assisted investment research summaries, scoring, and scenarios for personal learning and reference.",
+          "We are not a registered investment adviser, broker-dealer, bank, or financial planner; we do not execute trades, hold assets, or provide personalized investment advice.",
+          "Outputs may be wrong, incomplete, or outdated—see the Investment Disclaimer."
+        ]
+      },
+      {
+        "title": "2. Accounts",
+        "paragraphs": [
+          "You must provide a valid email and complete verification; keep your password confidential.",
+          "No account sharing, bulk fake sign-ups, disposable emails, scraping, reverse engineering, or abuse.",
+          "We may suspend or terminate accounts for violations."
+        ]
+      },
+      {
+        "title": "3. Subscriptions & payment",
+        "paragraphs": [
+          "Paid plans (Pro / Pro+) bill in USD via Stripe on a recurring basis; prices are shown on the pricing page and Checkout.",
+          "Manage payment methods and cancellation via Stripe Customer Portal or our provided links; access typically continues until period end after cancel.",
+          "Refunds follow Stripe and our posted policies; statutory withdrawal rights apply where required by law.",
+          "Free tiers and referral promotions are as described on the site and may change."
+        ]
+      },
+      {
+        "title": "4. Acceptable use",
+        "paragraphs": [
+          "No illegal activity, market manipulation, insider trading, harassment, malware, or IP infringement.",
+          "No circumvention of limits, extraction of training data, or mass automated API abuse.",
+          "Sharing public report links must not imply our endorsement of your trades."
+        ]
+      },
+      {
+        "title": "5. Intellectual property",
+        "paragraphs": [
+          "Site, brand, UI, and our original text belong to us or licensors.",
+          "You own your inputs; you grant us a license to store, process, and display them to operate the Service.",
+          "Do not resell Service output or republish it as professional research."
+        ]
+      },
+      {
+        "title": "6. Disclaimer & limitation of liability",
+        "paragraphs": [
+          "The Service is provided \"as is\" without warranties of accuracy, uptime, or fitness for a particular investment goal.",
+          "To the maximum extent permitted by law, we are not liable for indirect, consequential, or trading losses; total liability is capped at fees you paid us in the prior 12 months (zero for free-only users).",
+          "Limits do not apply where exclusion is unlawful (e.g. fraud)."
+        ]
+      },
+      {
+        "title": "7. Indemnity",
+        "paragraphs": [
+          "You will indemnify us for reasonable losses arising from your breach of these Terms or misuse of the Service, where permitted by law."
+        ]
+      },
+      {
+        "title": "8. Termination",
+        "paragraphs": [
+          "You may stop using the Service anytime; we may suspend for maintenance, risk, or legal reasons.",
+          "Surviving clauses remain in effect."
+        ]
+      },
+      {
+        "title": "9. Governing law & disputes",
+        "paragraphs": [
+          "These Terms are governed by the laws of Japan, without regard to conflict rules (mandatory consumer protections may apply).",
+          "Disputes: good-faith negotiation first; otherwise exclusive jurisdiction of the Tokyo District Court as court of first instance (we may also sue where law allows in your residence)."
+        ]
+      },
+      {
+        "title": "10. Miscellaneous",
+        "paragraphs": [
+          "These Terms, the Privacy Policy, Investment Disclaimer, and pricing page form the agreement.",
+          "Contact: support@wenap.app"
+        ]
+      }
+    ]
+  },
+  "disclaimerPage": {
+    "title": "Investment Disclaimer",
+    "updated": "May 21, 2026",
+    "intro": "Read carefully before using Wenap. This page supplements the Terms of Service and Privacy Policy.",
+    "sections": [
+      {
+        "title": "Not investment advice",
+        "paragraphs": [
+          "Scores, signals (e.g. buy/hold/sell), price scenarios, probability estimates, and bull/bear debates are model outputs and information summaries—not investment advice, offers, or recommendations in any jurisdiction.",
+          "We have not assessed your financial situation, experience, risk tolerance, or objectives. You alone are responsible for investment decisions."
+        ]
+      },
+      {
+        "title": "Data & AI limitations",
+        "paragraphs": [
+          "Market, news, and fundamental data come from third parties and may be delayed or wrong; AI may hallucinate, cite stale sources, or err logically.",
+          "Scenario probabilities are model estimates, not market consensus.",
+          "Historical accuracy (including /accuracy) does not predict future results."
+        ]
+      },
+      {
+        "title": "No guarantees",
+        "paragraphs": [
+          "We do not guarantee profits, loss avoidance, or suitability for any security, derivative, crypto, or other asset.",
+          "Do not allocate most of your portfolio based solely on this Service; seek licensed professionals for major decisions."
+        ]
+      },
+      {
+        "title": "Regulation & geography",
+        "paragraphs": [
+          "The Service may not meet regulatory requirements where you live; you must confirm legality of use.",
+          "Do not use if you are in sanctioned jurisdictions or where such services are restricted."
+        ]
+      },
+      {
+        "title": "Liability",
+        "paragraphs": [
+          "We disclaim liability for losses from reliance on content where law permits; see Terms for full limits.",
+          "If translations conflict, the English or Chinese version posted on our site controls as stated there."
+        ]
+      }
+    ]
+  }
+}

@@ -336,7 +336,8 @@
     "faq2Q": "What happens when I cancel?",
     "faq2A": "Your account downgrades to Free at the end of the current billing period. Your history and watchlist are preserved.",
     "faq3Q": "Is my payment secure?",
-    "faq3A": "Payments are processed by Stripe, a PCI-compliant payment provider. We never store your card details."
+    "faq3A": "Payments are processed by Stripe, a PCI-compliant payment provider. We never store your card details.",
+    "legalNote": "By upgrading you agree to our Terms of Service. Billing is handled by Stripe; you may cancel renewal in the customer portal."
   },
   "report": {
     "radar": "Six-dimension radar",

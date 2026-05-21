@@ -1,0 +1,99 @@
+{
+  "nav": {
+    "privacy": "隱私權政策",
+    "terms": "服務條款",
+    "disclaimer": "投資免責聲明",
+    "contact": "聯絡支援",
+    "all": "法律資訊"
+  },
+  "registerAgreePrefix": "我已閱讀並同意",
+  "registerAgreeJoin": "與",
+  "registerAgreeSuffix": "，並知悉 Wenap 不提供個人化投資建議。",
+  "registerMustAgree": "請先勾選同意服務條款與隱私權政策",
+  "lastUpdated": "最後更新：{{date}}",
+  "backHome": "返回首頁",
+  "privacy": {
+    "title": "隱私權政策",
+    "updated": "2026年5月21日",
+    "intro": "本政策說明 Wenap（https://wenap.app）如何收集、使用與保護您的個人資料。",
+    "sections": [
+      {
+        "title": "1. 收集的資訊",
+        "paragraphs": [
+          "帳戶：電子郵件、密碼（僅儲存雜湊）、推薦來源。",
+          "使用：分析標的、時間、訂閱方案、IP、Cloudflare 國家代碼等。",
+          "付款：由 Stripe 處理，我們不儲存完整卡號。",
+          "聯絡：support@wenap.app。"
+        ]
+      },
+      {
+        "title": "2. 用途與第三方",
+        "paragraphs": [
+          "用於提供服務、驗證、訂閱管理、防濫用與法令遵循。",
+          "使用 OpenRouter、Alpha Vantage、Stripe、Resend、Render、Cloudflare。不出售郵件列表。"
+        ]
+      },
+      {
+        "title": "3. 權利與安全",
+        "paragraphs": [
+          "可致信 support@wenap.app 申請查閱、更正或刪除（法律允許範圍內）。",
+          "採用 HTTPS 等措施；資料可能在海外處理。18 歲以下不得使用。"
+        ]
+      },
+      {
+        "title": "4. 聯絡",
+        "paragraphs": ["support@wenap.app · https://wenap.app"]
+      }
+    ]
+  },
+  "terms": {
+    "title": "服務條款",
+    "updated": "2026年5月21日",
+    "intro": "使用 Wenap 即表示同意本條款。",
+    "sections": [
+      {
+        "title": "1. 服務性質",
+        "paragraphs": [
+          "Wenap 為 AI 投資研究資訊工具，非投資顧問、券商或銀行。",
+          "內容可能錯誤或過時，見投資免責聲明。"
+        ]
+      },
+      {
+        "title": "2. 帳戶與付費",
+        "paragraphs": [
+          "須完成郵件驗證；禁止濫用與帳號共用。",
+          "Pro / Pro+ 透過 Stripe 以美元定期扣款；取消與退款依 Stripe 及本站說明。"
+        ]
+      },
+      {
+        "title": "3. 責任與準據法",
+        "paragraphs": [
+          "服務按現狀提供；投資損失在法律允許範圍內不負責，賠償上限為過去 12 個月已付費用。",
+          "準據法為日本法；爭議以東京地方裁判所為第一審專屬管轄（法定例外除外）。",
+          "support@wenap.app"
+        ]
+      }
+    ]
+  },
+  "disclaimerPage": {
+    "title": "投資免責聲明",
+    "updated": "2026年5月21日",
+    "intro": "使用前請務必閱讀。",
+    "sections": [
+      {
+        "title": "非投資建議",
+        "paragraphs": [
+          "評分、訊號、情境與機率均為模型輸出，不構成投資建議。",
+          "您須自行承擔投資決策風險。"
+        ]
+      },
+      {
+        "title": "侷限與責任",
+        "paragraphs": [
+          "資料可能延遲或錯誤；AI 可能產生錯誤；過去準確率不代表未來。",
+          "不保證獲利；重大決策請諮詢專業人士。詳見服務條款。"
+        ]
+      }
+    ]
+  }
+}
