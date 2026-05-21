@@ -734,6 +734,8 @@ const {
   sanitizeKeyEventDates,
   sanitizeKeyLevels,
   etfSharePricePromptBlock,
+  stockPricePromptBlock,
+  resolveTargetPrice,
 } = require('./lib/priceSanity.cjs');
 
 const RISK_FOCUS_LABELS = {
@@ -798,6 +800,7 @@ ${dimensionBoundaryPromptBlock(loc)}
 ${policyDimBlock}
 ${riskFocusPromptBlock(riskFocus, loc)}
 ${etfSharePricePromptBlock(assetType, ticker, loc)}
+${assetType === 'stock' ? stockPricePromptBlock(ticker, loc) : ''}
 ${searchIntegrityBlock(loc)}
 ${sourceFreshnessBlock(loc)}
 只输出一个合法 JSON（禁止 Markdown 围栏与 JSON 外字符）。
@@ -1041,24 +1044,18 @@ function normalizeReportExtensions(data, alphaOverview, latestPrice, listingCurr
   data.leaderInsiderSummary = String(data.leaderInsiderSummary || '').trim();
   data.peerVsSectorLine = String(data.peerVsSectorLine || '').trim();
   let apl = String(data.analystPriceLine || '').trim();
-  let targetFromLine = parsePricesFromLine(apl, latestPrice).target;
-  if (!Number.isFinite(targetFromLine) && alphaOverview) {
-    const tpNum = parseFloat(String(alphaOverview.AnalystTargetPrice || '').replace(/[^\d.-]/g, ''));
-    if (Number.isFinite(tpNum) && tpNum > 0) targetFromLine = tpNum;
-  }
-  if (!Number.isFinite(targetFromLine) && data.scenarios?.bull?.range) {
-    const bullNums = String(data.scenarios.bull.range || '').match(/[\d,]+(?:\.\d+)?/g);
-    if (bullNums && bullNums.length >= 2) {
-      const a = parseFloat(bullNums[0].replace(/,/g, ''));
-      const b = parseFloat(bullNums[1].replace(/,/g, ''));
-      if (Number.isFinite(a) && Number.isFinite(b)) targetFromLine = Math.max(a, b);
-    }
-  }
   const cur = reconcileCurrentPrice({
     quotePrice: latestPrice,
     analystPriceLine: apl,
     overview: alphaOverview,
     assetType: ctx.assetType,
+  });
+  let targetFromLine = resolveTargetPrice({
+    targetFromLine: parsePricesFromLine(apl, cur).target,
+    current: cur,
+    overview: alphaOverview,
+    scenarios: data.scenarios,
+    signal: data.signal,
   });
   const loc = normalizeLocale(ctx.locale || 'zh-CN');
   if (Number.isFinite(cur) && cur > 0) {
@@ -1088,7 +1085,7 @@ function normalizeReportExtensions(data, alphaOverview, latestPrice, listingCurr
   const priceForNotes = Number.isFinite(cur) && cur > 0 ? cur : latestPrice;
   data.scenarioPriceNotes = computeScenarioPriceNotes(priceForNotes, data.scenarios, listingCurrency);
   sanitizeKeyLevels(data, priceForNotes, alphaOverview);
-  recomputeRiskReward(data, priceForNotes);
+  recomputeRiskReward(data, priceForNotes, alphaOverview);
 }
 
 function mergePeerLineIntoDimensions(dimensions, peerLine) {

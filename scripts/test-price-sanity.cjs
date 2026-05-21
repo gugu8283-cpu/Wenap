@@ -4,6 +4,7 @@ const {
   resolveTickerInput,
   reconcileCurrentPrice,
   recomputeRiskReward,
+  resolveTargetPrice,
   sanitizeSupplyChain,
   isPlausibleQuote,
 } = require('../lib/priceSanity.cjs');
@@ -46,5 +47,15 @@ const d2 = {
 sanitizeSupplyChain(d2);
 assert.strictEqual(d2.supplyChain.length, 1);
 assert.strictEqual(d2.supplyChain[0].ticker, 'TLT');
+
+// TSM-style bogus target $12.10 with current $435 → use bull $460
+const tsmTarget = resolveTargetPrice({
+  targetFromLine: 12.1,
+  current: 435,
+  overview: { '52WeekLow': '320', '52WeekHigh': '460' },
+  scenarios: { bull: { range: '$420 - $460' } },
+  signal: 'BUY',
+});
+assert.strictEqual(tsmTarget, 460, 'bogus low target should fall back to bull high');
 
 console.log('[test-price-sanity] OK');

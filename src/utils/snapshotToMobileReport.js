@@ -140,7 +140,7 @@ export function snapshotToMobileReport(snapshot, meta = {}) {
     Number.isFinite(snapshot.latestPriceUsd) && snapshot.latestPriceUsd > 0
       ? snapshot.latestPriceUsd
       : NaN
-  const { current, target, upside } = parsePricesFromLine(snapshot.analystPriceLine, latest)
+  let { current, target, upside } = parsePricesFromLine(snapshot.analystPriceLine, latest)
   const currentPrice = Number.isFinite(latest) ? latest : current
 
   const dims = snapshot.dimensions.slice(0, 6).map((d) => {
@@ -172,6 +172,28 @@ export function snapshotToMobileReport(snapshot, meta = {}) {
         rangeMax: max,
         trigger: String(z.trigger || '').trim(),
       })
+    }
+  }
+
+  const sig = String(snapshot.signal || '').toLowerCase()
+  const bullSc = scenarios.find((s) => s.type === 'bull')
+  if (
+    Number.isFinite(currentPrice) &&
+    Number.isFinite(target) &&
+    bullSc &&
+    Number.isFinite(bullSc.rangeMax)
+  ) {
+    const ratio = target / currentPrice
+    const needsFix =
+      (sig === 'buy' && ratio < 0.88) ||
+      ratio < 0.25 ||
+      ratio > 2.8 ||
+      (target < 20 && currentPrice > 50)
+    if (needsFix) {
+      target = bullSc.rangeMax
+      if (currentPrice > 0) {
+        upside = Math.round(((target - currentPrice) / currentPrice) * 100)
+      }
     }
   }
 
