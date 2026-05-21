@@ -149,6 +149,10 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
       const tier = session.metadata?.tier || 'pro';
       const customerId = session.customer;
       const subscriptionId = session.subscription;
+      const customerCountry =
+        session.customer_details?.address?.country ||
+        session.shipping_details?.address?.country ||
+        null;
 
       if (userId) {
         const { initDb } = require('../db/store.cjs');
@@ -157,15 +161,16 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
 
         // Upsert billing row
         db.prepare(`
-          INSERT INTO billing (user_id, stripe_customer_id, stripe_subscription_id, tier, status, updated_at)
-          VALUES (?, ?, ?, ?, 'active', datetime('now'))
+          INSERT INTO billing (user_id, stripe_customer_id, stripe_subscription_id, tier, status, customer_country, updated_at)
+          VALUES (?, ?, ?, ?, 'active', ?, datetime('now'))
           ON CONFLICT(user_id) DO UPDATE SET
             stripe_customer_id = excluded.stripe_customer_id,
             stripe_subscription_id = excluded.stripe_subscription_id,
             tier = excluded.tier,
             status = 'active',
+            customer_country = COALESCE(excluded.customer_country, billing.customer_country),
             updated_at = datetime('now')
-        `).run(userId, customerId, subscriptionId, tier);
+        `).run(userId, customerId, subscriptionId, tier, customerCountry);
 
         console.log(`[Wenap] Stripe: user ${userId} upgraded to ${tier}`);
       }

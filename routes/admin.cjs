@@ -13,6 +13,53 @@ router.get('/stats/revenue', (req, res) => {
   res.json(store.revenueStats());
 });
 
+router.get('/bookkeeping/stats', (req, res) => {
+  res.json(store.bookkeepingStats());
+});
+
+router.get('/bookkeeping/subscribers', (req, res) => {
+  const q = req.query || {};
+  res.json(
+    store.listBookkeepingSubscribers({
+      limit: Number(q.limit) || 100,
+      offset: Number(q.offset) || 0,
+    }),
+  );
+});
+
+router.get('/bookkeeping/expenses', (req, res) => {
+  const q = req.query || {};
+  res.json(
+    store.listAdminExpenses({
+      limit: Number(q.limit) || 50,
+      offset: Number(q.offset) || 0,
+    }),
+  );
+});
+
+router.post('/bookkeeping/expenses', (req, res) => {
+  try {
+    const row = store.addAdminExpense(req.body || {});
+    res.status(201).json(row);
+  } catch (e) {
+    res.status(400).json({ error: e.message || 'INVALID' });
+  }
+});
+
+router.delete('/bookkeeping/expenses/:id', (req, res) => {
+  if (!store.deleteAdminExpense(req.params.id)) {
+    return res.status(404).json({ error: 'NOT_FOUND' });
+  }
+  res.status(204).end();
+});
+
+router.get('/bookkeeping/export.csv', (req, res) => {
+  const csv = store.bookkeepingCsv();
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="wenap-bookkeeping.csv"');
+  res.send('\uFEFF' + csv);
+});
+
 router.get('/predictions', (req, res) => {
   const q = req.query || {};
   res.json(

@@ -43,6 +43,9 @@ function migrateBillingSchema(db) {
   if (!cols.includes('status')) {
     addCol('ALTER TABLE billing ADD COLUMN status TEXT DEFAULT \'active\'');
   }
+  if (!cols.includes('customer_country')) {
+    addCol('ALTER TABLE billing ADD COLUMN customer_country TEXT');
+  }
 }
 
 function getBillingByUserId(userId) {

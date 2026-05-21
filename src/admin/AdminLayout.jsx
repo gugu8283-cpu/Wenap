@@ -22,6 +22,8 @@ const NAV_KEYS = [
 
   { to: '/admin/revenue', key: 'revenue' },
 
+  { to: '/admin/finance', key: 'finance' },
+
   { to: '/admin/system', key: 'system' },
 
 ]

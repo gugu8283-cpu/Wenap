@@ -56,6 +56,8 @@ function migrateAuthSchema(dbIn) {
   if (!userCols.includes('verify_email_sent_at')) addCol('ALTER TABLE users ADD COLUMN verify_email_sent_at TEXT');
   if (!userCols.includes('referrer_id')) addCol('ALTER TABLE users ADD COLUMN referrer_id TEXT');
   if (!userCols.includes('referral_bonus_until')) addCol('ALTER TABLE users ADD COLUMN referral_bonus_until TEXT');
+  if (!userCols.includes('register_ip')) addCol('ALTER TABLE users ADD COLUMN register_ip TEXT');
+  if (!userCols.includes('country_code')) addCol('ALTER TABLE users ADD COLUMN country_code TEXT');
 
   try {
     db.exec(`CREATE TABLE IF NOT EXISTS referrals (
@@ -342,7 +344,7 @@ function canResendVerifyEmail(user) {
   return Date.now() - last >= 60_000;
 }
 
-async function createUserWithPassword({ email, password, ip }) {
+async function createUserWithPassword({ email, password, ip, countryCode }) {
   initDb();
   const db = getDb();
   const existing = getUserByEmail(email);
@@ -364,13 +366,28 @@ async function createUserWithPassword({ email, password, ip }) {
   const monthStart = utcMonthStartIso();
   const externalKey = `email:${email.toLowerCase()}`;
 
+  const regIp = String(ip || '').slice(0, 45);
+  const cc = countryCode ? String(countryCode).slice(0, 2).toUpperCase() : null;
+
   db.prepare(
     `INSERT INTO users (
       id, external_key, email, password_hash, tier, email_verified,
       email_verify_token, email_verify_expires, free_trials_used, free_trials_limit,
-      free_trials_reset_at, verify_email_sent_at, created_at, last_active_at
-    ) VALUES (?, ?, ?, ?, 'free', 0, ?, ?, 0, ?, ?, datetime('now'), datetime('now'), datetime('now'))`,
-  ).run(id, externalKey, email.toLowerCase(), passwordHash, verifyToken, expires, FREE_MONTHLY_CAP, monthStart);
+      free_trials_reset_at, verify_email_sent_at, register_ip, country_code,
+      created_at, last_active_at
+    ) VALUES (?, ?, ?, ?, 'free', 0, ?, ?, 0, ?, ?, datetime('now'), ?, ?, datetime('now'), datetime('now'))`,
+  ).run(
+    id,
+    externalKey,
+    email.toLowerCase(),
+    passwordHash,
+    verifyToken,
+    expires,
+    FREE_MONTHLY_CAP,
+    monthStart,
+    regIp || null,
+    cc,
+  );
 
   incrementIpRegister(ip);
   return { user: getUserById(id), verifyToken };

@@ -8,6 +8,7 @@ import PredictionsPage from './pages/Predictions.jsx'
 import UsersPage from './pages/Users.jsx'
 import AnalysisLogsPage from './pages/AnalysisLogs.jsx'
 import RevenuePage from './pages/Revenue.jsx'
+import FinancePage from './pages/Finance.jsx'
 import SystemPage from './pages/System.jsx'
 
 export default function AdminApp() {
@@ -25,6 +26,7 @@ export default function AdminApp() {
         <Route path="users" element={<UsersPage />} />
         <Route path="analysis-logs" element={<AnalysisLogsPage />} />
         <Route path="revenue" element={<RevenuePage />} />
+        <Route path="finance" element={<FinancePage />} />
         <Route path="system" element={<SystemPage />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>

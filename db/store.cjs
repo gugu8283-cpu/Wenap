@@ -40,6 +40,207 @@ function migrateDb() {
   } catch (e) {
     console.warn('[Wenap] auth schema migrate:', e.message);
   }
+  migrateFinanceSchema();
+}
+
+function migrateFinanceSchema() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS admin_expenses (
+      id TEXT PRIMARY KEY,
+      amount_usd REAL NOT NULL,
+      category TEXT,
+      note TEXT,
+      expense_date TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    )
+  `);
+  try {
+    const { getDb } = require('../routes/billingDb.cjs');
+    getDb();
+  } catch (e) {
+    console.warn('[Wenap] billing schema migrate:', e.message);
+  }
+}
+
+function countryBucket(code) {
+  const cc = String(code || '').trim().toUpperCase();
+  if (!cc) return 'unknown';
+  if (cc === 'JP') return 'japan';
+  return 'foreign';
+}
+
+function bookkeepingStats() {
+  initDb();
+  const registerRows = db
+    .prepare(
+      `SELECT country_code, COUNT(*) AS c FROM users GROUP BY country_code`,
+    )
+    .all();
+  const register = { japan: 0, foreign: 0, unknown: 0, byCode: {} };
+  for (const row of registerRows) {
+    const bucket = countryBucket(row.country_code);
+    register[bucket] += row.c;
+    if (row.country_code) register.byCode[row.country_code] = row.c;
+  }
+  register.total = register.japan + register.foreign + register.unknown;
+
+  const paidRows = db
+    .prepare(
+      `SELECT u.id, u.tier, u.country_code AS register_country,
+              b.customer_country, b.status
+       FROM users u
+       LEFT JOIN billing b ON b.user_id = u.id
+       WHERE u.tier IN ('pro','pro_plus','proplus')
+         AND COALESCE(b.status, 'active') = 'active'`,
+    )
+    .all();
+  const paid = { japan: 0, foreign: 0, unknown: 0, pro: 0, pro_plus: 0 };
+  for (const row of paidRows) {
+    const effective = row.customer_country || row.register_country;
+    paid[countryBucket(effective)] += 1;
+    const t = row.tier === 'proplus' ? 'pro_plus' : row.tier;
+    if (t === 'pro') paid.pro += 1;
+    else if (t === 'pro_plus') paid.pro_plus += 1;
+  }
+  paid.total = paidRows.length;
+  paid.mrr =
+    Math.round((paid.pro * 9.99 + paid.pro_plus * 19.99) * 100) / 100;
+
+  const expenses = db
+    .prepare(
+      `SELECT COALESCE(SUM(amount_usd),0) AS total,
+              COUNT(*) AS count
+       FROM admin_expenses
+       WHERE expense_date >= date('now', 'start of month')`,
+    )
+    .get();
+  const expensesAll = db
+    .prepare(`SELECT COALESCE(SUM(amount_usd),0) AS total, COUNT(*) AS count FROM admin_expenses`)
+    .get();
+
+  const stripeConfigured = Boolean(
+    process.env.STRIPE_SECRET_KEY &&
+      process.env.STRIPE_WEBHOOK_SECRET &&
+      (process.env.STRIPE_PRICE_PRO || process.env.STRIPE_PRICE_PRO_PLUS),
+  );
+
+  return {
+    register,
+    paid,
+    expenses: {
+      monthUsd: Math.round((expenses?.total || 0) * 100) / 100,
+      monthCount: expenses?.count || 0,
+      allUsd: Math.round((expensesAll?.total || 0) * 100) / 100,
+      allCount: expensesAll?.count || 0,
+    },
+    stripeConfigured,
+    appPublicUrl: process.env.APP_PUBLIC_URL || 'https://wenap.app',
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function listBookkeepingSubscribers({ limit = 100, offset = 0 } = {}) {
+  initDb();
+  const rows = db
+    .prepare(
+      `SELECT u.id, u.email, u.tier, u.country_code AS register_country,
+              u.created_at, b.customer_country, b.status AS billing_status,
+              b.stripe_customer_id, b.updated_at AS billing_updated_at
+       FROM users u
+       LEFT JOIN billing b ON b.user_id = u.id
+       WHERE u.tier IN ('pro','pro_plus','proplus')
+       ORDER BY b.updated_at DESC, u.created_at DESC
+       LIMIT ? OFFSET ?`,
+    )
+    .all(limit, offset);
+  const total = db
+    .prepare(
+      `SELECT COUNT(*) AS c FROM users WHERE tier IN ('pro','pro_plus','proplus')`,
+    )
+    .get().c;
+  return {
+    rows: rows.map((r) => ({
+      ...r,
+      tier: r.tier === 'proplus' ? 'pro_plus' : r.tier,
+      effective_country: r.customer_country || r.register_country || null,
+      region: countryBucket(r.customer_country || r.register_country),
+    })),
+    total,
+  };
+}
+
+function listAdminExpenses({ limit = 50, offset = 0 } = {}) {
+  initDb();
+  const rows = db
+    .prepare(
+      `SELECT * FROM admin_expenses ORDER BY expense_date DESC, created_at DESC LIMIT ? OFFSET ?`,
+    )
+    .all(limit, offset);
+  const total = db.prepare('SELECT COUNT(*) AS c FROM admin_expenses').get().c;
+  return { rows, total };
+}
+
+function addAdminExpense({ amountUsd, category, note, expenseDate }) {
+  initDb();
+  const amount = Number(amountUsd);
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error('INVALID_AMOUNT');
+  const date = String(expenseDate || '').slice(0, 10) || new Date().toISOString().slice(0, 10);
+  const id = uuid();
+  db.prepare(
+    `INSERT INTO admin_expenses (id, amount_usd, category, note, expense_date)
+     VALUES (?, ?, ?, ?, ?)`,
+  ).run(id, amount, category ? String(category).slice(0, 64) : null, note ? String(note).slice(0, 500) : null, date);
+  return { id };
+}
+
+function deleteAdminExpense(id) {
+  initDb();
+  const r = db.prepare('DELETE FROM admin_expenses WHERE id = ?').run(id);
+  return r.changes > 0;
+}
+
+function bookkeepingCsv() {
+  initDb();
+  const stats = bookkeepingStats();
+  const subs = listBookkeepingSubscribers({ limit: 5000, offset: 0 });
+  const exps = listAdminExpenses({ limit: 5000, offset: 0 });
+  const esc = (v) => {
+    const s = v == null ? '' : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const lines = [
+    '# Wenap bookkeeping export',
+    `# generated ${stats.updatedAt}`,
+    '',
+    'section,metric,value',
+    `register,japan,${stats.register.japan}`,
+    `register,foreign,${stats.register.foreign}`,
+    `register,unknown,${stats.register.unknown}`,
+    `paid,japan,${stats.paid.japan}`,
+    `paid,foreign,${stats.paid.foreign}`,
+    `paid,unknown,${stats.paid.unknown}`,
+    `paid,mrr_usd,${stats.paid.mrr}`,
+    '',
+    'email,tier,register_country,billing_country,effective_country,region,billing_status',
+  ];
+  for (const r of subs.rows) {
+    lines.push(
+      [
+        esc(r.email),
+        esc(r.tier),
+        esc(r.register_country),
+        esc(r.customer_country),
+        esc(r.effective_country),
+        esc(r.region),
+        esc(r.billing_status || 'active'),
+      ].join(','),
+    );
+  }
+  lines.push('', 'expense_date,amount_usd,category,note');
+  for (const e of exps.rows) {
+    lines.push([esc(e.expense_date), e.amount_usd, esc(e.category), esc(e.note)].join(','));
+  }
+  return lines.join('\n');
 }
 
 function upsertUserByExternalKey(externalKey, tier = 'free') {
@@ -563,6 +764,12 @@ module.exports = {
   setUserBan,
   listAnalysisLogs,
   revenueStats,
+  bookkeepingStats,
+  listBookkeepingSubscribers,
+  listAdminExpenses,
+  addAdminExpense,
+  deleteAdminExpense,
+  bookkeepingCsv,
   systemHealth,
   getDuePredictions,
   setPredictionSkipReason,

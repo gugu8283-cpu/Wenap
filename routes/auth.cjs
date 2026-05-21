@@ -19,6 +19,7 @@ const {
 const bcrypt = require('bcryptjs');
 const { signAccessToken } = require('../lib/jwtAuth.cjs');
 const { isDisposableEmail } = require('../lib/disposableEmail.cjs');
+const { countryFromRequest } = require('../lib/countryFromRequest.cjs');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../lib/emailSend.cjs');
 const { requireAuth } = require('../middleware/requireAuth.cjs');
 const {
@@ -62,7 +63,12 @@ router.post('/register', async (req, res) => {
 
     const ip = getClientIp(req);
     const referralCode = String(req.body?.referralCode || '').trim().slice(0, 64);
-    const { user, verifyToken } = await createUserWithPassword({ email, password, ip });
+    const { user, verifyToken } = await createUserWithPassword({
+      email,
+      password,
+      ip,
+      countryCode: countryFromRequest(req),
+    });
     setVerifyEmailSent(user.id);
     await sendVerificationEmail({ to: email, token: verifyToken });
 
