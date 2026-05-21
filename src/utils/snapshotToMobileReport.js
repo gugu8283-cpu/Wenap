@@ -42,13 +42,16 @@ function parsePricesFromLine(line, latestUsd) {
     /current\s*(?:price)?[^$0-9]*\$?\s*([\d,]+(?:\.\d+)?)/i,
     /(?:at|@)\s*\$?\s*([\d,]+(?:\.\d+)?)/i,
   ]
-  for (const re of curPatterns) {
-    const m = t.match(re)
-    if (m) {
-      const v = parseMoneyToken(m[1])
-      if (Number.isFinite(v)) {
-        current = v
-        break
+  const quoteLocked = Number.isFinite(latestUsd) && latestUsd > 0
+  if (!quoteLocked) {
+    for (const re of curPatterns) {
+      const m = t.match(re)
+      if (m) {
+        const v = parseMoneyToken(m[1])
+        if (Number.isFinite(v)) {
+          current = v
+          break
+        }
       }
     }
   }
@@ -133,8 +136,12 @@ export function snapshotToMobileReport(snapshot, meta = {}) {
     ticker,
     snapshot.companyName,
   )
-  const latest = snapshot.latestPriceUsd
+  const latest =
+    Number.isFinite(snapshot.latestPriceUsd) && snapshot.latestPriceUsd > 0
+      ? snapshot.latestPriceUsd
+      : NaN
   const { current, target, upside } = parsePricesFromLine(snapshot.analystPriceLine, latest)
+  const currentPrice = Number.isFinite(latest) ? latest : current
 
   const dims = snapshot.dimensions.slice(0, 6).map((d) => {
     const sc = Math.min(100, Math.max(0, Number(d.score) || 0))
@@ -265,7 +272,7 @@ export function snapshotToMobileReport(snapshot, meta = {}) {
     tendency: signalToTendency(snapshot.signal),
     risk: String(snapshot.risk || '—'),
     riskReward: String(snapshot.riskReward || '').trim(),
-    currentPrice: current,
+    currentPrice,
     targetPrice: target,
     upside,
     summary: String(snapshot.summary || '').trim(),

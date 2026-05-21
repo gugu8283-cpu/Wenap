@@ -14,6 +14,7 @@ import { resolveAppLanguage } from './i18n/index.js'
 import { useAuth } from './context/AuthContext.jsx'
 import { apiFetch, getToken } from './lib/api.js'
 import { applyTheme, getTheme } from './utils/theme.js'
+import { resolveTickerInput } from './utils/tickerResolve.js'
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 
@@ -256,7 +257,7 @@ export default function App() {
 
   const runAnalyze = useCallback(
     async (overrides = {}) => {
-      const sym = String(overrides.ticker ?? ticker).trim().toUpperCase()
+      const sym = resolveTickerInput(overrides.ticker ?? ticker)
       if (!sym) {
         setError(t('app.errTicker'))
         return

@@ -726,6 +726,15 @@ function tierPromptExtensions(tier) {
 
 const { searchIntegrityBlock, sourceFreshnessBlock } = require('./lib/promptSearchRules.cjs');
 const { parsePricesFromLine } = require('./lib/parsePrices.cjs');
+const {
+  resolveTickerInput,
+  reconcileCurrentPrice,
+  recomputeRiskReward,
+  sanitizeSupplyChain,
+  sanitizeKeyEventDates,
+  sanitizeKeyLevels,
+  etfSharePricePromptBlock,
+} = require('./lib/priceSanity.cjs');
 
 const RISK_FOCUS_LABELS = {
   geo: { 'zh-CN': '地缘政治与出口管制', en: 'Geopolitics & export controls' },
@@ -788,6 +797,7 @@ ${dimensionBoundaryPromptBlock(loc)}
 
 ${policyDimBlock}
 ${riskFocusPromptBlock(riskFocus, loc)}
+${etfSharePricePromptBlock(assetType, ticker, loc)}
 ${searchIntegrityBlock(loc)}
 ${sourceFreshnessBlock(loc)}
 只输出一个合法 JSON（禁止 Markdown 围栏与 JSON 外字符）。
@@ -809,7 +819,7 @@ JSON 字段与要求：
   },
   "riskBlindSpot": "≤48字：1条主分析可能低估的具体风险（附来源日期角标）",
   "keyLevels": [ { "price": 0, "label": "如120日均线阻力位；最多4条，price为数字" } ],
-  "analystPriceLine": "单行：目标价/现价/空间%；无则空",
+  "analystPriceLine": "单行：目标价/现价/空间%（现价须与行情API一致，ETF禁止用现货金价）；无则空",
   "dimensions": [ ${dimensionJsonSpec(assetType, loc)} ],
   "detailAnalysis": "260-360 chars; new facts only; escape quotes in JSON",
   "sources": [ { "text": "", "url": "https://...", "time": "", "credibility": "高|中|低", "cite": "SEC" } ],
@@ -1023,9 +1033,11 @@ function normalizeReportExtensions(data, alphaOverview, latestPrice, listingCurr
   applyAlphaIdentity(data, alphaOverview, ctx.symbol, ctx.locale);
   normalizeActionLineField(data);
   normalizeKeyEventsField(data);
+  sanitizeKeyEventDates(data);
   normalizeBullBearDebateField(data);
   normalizeScenarioProPlusFields(data);
   normalizeSupplyChainProPlusFields(data);
+  sanitizeSupplyChain(data);
   data.leaderInsiderSummary = String(data.leaderInsiderSummary || '').trim();
   data.peerVsSectorLine = String(data.peerVsSectorLine || '').trim();
   let apl = String(data.analystPriceLine || '').trim();
@@ -1041,12 +1053,13 @@ function normalizeReportExtensions(data, alphaOverview, latestPrice, listingCurr
       const b = parseFloat(bullNums[1].replace(/,/g, ''));
       if (Number.isFinite(a) && Number.isFinite(b)) targetFromLine = Math.max(a, b);
     }
-    if (Number.isFinite(max)) targetFromLine = max;
   }
-  const cur =
-    Number.isFinite(latestPrice) && latestPrice > 0
-      ? latestPrice
-      : parsePricesFromLine(apl, NaN).current;
+  const cur = reconcileCurrentPrice({
+    quotePrice: latestPrice,
+    analystPriceLine: apl,
+    overview: alphaOverview,
+    assetType: ctx.assetType,
+  });
   const loc = normalizeLocale(ctx.locale || 'zh-CN');
   if (Number.isFinite(cur) && cur > 0) {
     const curS = formatListingPrice(cur, listingCurrency);
@@ -1072,7 +1085,10 @@ function normalizeReportExtensions(data, alphaOverview, latestPrice, listingCurr
     }
   }
   data.analystPriceLine = apl;
-  data.scenarioPriceNotes = computeScenarioPriceNotes(latestPrice, data.scenarios, listingCurrency);
+  const priceForNotes = Number.isFinite(cur) && cur > 0 ? cur : latestPrice;
+  data.scenarioPriceNotes = computeScenarioPriceNotes(priceForNotes, data.scenarios, listingCurrency);
+  sanitizeKeyLevels(data, priceForNotes, alphaOverview);
+  recomputeRiskReward(data, priceForNotes);
 }
 
 function mergePeerLineIntoDimensions(dimensions, peerLine) {
@@ -1879,7 +1895,16 @@ function jsonToMarkdownFourParts(data, tier = 'free', locale = 'zh-CN') {
 }
 
 /** 供前端图表用，控制体积 */
-function stripDataForViz(data, { tier = 'free', latestPrice = NaN, locale = 'zh-CN', listingCurrency = 'USD', model = '' } = {}) {
+function stripDataForViz(
+  data,
+  { tier = 'free', latestPrice = NaN, locale = 'zh-CN', listingCurrency = 'USD', model = '', assetType = 'stock' } = {},
+) {
+  const curForSnap = reconcileCurrentPrice({
+    quotePrice: latestPrice,
+    analystPriceLine: data.analystPriceLine,
+    overview: null,
+    assetType,
+  });
   const detailFull = trimSuspensionSuffix(String(data.detailAnalysis || '').trim());
   const detailPreview = clipToCompleteThought(detailFull, DETAIL_MARKDOWN_MAX_CHARS, 0.32);
   const detailNeedsFold = [...detailFull].length > DETAIL_MARKDOWN_MAX_CHARS;
@@ -1911,7 +1936,12 @@ function stripDataForViz(data, { tier = 'free', latestPrice = NaN, locale = 'zh-
       : [],
     dataAsOf: data.dataAsOf,
     reportTier: tier,
-    latestPriceUsd: Number.isFinite(latestPrice) && latestPrice > 0 ? latestPrice : null,
+    latestPriceUsd:
+      Number.isFinite(curForSnap) && curForSnap > 0
+        ? curForSnap
+        : Number.isFinite(latestPrice) && latestPrice > 0
+          ? latestPrice
+          : null,
     actionLine: String(data.actionLine || '').trim(),
     actionLineObj:
       data.actionLineObj && typeof data.actionLineObj === 'object'
@@ -2226,10 +2256,14 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
       mergePeerLineIntoDimensions(data.dimensions, data.peerVsSectorLine);
     }
     repairMisattributedUsdScenarioRanges(data, listingCurrency);
-    normalizeReportExtensions(data, alphaOverview, latestPrice, listingCurrency, { symbol, locale });
+    normalizeReportExtensions(data, alphaOverview, latestPrice, listingCurrency, {
+      symbol,
+      locale,
+      assetType: effectiveAssetType,
+    });
     clampVerboseChineseFields(data);
     sanitizeRiskRewardField(data);
-    fillRiskRewardIfEmpty(data);
+    if (!String(data.riskReward || '').trim()) fillRiskRewardIfEmpty(data);
     const md = jsonToMarkdownFourParts(data, tier, locale);
     let secondCritique = null;
     if (tier === 'pro_plus') {
@@ -2242,7 +2276,14 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
         console.warn('[Wenap] secondPassCritique failed (non-fatal):', e.message);
       }
     }
-    const vizSnapshot = stripDataForViz(data, { tier, latestPrice, locale, listingCurrency, model: mainModel });
+    const vizSnapshot = stripDataForViz(data, {
+      tier,
+      latestPrice,
+      locale,
+      listingCurrency,
+      model: mainModel,
+      assetType: effectiveAssetType,
+    });
     if (!writeSse(res, { type: 'viz', snapshot: vizSnapshot })) return;
     if (bailIfClientGone('before-stream')) return;
     await streamChunkedMarkdown(res, md);
@@ -2611,7 +2652,7 @@ app.get('/history/:id', requireAuth, (req, res) => {
 
 app.post('/analyze', requireAuth, async (req, res) => {
   const { ticker, assetType, horizon, riskFocus } = req.body || {};
-  const symbol = typeof ticker === 'string' ? ticker.trim().toUpperCase() : '';
+  const symbol = resolveTickerInput(ticker);
   if (!symbol) {
     return res.status(400).json({ error: 'Ticker required' });
   }

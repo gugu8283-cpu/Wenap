@@ -174,7 +174,10 @@ export default function HeroCard({
     return { target, current, stop, reward, risk, ratio }
   }, [displayTarget, displayCurrent, stopPrice])
 
-  const rrDisplay = report.riskReward || (rrCalc ? `1:${rrCalc.ratio.toFixed(1)}` : '')
+  const rrDisplay =
+    rrCalc && Number.isFinite(rrCalc.ratio)
+      ? `1:${rrCalc.ratio.toFixed(1)}`
+      : report.riskReward || ''
 
   const tier = report.reportTier || 'free'
   const showScoreTierHint = tier === 'pro' || tier === 'pro_plus'

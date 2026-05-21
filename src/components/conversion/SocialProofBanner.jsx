@@ -26,7 +26,7 @@ export default function SocialProofBanner({ ticker }) {
 
   if (!stats) return null
   const views = stats.tickerWeekViews ?? 0
-  if (views < 1) return null
+  if (views < 3) return null
 
   return (
     <p className="cv-social-proof">
