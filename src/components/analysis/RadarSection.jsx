@@ -17,11 +17,16 @@ ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, 
 
 function readChartTheme() {
   if (typeof document === 'undefined') {
-    return { gridColor: '#2a2a2a', labelColor: '#888888', fill: 'rgba(55,138,221,0.18)', border: '#378add' }
+    return {
+      gridColor: '#3d4558',
+      labelColor: '#a8b0bd',
+      fill: 'rgba(77,154,255,0.22)',
+      border: '#4d9aff',
+    }
   }
   const style = getComputedStyle(document.documentElement)
-  const grid = style.getPropertyValue('--border').trim() || '#2a2a2a'
-  const label = style.getPropertyValue('--text-secondary').trim() || '#888888'
+  const grid = style.getPropertyValue('--radar-grid').trim() || style.getPropertyValue('--border').trim() || '#3d4558'
+  const label = style.getPropertyValue('--text-secondary').trim() || '#a8b0bd'
   const fill = style.getPropertyValue('--radar-fill').trim() || 'rgba(55,138,221,0.18)'
   const border = style.getPropertyValue('--radar-border').trim() || '#378add'
   return { gridColor: grid, labelColor: label, fill, border }

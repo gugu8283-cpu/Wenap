@@ -15,6 +15,7 @@ import { useAuth } from './context/AuthContext.jsx'
 import { apiFetch, getToken } from './lib/api.js'
 import { applyTheme, getTheme } from './utils/theme.js'
 import { resolveTickerInput } from './utils/tickerResolve.js'
+import TickerQuickPicks from './components/TickerQuickPicks.jsx'
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 
@@ -500,7 +501,9 @@ export default function App() {
       <QuotaStrip quotaBanner={quotaBanner} />
       <header className="header">
         <div className="header-top">
-          <p className="brand">Wenap</p>
+          <p className="brand">
+            Wen<span>ap</span>
+          </p>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             {user && <NotificationCenter />}
             <LanguageSwitcher />
@@ -613,6 +616,13 @@ export default function App() {
             spellCheck={false}
           />
         </div>
+
+        <TickerQuickPicks
+          onPick={({ ticker: sym, assetType: ast }) => {
+            setTicker(sym)
+            setAssetType(ast)
+          }}
+        />
 
         <p className="label">{t('app.horizon')}</p>
         <div className="horizon-row">

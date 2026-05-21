@@ -3,26 +3,32 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  padding: 7px 16px;
-  background: rgba(59, 130, 246, 0.1);
-  border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+  padding: 8px 16px;
+  background: rgba(77, 154, 255, 0.1);
+  border-bottom: 1px solid var(--border-subtle);
   font-size: 0.8125rem;
   flex-wrap: wrap;
 }
 
 .quota-strip-text {
-  color: rgba(255,255,255,0.75);
+  color: var(--text-secondary);
 }
 
 .quota-strip-cta {
-  padding: 3px 14px;
-  background: #378ADD;
+  padding: 4px 14px;
+  background: var(--accent-blue);
   color: #fff;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 0.75rem;
   font-weight: 700;
   text-decoration: none;
   white-space: nowrap;
-  transition: background 0.15s;
+  transition:
+    background 0.15s,
+    transform 0.12s;
 }
-.quota-strip-cta:hover { background: #2f6fbf; }
+
+.quota-strip-cta:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}

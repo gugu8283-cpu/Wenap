@@ -1,23 +1,41 @@
-/* Wenap 设计系统 — 默认暗色，不跟随系统；亮色由 html[data-wenap-theme="light"] 切换 */
+/* Wenap 设计系统 — 参考 fintech 可读性：避免纯黑、次要文字 ≥4.5:1、卡片微边框分层 */
+
 :root,
 html[data-wenap-theme='dark'] {
-  --font-display: 'Syne', sans-serif;
-  --font-mono: 'DM Mono', monospace;
-  --bg-base: #0d0d0d;
-  --bg-card: #161616;
-  --bg-elevated: #1e1e1e;
-  --bg-input: #242424;
-  --border: #2a2a2a;
-  --text-primary: #f0f0f0;
-  --text-secondary: #888888;
-  --text-muted: #444444;
-  --accent-green: #00d4aa;
-  --accent-amber: #f5a623;
-  --accent-red: #ff4d4d;
-  --accent-blue: #378add;
-  --glow-green: 0 0 20px rgba(0, 212, 170, 0.3);
-  --glow-amber: 0 0 20px rgba(245, 166, 35, 0.3);
-  --glow-red: 0 0 20px rgba(255, 77, 77, 0.3);
+  --font-display: 'Syne', system-ui, sans-serif;
+  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, monospace;
+
+  --bg-base: #12141c;
+  --bg-card: #1a1e28;
+  --bg-elevated: #222733;
+  --bg-input: #2a3040;
+  --border: #343b4d;
+  --border-subtle: #2a3040;
+
+  --text-primary: #f4f5f7;
+  --text-secondary: #a8b0bd;
+  --text-muted: #7a8494;
+
+  --accent-green: #00e6b8;
+  --accent-amber: #f5b84a;
+  --accent-red: #ff6b6b;
+  --accent-blue: #4d9aff;
+  --accent-purple: #b794f6;
+
+  --glow-green: 0 0 24px rgba(0, 230, 184, 0.22);
+  --glow-amber: 0 0 24px rgba(245, 184, 74, 0.22);
+  --glow-red: 0 0 24px rgba(255, 107, 107, 0.22);
+  --glow-blue: 0 0 20px rgba(77, 154, 255, 0.18);
+
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 4px 24px rgba(0, 0, 0, 0.28);
+  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.35);
+  --focus-ring: 0 0 0 3px rgba(77, 154, 255, 0.35);
+
+  --gradient-cta: linear-gradient(135deg, #00e6b8 0%, #00c9a3 55%, #00b894 100%);
+  --gradient-hero: linear-gradient(165deg, rgba(77, 154, 255, 0.12) 0%, transparent 42%),
+    linear-gradient(15deg, rgba(0, 230, 184, 0.08) 0%, transparent 38%);
+
   --text-h: var(--text-primary);
   --text: var(--text-primary);
   --card: var(--bg-card);
@@ -26,41 +44,60 @@ html[data-wenap-theme='dark'] {
   --buy: var(--accent-green);
   --sell: var(--accent-red);
   --hold: var(--accent-amber);
-  --skeleton: #242424;
-  --skeleton-hi: #2e2e2e;
-  --radar-fill: rgba(55, 138, 221, 0.18);
-  --radar-border: #378add;
-  --ma-scen-gap-fill: rgba(255, 255, 255, 0.06);
+  --skeleton: #2a3040;
+  --skeleton-hi: #363d4f;
+  --radar-fill: rgba(77, 154, 255, 0.22);
+  --radar-border: #4d9aff;
+  --radar-grid: #3d4558;
+  --ma-scen-gap-fill: rgba(255, 255, 255, 0.07);
+  --overlay-blur: rgba(18, 20, 28, 0.85);
 }
 
 html[data-wenap-theme='light'] {
-  --bg-base: #f2f2f0;
+  --bg-base: #f0f2f6;
   --bg-card: #ffffff;
-  --bg-elevated: #f5f5f3;
-  --bg-input: #ebebea;
-  --border: #e0e0de;
-  --text-primary: #1a1a1a;
-  --text-secondary: #666666;
-  --text-muted: #999999;
-  --accent-green: #00a884;
-  --accent-amber: #c48412;
-  --accent-red: #d93636;
-  --accent-blue: #2a6fc0;
-  --glow-green: 0 0 16px rgba(0, 168, 132, 0.2);
-  --glow-amber: 0 0 16px rgba(196, 132, 18, 0.2);
-  --glow-red: 0 0 16px rgba(217, 54, 54, 0.2);
-  --text-h: var(--text-primary);
-  --text: var(--text-primary);
-  --card: var(--bg-card);
-  --card-elevated: var(--bg-elevated);
-  --primary: var(--accent-blue);
-  --buy: var(--accent-green);
-  --sell: var(--accent-red);
-  --hold: var(--accent-amber);
-  --skeleton: #e8e8e4;
-  --skeleton-hi: #f0f0ec;
-  --radar-fill: rgba(55, 138, 221, 0.12);
-  --ma-scen-gap-fill: rgba(0, 0, 0, 0.06);
+  --bg-elevated: #f5f7fa;
+  --bg-input: #eef1f6;
+  --border: #d8dee8;
+  --border-subtle: #e8ecf2;
+
+  --text-primary: #141820;
+  --text-secondary: #5c6573;
+  --text-muted: #8a939f;
+
+  --accent-green: #008f72;
+  --accent-amber: #b87a0a;
+  --accent-red: #c93c3c;
+  --accent-blue: #2563c7;
+  --accent-purple: #7c3aed;
+
+  --glow-green: 0 0 16px rgba(0, 143, 114, 0.15);
+  --glow-amber: 0 0 16px rgba(184, 122, 10, 0.15);
+  --glow-red: 0 0 16px rgba(201, 60, 60, 0.12);
+  --glow-blue: 0 0 14px rgba(37, 99, 199, 0.12);
+
+  --shadow-card: 0 1px 2px rgba(20, 24, 32, 0.06), 0 4px 16px rgba(20, 24, 32, 0.06);
+  --shadow-elevated: 0 12px 40px rgba(20, 24, 32, 0.1);
+  --focus-ring: 0 0 0 3px rgba(37, 99, 199, 0.25);
+
+  --gradient-cta: linear-gradient(135deg, #00b894 0%, #00a884 100%);
+  --gradient-hero: linear-gradient(165deg, rgba(37, 99, 199, 0.08) 0%, transparent 45%),
+    linear-gradient(15deg, rgba(0, 168, 132, 0.06) 0%, transparent 40%);
+
+  --skeleton: #e4e8ef;
+  --skeleton-hi: #f0f3f8;
+  --radar-fill: rgba(37, 99, 199, 0.15);
+  --radar-border: #2563c7;
+  --radar-grid: #d0d7e2;
+  --ma-scen-gap-fill: rgba(20, 24, 32, 0.05);
+  --overlay-blur: rgba(255, 255, 255, 0.92);
+}
+
+html {
+  color-scheme: dark;
+}
+html[data-wenap-theme='light'] {
+  color-scheme: light;
 }
 
 /* 数字等宽 */
@@ -74,4 +111,13 @@ html[data-wenap-theme='light'] {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
+}
+
+.display-font,
+.brand,
+.ma-name,
+.ma-section-title,
+.ma-core-conclusion-headline,
+.landing-headline {
+  font-family: var(--font-display);
 }

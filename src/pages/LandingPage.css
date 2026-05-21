@@ -1,8 +1,17 @@
 .landing {
-  background: #080b14;
+  background: var(--landing-bg, #0e1118);
+  background-image: var(--landing-gradient);
   color: #fff;
   min-height: 100vh;
   font-family: var(--font-body, system-ui, sans-serif);
+}
+
+:root,
+html[data-wenap-theme='dark'] {
+  --landing-bg: #0e1118;
+  --landing-gradient: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(77, 154, 255, 0.18), transparent),
+    radial-gradient(ellipse 60% 40% at 90% 20%, rgba(0, 230, 184, 0.1), transparent),
+    radial-gradient(ellipse 50% 30% at 10% 60%, rgba(77, 154, 255, 0.06), transparent);
 }
 
 /* Nav */
@@ -74,8 +83,9 @@
 }
 
 .landing-headline {
+  font-family: var(--font-display);
   font-size: clamp(2rem, 6vw, 3.25rem);
-  font-weight: 900;
+  font-weight: 800;
   line-height: 1.1;
   letter-spacing: -0.04em;
   margin: 0 0 18px;

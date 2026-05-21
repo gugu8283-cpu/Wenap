@@ -14,13 +14,19 @@
   --color-warn-row: var(--bg-elevated);
   --color-border: var(--border);
   --color-pro-locked-bg: var(--bg-elevated);
-  max-width: 375px;
+  max-width: min(420px, 100%);
   margin: 0 auto;
   padding: 16px 16px 96px;
   box-sizing: border-box;
   background: var(--bg-base);
   color: var(--text-primary);
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family: var(--font-body);
+}
+
+@media (min-width: 1024px) {
+  .mobile-analysis-root {
+    max-width: 440px;
+  }
 }
 
 @keyframes ma-shimmer {
@@ -41,18 +47,25 @@
 
 .ma-card {
   background: var(--bg-card);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 16px;
   margin-bottom: 12px;
-  border: none;
-  box-shadow: none;
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-card);
+}
+
+.ma-hero-card {
+  background: var(--gradient-hero), var(--bg-card);
+  border-color: var(--border);
 }
 
 .ma-section-title {
-  font-size: 15px;
-  font-weight: 500;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
   margin: 0 0 12px;
   color: var(--color-text);
+  letter-spacing: -0.02em;
 }
 
 .ma-hero-head {
@@ -63,10 +76,12 @@
 }
 
 .ma-hero-title-block .ma-name {
-  font-size: 20px;
-  font-weight: 500;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
   margin: 0;
-  line-height: 1.2;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
 }
 
 .ma-hero-sub {
@@ -124,9 +139,10 @@
 
 .ma-sparkline-wrap {
   width: 100%;
-  height: 40px;
+  height: 44px;
   background: var(--bg-elevated);
-  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
   overflow: hidden;
 }
 
@@ -146,8 +162,9 @@
   font-size: 12px;
   padding: 6px 12px;
   border-radius: 999px;
-  font-weight: 500;
-  background: var(--color-border);
+  font-weight: 600;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
   color: var(--color-text);
 }
 
@@ -252,6 +269,11 @@
   color: var(--color-text-muted);
   text-align: center;
   line-height: 1.5;
+}
+
+.ma-upside--loss {
+  color: var(--accent-green);
+  font-weight: 600;
 }
 
 .ma-upside {
@@ -665,8 +687,13 @@
 }
 
 .ma-pro-plus-locked .ma-pro-blur-item {
-  filter: blur(4px);
+  filter: blur(5px);
+  opacity: 0.65;
+  user-select: none;
   margin: 8px 0;
+  border-radius: 8px;
+  padding: 8px;
+  background: var(--bg-elevated);
 }
 
 .ma-radar-card {
