@@ -35,5 +35,9 @@ export default function ProtectedRoute({ children }) {
     return <Navigate to={`/verify-email?email=${encodeURIComponent(user.email || '')}`} replace />
   }
 
+  if (user.legal?.needsReaccept) {
+    return <Navigate to="/accept-legal" replace />
+  }
+
   return children
 }

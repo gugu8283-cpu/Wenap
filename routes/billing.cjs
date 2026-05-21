@@ -57,9 +57,28 @@ router.get('/config', (req, res) => {
 });
 
 // Create a Checkout Session for the requested tier
+const { legalStatusForUser, recordConsents, clientMeta: legalClientMeta } = require('../lib/legalConsent.cjs');
+
 router.post('/create-checkout-session', requireAuth, async (req, res) => {
   const stripe = getStripe();
   if (!stripe) return noStripe(res);
+
+  if (!req.body?.agreeSubscriptionTerms) {
+    return res.status(400).json({
+      error: 'SUBSCRIPTION_CONSENT_REQUIRED',
+      message: '请确认同意服务条款中的付费与订阅条款后再继续',
+    });
+  }
+
+  const user = getUserById(req.authUser.id);
+  const legal = legalStatusForUser(user);
+  if (legal.needsReaccept) {
+    return res.status(403).json({
+      error: 'LEGAL_REACCEPT_REQUIRED',
+      message: '请先更新并同意最新版法律文件',
+      missing: legal.missing,
+    });
+  }
 
   const tier = String(req.body?.tier || '').toLowerCase();
   const priceId = STRIPE_PRICE[tier === 'pro_plus' ? 'pro_plus' : 'pro'];
@@ -67,8 +86,9 @@ router.post('/create-checkout-session', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'INVALID_TIER', message: 'Tier must be pro or pro_plus.' });
   }
 
-  const user = getUserById(req.authUser.id);
   if (!user) return res.status(401).json({ error: 'UNAUTHORIZED' });
+
+  recordConsents(user.id, ['subscription'], legalClientMeta(req));
 
   try {
     const db = getDb();

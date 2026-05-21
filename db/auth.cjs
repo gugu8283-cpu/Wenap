@@ -59,6 +59,11 @@ function migrateAuthSchema(dbIn) {
   if (!userCols.includes('referral_bonus_until')) addCol('ALTER TABLE users ADD COLUMN referral_bonus_until TEXT');
   if (!userCols.includes('register_ip')) addCol('ALTER TABLE users ADD COLUMN register_ip TEXT');
   if (!userCols.includes('country_code')) addCol('ALTER TABLE users ADD COLUMN country_code TEXT');
+  try {
+    require('../lib/legalConsent.cjs').migrateLegalConsentSchema(db);
+  } catch (e) {
+    console.warn('[Wenap] legal consent schema migrate:', e.message);
+  }
 
   try {
     db.exec(`CREATE TABLE IF NOT EXISTS referrals (
@@ -219,6 +224,7 @@ function publicUser(row) {
     freeTrialsRemaining: remaining,
     freeTrialsResetAt: u.free_trials_reset_at,
     createdAt: u.created_at,
+    legal: require('../lib/legalConsent.cjs').legalStatusForUser(u),
   };
 }
 

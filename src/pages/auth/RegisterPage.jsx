@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '../../components/LanguageSwitcher.jsx'
 import { apiFetch } from '../../lib/api.js'
+import LegalConsentFields, { allRegistrationConsents } from '../../components/LegalConsentFields.jsx'
 import LegalFooter from '../../components/LegalFooter.jsx'
 import '../../components/LegalFooter.css'
 import './AuthPages.css'
@@ -31,10 +32,13 @@ export default function RegisterPage() {
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [agreed, setAgreed] = useState(false)
+  const [agreeTerms, setAgreeTerms] = useState(false)
+  const [agreePrivacy, setAgreePrivacy] = useState(false)
+  const [agreeDisclaimer, setAgreeDisclaimer] = useState(false)
 
   const strength = useMemo(() => passwordStrength(password), [password])
   const mismatch = confirm.length > 0 && password !== confirm
+  const consentsOk = allRegistrationConsents({ agreeTerms, agreePrivacy, agreeDisclaimer })
 
   async function submit(e) {
     e.preventDefault()
@@ -43,8 +47,8 @@ export default function RegisterPage() {
       setError(t('auth.passwordMismatch'))
       return
     }
-    if (!agreed) {
-      setError(t('legal.registerMustAgree'))
+    if (!consentsOk) {
+      setError(t('legal.registerMustAgreeAll'))
       return
     }
     setLoading(true)
@@ -56,6 +60,9 @@ export default function RegisterPage() {
           password,
           passwordConfirm: confirm,
           locale: i18n.language,
+          agreeTerms: true,
+          agreePrivacy: true,
+          agreeDisclaimer: true,
           ...(referralCode ? { referralCode } : {}),
         }),
       })
@@ -66,6 +73,8 @@ export default function RegisterPage() {
         setError(t('auth.emailNotConfigured'))
       } else if (err.code === 'EMAIL_SEND_FAILED') {
         setError(t('auth.emailSendFailed'))
+      } else if (err.code === 'LEGAL_CONSENT_REQUIRED') {
+        setError(t('legal.registerMustAgreeAll'))
       } else {
         setError(err.message || t('auth.registerFail'))
       }
@@ -145,21 +154,17 @@ export default function RegisterPage() {
           />
           {mismatch ? <p className="auth-field-error">{t('auth.passwordMismatch')}</p> : null}
         </div>
-        <label className="auth-terms-agree">
-          <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
-          <span>
-            {t('legal.registerAgreePrefix')}{' '}
-            <Link to="/terms" target="_blank" rel="noopener noreferrer">
-              {t('legal.nav.terms')}
-            </Link>{' '}
-            {t('legal.registerAgreeJoin')}{' '}
-            <Link to="/privacy" target="_blank" rel="noopener noreferrer">
-              {t('legal.nav.privacy')}
-            </Link>
-            {t('legal.registerAgreeSuffix')}
-          </span>
-        </label>
-        <button type="submit" className="auth-btn" disabled={loading || mismatch || !agreed}>
+
+        <LegalConsentFields
+          agreeTerms={agreeTerms}
+          agreePrivacy={agreePrivacy}
+          agreeDisclaimer={agreeDisclaimer}
+          onChangeTerms={setAgreeTerms}
+          onChangePrivacy={setAgreePrivacy}
+          onChangeDisclaimer={setAgreeDisclaimer}
+        />
+
+        <button type="submit" className="auth-btn" disabled={loading || mismatch || !consentsOk}>
           {loading ? (
             <>
               <span className="auth-spinner" />

@@ -49,6 +49,7 @@ export default function PricingPage() {
   const [loadingTier, setLoadingTier] = useState(null)
   const [error, setError] = useState('')
   const [social, setSocial] = useState(null)
+  const [agreeSubscription, setAgreeSubscription] = useState(false)
 
   const checkoutStatus = searchParams.get('checkout')
 
@@ -71,12 +72,16 @@ export default function PricingPage() {
       navigate('/register')
       return
     }
+    if (!agreeSubscription) {
+      setError(t('legal.subscriptionMustAgree'))
+      return
+    }
     setLoadingTier(tier)
     setError('')
     try {
       const j = await apiFetch('/billing/create-checkout-session', {
         method: 'POST',
-        body: JSON.stringify({ tier }),
+        body: JSON.stringify({ tier, agreeSubscriptionTerms: true }),
       })
       if (j.url) {
         window.location.href = j.url
@@ -84,7 +89,15 @@ export default function PricingPage() {
         setError(t('pricing.stripeNotConfigured', { email: 'support@wenap.app' }))
       }
     } catch (e) {
-      setError(e?.message || t('pricing.upgradeError'))
+      if (e.code === 'LEGAL_REACCEPT_REQUIRED') {
+        navigate('/accept-legal')
+        return
+      }
+      if (e.code === 'SUBSCRIPTION_CONSENT_REQUIRED') {
+        setError(t('legal.subscriptionMustAgree'))
+      } else {
+        setError(e?.message || t('pricing.upgradeError'))
+      }
     } finally {
       setLoadingTier(null)
     }
@@ -104,6 +117,25 @@ export default function PricingPage() {
       </div>
 
       {error && <p className="pricing-error">{error}</p>}
+
+      {user ? (
+        <div className="pricing-consent-box">
+          <label className="auth-terms-agree legal-consent-row">
+            <input
+              type="checkbox"
+              checked={agreeSubscription}
+              onChange={(e) => setAgreeSubscription(e.target.checked)}
+            />
+            <span>
+              {t('legal.consentSubscriptionPrefix')}{' '}
+              <Link to="/terms" target="_blank" rel="noopener noreferrer">
+                {t('legal.nav.terms')}
+              </Link>
+              {t('legal.consentSubscriptionSuffix')}
+            </span>
+          </label>
+        </div>
+      ) : null}
 
       <div className="pricing-grid">
         {PLANS.map((plan) => {

@@ -13,6 +13,7 @@ import LandingPage from './pages/LandingPage.jsx'
 import RegisterPage from './pages/auth/RegisterPage.jsx'
 import LoginPage from './pages/auth/LoginPage.jsx'
 import VerifyEmailPage from './pages/auth/VerifyEmailPage.jsx'
+import AcceptLegalPage from './pages/auth/AcceptLegalPage.jsx'
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage.jsx'
 import PricingPage from './pages/PricingPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
@@ -40,6 +41,7 @@ createRoot(document.getElementById('root')).render(
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/accept-legal" element={<AcceptLegalPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/settings" element={<SettingsPage />} />

@@ -23,6 +23,13 @@ const { countryFromRequest } = require('../lib/countryFromRequest.cjs');
 const { sendVerificationEmail, sendPasswordResetEmail, sendWelcomeEmail } = require('../lib/emailSend.cjs');
 const { emailStatus, isProductionRuntime } = require('../lib/emailConfig.cjs');
 const { pickLocale } = require('../lib/emailTemplates.cjs');
+const {
+  clientMeta: legalClientMeta,
+  currentVersions,
+  legalStatusForUser,
+  recordConsents,
+  validateRegistrationConsents,
+} = require('../lib/legalConsent.cjs');
 
 function requestLocale(req) {
   const body = String(req.body?.locale || '').trim();
@@ -43,6 +50,10 @@ const router = express.Router();
 
 router.get('/email-status', (req, res) => {
   res.json(emailStatus());
+});
+
+router.get('/legal-versions', (req, res) => {
+  res.json({ versions: currentVersions() });
 });
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -75,6 +86,19 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'PASSWORD_MISMATCH', message: '密码不一致' });
     }
 
+    try {
+      validateRegistrationConsents(req.body);
+    } catch (e) {
+      if (e.code === 'LEGAL_CONSENT_REQUIRED') {
+        return res.status(400).json({
+          error: 'LEGAL_CONSENT_REQUIRED',
+          message: '请勾选并同意服务条款、隐私政策与投资免责声明',
+          missing: e.missing,
+        });
+      }
+      throw e;
+    }
+
     const ip = getClientIp(req);
     const referralCode = String(req.body?.referralCode || '').trim().slice(0, 64);
     const { user, verifyToken } = await createUserWithPassword({
@@ -83,6 +107,8 @@ router.post('/register', async (req, res) => {
       ip,
       countryCode: countryFromRequest(req),
     });
+    const legalMeta = legalClientMeta(req);
+    recordConsents(user.id, ['terms', 'privacy', 'disclaimer'], legalMeta);
     setVerifyEmailSent(user.id);
     const locale = requestLocale(req);
     const mail = await sendVerificationEmail({ to: email, token: verifyToken, locale });
@@ -247,6 +273,26 @@ router.post('/resend-verify', async (req, res) => {
 
 router.get('/me', requireAuth, (req, res) => {
   res.json({ user: req.authPublic });
+});
+
+router.post('/accept-legal', requireAuth, (req, res) => {
+  try {
+    validateRegistrationConsents(req.body);
+    const legalMeta = legalClientMeta(req);
+    recordConsents(req.authUser.id, ['terms', 'privacy', 'disclaimer'], legalMeta);
+    const user = getUserById(req.authUser.id);
+    res.json({ ok: true, user: publicUser(user), legal: legalStatusForUser(user) });
+  } catch (e) {
+    if (e.code === 'LEGAL_CONSENT_REQUIRED') {
+      return res.status(400).json({
+        error: 'LEGAL_CONSENT_REQUIRED',
+        message: '请勾选全部同意项',
+        missing: e.missing,
+      });
+    }
+    console.error('[Wenap] accept-legal:', e);
+    res.status(500).json({ error: 'SERVER_ERROR' });
+  }
 });
 
 // Password reset request
