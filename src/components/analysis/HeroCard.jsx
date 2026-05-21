@@ -4,6 +4,20 @@ import './MobileAnalysisReport.css'
 import { scoreHue } from '../../constants/colors.js'
 import Sparkline from './Sparkline.jsx'
 
+function parseStopPrice(raw) {
+  const m = String(raw || '').match(/[\d,]+(?:\.\d+)?/)
+  if (!m) return NaN
+  const n = parseFloat(m[0].replace(/,/g, ''))
+  return Number.isFinite(n) && n > 0 ? n : NaN
+}
+
+function parseRiskRewardRatio(rrStr) {
+  const m = String(rrStr || '').match(/1\s*[:：]\s*([\d.]+)/i)
+  if (!m) return NaN
+  const n = parseFloat(m[1])
+  return Number.isFinite(n) && n > 0 ? n : NaN
+}
+
 const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 
 function mapRiskLevel(risk, t) {
@@ -27,8 +41,16 @@ function formatGeneratedAt(iso) {
   }
 }
 
-export default function HeroCard({ report, onShare, showCompare, onCompare, onReanalyze }) {
+export default function HeroCard({
+  report,
+  onShare,
+  showCompare,
+  onCompare,
+  onReanalyze,
+  scorePercentile,
+}) {
   const { t } = useTranslation()
+  const [rrOpen, setRrOpen] = useState(false)
   const sigLabel = (sig) => {
     if (sig === 'buy') return t('report.signalBuy')
     if (sig === 'sell') return t('report.signalSell')
@@ -137,6 +159,26 @@ export default function HeroCard({ report, onShare, showCompare, onCompare, onRe
         ? '…'
         : '—'
 
+  const stopPrice = parseStopPrice(report.actionLineObj?.stopLoss)
+  const rrCalc = useMemo(() => {
+    const target = displayTarget
+    const current = displayCurrent
+    const stop = stopPrice
+    if (!Number.isFinite(current) || !Number.isFinite(target) || !Number.isFinite(stop)) {
+      return null
+    }
+    const reward = target - current
+    const risk = current - stop
+    if (risk <= 0 || reward <= 0) return null
+    const ratio = reward / risk
+    return { target, current, stop, reward, risk, ratio }
+  }, [displayTarget, displayCurrent, stopPrice])
+
+  const rrDisplay = report.riskReward || (rrCalc ? `1:${rrCalc.ratio.toFixed(1)}` : '')
+
+  const tier = report.reportTier || 'free'
+  const showScoreTierHint = tier === 'pro' || tier === 'pro_plus'
+
   const handleShare = async () => {
     const url = `${window.location.origin}${window.location.pathname}?symbol=${encodeURIComponent(report.ticker)}`
     try {
@@ -199,12 +241,46 @@ export default function HeroCard({ report, onShare, showCompare, onCompare, onRe
             / 100
           </text>
         </svg>
+        {Number.isFinite(scorePercentile) && scorePercentile > 0 ? (
+          <p className="ma-score-percentile ma-num">
+            {t('report.scorePercentile', { pct: scorePercentile })}
+          </p>
+        ) : null}
       </div>
 
       <div className="ma-pills">
         <span className={`ma-pill ma-pill--${report.tendency}`}>{sigLabel(report.tendency)}</span>
         <span className="ma-pill">{t('report.risk', { level: mapRiskLevel(report.risk, t) })}</span>
-        {report.riskReward ? <span className="ma-pill">RR {report.riskReward}</span> : null}
+        {rrDisplay ? (
+          <span className="ma-pill ma-pill--rr">
+            <button
+              type="button"
+              className="ma-rr-btn"
+              aria-expanded={rrOpen}
+              onClick={() => setRrOpen((v) => !v)}
+              title={t('report.rrTooltipTitle')}
+            >
+              RR {rrDisplay}
+            </button>
+            {rrOpen && rrCalc ? (
+              <span className="ma-rr-popover" role="tooltip">
+                {t('report.rrFormula', {
+                  rr: rrCalc.ratio.toFixed(1),
+                  target: rrCalc.target.toFixed(2),
+                  current: rrCalc.current.toFixed(2),
+                  stop: rrCalc.stop.toFixed(2),
+                  reward: rrCalc.reward.toFixed(2),
+                  risk: rrCalc.risk.toFixed(2),
+                })}
+              </span>
+            ) : null}
+          </span>
+        ) : null}
+        {showScoreTierHint ? (
+          <span className="ma-pill ma-pill--info" title={t('report.scoreTierHint')}>
+            ⓘ
+          </span>
+        ) : null}
         {report.model ? (
           <span className="ma-pill ma-pill--model" title={t('report.modelBadge', { model: report.model })}>
             {report.model.includes('sonnet')

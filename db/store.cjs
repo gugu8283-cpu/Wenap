@@ -484,9 +484,45 @@ function setPredictionSkipReason(id, reason) {
   );
 }
 
+function getBuySignalWinRate30d() {
+  initDb();
+  const row = db
+    .prepare(
+      `SELECT COUNT(*) AS total, SUM(r.tendency_correct) AS hits
+       FROM predictions p
+       JOIN prediction_results r ON r.prediction_id = p.id
+       WHERE p.status = 'verified' AND p.is_backtest = 0
+         AND UPPER(p.tendency) = 'BUY'
+         AND p.analyzed_at >= datetime('now', '-30 days')`,
+    )
+    .get();
+  const total = row?.total || 0;
+  if (!total) return null;
+  return Math.round((row.hits / total) * 1000) / 10;
+}
+
+function getScorePercentile(score) {
+  initDb();
+  const s = Number(score);
+  if (!Number.isFinite(s)) return null;
+  const rows = db
+    .prepare(
+      `SELECT score FROM predictions
+       WHERE analyzed_at >= datetime('now', 'start of day')
+         AND score IS NOT NULL`,
+    )
+    .all()
+    .map((r) => Number(r.score))
+    .filter((n) => Number.isFinite(n));
+  if (rows.length < 2) return null;
+  const below = rows.filter((n) => n < s).length;
+  return Math.round((below / rows.length) * 100);
+}
+
 function getPublicAccuracy() {
   initDb();
   const stats = getAccuracyStats({ backtestOnly: false });
+  const buySignalWinRate30d = getBuySignalWinRate30d();
   const recent = db
     .prepare(
       `SELECT p.ticker, p.tendency, p.analyzed_at, r.price_change_pct, r.tendency_correct, r.scenario_hit, p.is_backtest
@@ -498,6 +534,8 @@ function getPublicAccuracy() {
     .all();
   return {
     ...stats,
+    buySignalWinRate30d,
+    pct_correct: stats.total ? stats.tendencyAccuracy : null,
     updatedAt: new Date().toISOString(),
     recent,
   };
@@ -529,4 +567,6 @@ module.exports = {
   getDuePredictions,
   setPredictionSkipReason,
   getPublicAccuracy,
+  getScorePercentile,
+  getBuySignalWinRate30d,
 };

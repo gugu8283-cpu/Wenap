@@ -17,6 +17,22 @@ function CredBadge({ level, t }) {
   return <span className={`ma-cred ${c}`}>{label}</span>
 }
 
+function isStaleSourceDate(raw) {
+  const s = String(raw || '').trim()
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s)
+  let d
+  if (m) d = new Date(`${m[1]}-${m[2]}-${m[3]}T12:00:00Z`)
+  else {
+    try {
+      d = new Date(s)
+    } catch {
+      return false
+    }
+  }
+  if (!d || Number.isNaN(d.getTime())) return false
+  return Date.now() - d.getTime() > 14 * 24 * 60 * 60 * 1000
+}
+
 function formatSourceDate(raw, t) {
   const s = String(raw || '').trim()
   if (!s || s === '—' || s.toLowerCase() === 'null') return t('report.dateUnknown')
@@ -52,6 +68,7 @@ export default function SourcesAccordion({ sources, sourceCount, timeSaved }) {
       </summary>
       {list.map((s, i) => {
         const dateLine = formatSourceDate(s.date, t)
+        const stale = isStaleSourceDate(s.date) || /⚠️|可能过时|may be stale/i.test(s.title || '')
         const fullTitle = s.title || s.url || '来源'
         const shortTitle = truncateTitle(fullTitle)
         return (
@@ -73,8 +90,9 @@ export default function SourcesAccordion({ sources, sourceCount, timeSaved }) {
                   {shortTitle}
                 </span>
               )}
-              <div className="ma-source-meta">
+              <div className={`ma-source-meta${stale ? ' ma-source-meta--stale' : ''}`}>
                 {s.source} · {dateLine}
+                {stale ? ` · ${t('report.sourceStale')}` : ''}
               </div>
             </div>
             <span className="ma-source-arrow" aria-hidden>

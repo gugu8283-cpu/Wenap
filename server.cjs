@@ -782,6 +782,14 @@ JSON 字段与要求：
   "risk": "高" | "中" | "低",
   "riskReward": "如 1:2.5；无法估计留空",
   "summary": "≤28字，一句结论",
+  "coreConclusion": {
+    "headline": "≤32字：关键节点（如财报/政策/产品发布）",
+    "ifBull": "符合预期 → 目标区间（含$与区间，勿复述 outlook）",
+    "ifBear": "不及预期 → 下行风险价位",
+    "action": "建议：买入/持有/观望 + 止损价（含$）"
+  },
+  "riskBlindSpot": "≤48字：1条主分析可能低估的具体风险（附来源日期角标）",
+  "keyLevels": [ { "price": 0, "label": "如120日均线阻力位；最多4条，price为数字" } ],
   "analystPriceLine": "单行：目标价/现价/空间%；无则空",
   "dimensions": [ ${dimensionJsonSpec(assetType, loc)} ],
   "detailAnalysis": "260-360 chars; new facts only; escape quotes in JSON",
@@ -795,7 +803,7 @@ JSON 字段与要求：
     "bear": { "p": 0-100, "range": "…", "trigger": "≤36字" }
   },
   "valuationBridge": "≤36字或空",
-  "technicalSnapshot": "≤56字或空",
+  "technicalSnapshot": "≤80字；关键技术位须写为 $价格（来源说明），如 $236.54（120日均线阻力位）",
   "outlook": "≤120字；与期限 ${h} 一致",
   "disclaimer": "${defaultDisclaimer(loc).replace(/"/g, '\\"')}"
 }
@@ -1863,6 +1871,25 @@ function stripDataForViz(data, { tier = 'free', latestPrice = NaN, locale = 'zh-
     risk: data.risk,
     riskReward: data.riskReward,
     summary: data.summary,
+    coreConclusion:
+      data.coreConclusion && typeof data.coreConclusion === 'object'
+        ? {
+            headline: String(data.coreConclusion.headline || '').trim().slice(0, 80),
+            ifBull: String(data.coreConclusion.ifBull || data.coreConclusion.bullCase || '').trim().slice(0, 120),
+            ifBear: String(data.coreConclusion.ifBear || data.coreConclusion.bearCase || '').trim().slice(0, 120),
+            action: String(data.coreConclusion.action || '').trim().slice(0, 120),
+          }
+        : null,
+    riskBlindSpot: String(data.riskBlindSpot || '').trim().slice(0, 120),
+    keyLevels: Array.isArray(data.keyLevels)
+      ? data.keyLevels
+          .slice(0, 4)
+          .map((k) => ({
+            price: Number(k?.price),
+            label: String(k?.label || k?.source || '').trim().slice(0, 48),
+          }))
+          .filter((k) => Number.isFinite(k.price) && k.price > 0 && k.label)
+      : [],
     dataAsOf: data.dataAsOf,
     reportTier: tier,
     latestPriceUsd: Number.isFinite(latestPrice) && latestPrice > 0 ? latestPrice : null,
@@ -2359,6 +2386,17 @@ app.get('/market/sparkline', async (req, res) => {
     res.json({ ticker, points });
   } catch (e) {
     res.status(502).json({ error: e.message || 'sparkline failed' });
+  }
+});
+
+/** 公开：当日分析评分百分位（CONVERT-01） */
+app.get('/stats/score-percentile', (req, res) => {
+  try {
+    const store = require('./db/store.cjs');
+    const percentile = store.getScorePercentile(req.query?.score);
+    res.json({ percentile: percentile ?? null, sampleSize: percentile != null ? 'ok' : 'insufficient' });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 

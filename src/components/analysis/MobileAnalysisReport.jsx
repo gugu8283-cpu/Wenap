@@ -3,6 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { snapshotToMobileReport } from '../../utils/snapshotToMobileReport.js'
 import './MobileAnalysisReport.css'
 import HeroCard from './HeroCard.jsx'
+import CoreConclusionCard from './CoreConclusionCard.jsx'
+import KeyLevelsSection from './KeyLevelsSection.jsx'
+import AccuracyTeaser from './AccuracyTeaser.jsx'
 import RadarSection from './RadarSection.jsx'
 import ScenarioSection from './ScenarioSection.jsx'
 import SupplyChainSection from './SupplyChainSection.jsx'
@@ -16,7 +19,8 @@ import CritiqueSection from './CritiqueSection.jsx'
 import ExportPdfButton from './ExportPdfButton.jsx'
 import Skeleton, { HeroSkeleton, RadarSkeleton, BlockSkeleton } from './Skeleton.jsx'
 
-const SECTION_COUNT = 9
+const SECTION_COUNT = 10
+const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 
 export default function MobileAnalysisReport({
   snapshot,
@@ -48,6 +52,7 @@ export default function MobileAnalysisReport({
   }, [report])
 
   const [revealed, setRevealed] = useState(0)
+  const [scorePercentile, setScorePercentile] = useState(null)
   const revealKey = report ? `${report.ticker}|${report.dataAsOf}|${report.generatedAt}` : ''
 
   useEffect(() => {
@@ -58,6 +63,21 @@ export default function MobileAnalysisReport({
     }
     return () => timers.forEach(clearTimeout)
   }, [revealKey])
+
+  useEffect(() => {
+    if (!report?.score) return undefined
+    const base = API_BASE.replace(/\/$/, '')
+    let cancelled = false
+    fetch(`${base}/stats/score-percentile?score=${encodeURIComponent(report.score)}`)
+      .then((r) => r.json())
+      .then((j) => {
+        if (!cancelled && Number.isFinite(j.percentile)) setScorePercentile(j.percentile)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [report?.score, report?.ticker])
 
   const tier = snapshot?.reportTier || report?.reportTier || 'free'
   const isFree = tier === 'free'
@@ -91,31 +111,40 @@ export default function MobileAnalysisReport({
   return (
     <div className="mobile-analysis-root">
       {vis(1) ? (
-        <HeroCard report={report} showCompare={false} onCompare={onCompare} />
+        <HeroCard
+          report={report}
+          showCompare={false}
+          onCompare={onCompare}
+          scorePercentile={scorePercentile}
+        />
       ) : (
         <HeroSkeleton />
       )}
-      {vis(2) ? <RadarSection dimensions={report.dimensions} /> : <RadarSkeleton />}
-      {vis(3) ? (
+      {vis(2) ? <CoreConclusionCard conclusion={report.coreConclusion} /> : null}
+      {vis(3) ? <RadarSection dimensions={report.dimensions} /> : <RadarSkeleton />}
+      {vis(4) ? (
         <ScenarioSection scenarios={report.scenarios} currentPrice={report.currentPrice} />
       ) : (
         <BlockSkeleton h={100} />
       )}
-      {vis(4) ? (
+      {vis(5) ? (
         report.supplyChain?.length ? (
           <SupplyChainSection rows={report.supplyChain} onAnalyzeCode={onAnalyzeSymbol} />
         ) : null
       ) : report.supplyChain?.length ? (
         <BlockSkeleton h={72} />
       ) : null}
-      {vis(5) ? (
+      {vis(6) ? (
         isProPlus ? (
           <BullBearSection bullBearDebate={report.bullBearDebate} />
         ) : isPro ? (
           <ProPlusLockedSection hints={report.proPlusFieldHints} onUpgrade={onUpgrade} />
         ) : null
       ) : null}
-      {vis(6) ? (
+      {report.keyLevels?.length ? (
+        <KeyLevelsSection levels={report.keyLevels} listingCurrency={report.listingCurrency} />
+      ) : null}
+      {vis(7) ? (
         <ProFieldsSection
           report={report}
           locked={isFree}
@@ -125,7 +154,7 @@ export default function MobileAnalysisReport({
       ) : (
         <BlockSkeleton h={72} />
       )}
-      {vis(7) ? (
+      {vis(8) ? (
         <ForecastCard
           forecast={report.forecast}
           assumption={report.forecastAssumption}
@@ -134,7 +163,7 @@ export default function MobileAnalysisReport({
       ) : (
         <BlockSkeleton h={88} />
       )}
-      {vis(8) ? (
+      {vis(9) ? (
         <>
           {targetPriceMismatch ? (
             <p className="ma-target-mismatch-warn">⚠️ {t('report.targetMismatch')}</p>
@@ -144,13 +173,30 @@ export default function MobileAnalysisReport({
             sourceCount={report.sourceCount}
             timeSaved={report.timeSaved}
           />
+          <AccuracyTeaser />
         </>
       ) : (
         <BlockSkeleton h={48} />
       )}
-      {isProPlus && report.secondPassCritique ? (
-        <CritiqueSection critique={report.secondPassCritique} />
-      ) : null}
+      {(() => {
+        const critique =
+          report.secondPassCritique ||
+          (report.riskBlindSpot ? { blindSpot: report.riskBlindSpot, weaknesses: [] } : null)
+        if (!critique) return null
+        if (isProPlus) return <CritiqueSection critique={critique} />
+        if (isFree || isPro) {
+          const n = report.secondPassCritique?.weaknesses?.length || 0
+          return (
+            <CritiqueSection
+              critique={critique}
+              previewMode
+              lockedCount={Math.max(2, n > 1 ? n - 1 : 2)}
+              onUpgrade={onUpgrade}
+            />
+          )
+        }
+        return null
+      })()}
       {isProPlus ? (
         <div className="ma-pro-plus-actions">
           <ExportPdfButton report={report} />

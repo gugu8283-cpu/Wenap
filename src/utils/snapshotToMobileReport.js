@@ -1,4 +1,5 @@
 import { COLORS, scoreHue } from '../constants/colors.js'
+import { normalizeCoreConclusion, parseKeyLevelsFromSnapshot } from './buildCoreConclusion.js'
 
 function signalToTendency(sig) {
   const u = String(sig || '').toUpperCase()
@@ -243,6 +244,17 @@ export function snapshotToMobileReport(snapshot, meta = {}) {
     }
   }
 
+  const coreConclusion = normalizeCoreConclusion(snapshot.coreConclusion, {
+    summary: String(snapshot.summary || '').trim(),
+    forecast: String(snapshot.outlook || '').trim(),
+    actionLineObj:
+      snapshot.actionLineObj && typeof snapshot.actionLineObj === 'object'
+        ? snapshot.actionLineObj
+        : {},
+    scenarios: scenariosWithDetail.length ? scenariosWithDetail : scenarios,
+  })
+  const keyLevels = parseKeyLevelsFromSnapshot(snapshot)
+
   return {
     ticker,
     name,
@@ -257,6 +269,9 @@ export function snapshotToMobileReport(snapshot, meta = {}) {
     targetPrice: target,
     upside,
     summary: String(snapshot.summary || '').trim(),
+    coreConclusion,
+    keyLevels,
+    riskBlindSpot: String(snapshot.riskBlindSpot || '').trim(),
     technicalSnapshot: String(snapshot.technicalSnapshot || '').trim(),
     dimensions: dims,
     scenarios: scenariosWithDetail.length ? scenariosWithDetail : scenarios,

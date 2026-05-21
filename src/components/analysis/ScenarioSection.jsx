@@ -168,6 +168,7 @@ export default function ScenarioSection({ scenarios, currentPrice }) {
           </text>
         </svg>
       ) : null}
+      <p className="ma-scenario-disclaimer">{t('report.scenarioProbDisclaimer')}</p>
     </div>
   )
 }

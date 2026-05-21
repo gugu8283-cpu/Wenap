@@ -92,7 +92,9 @@ export default function LandingPage() {
 
           {accuracy && accuracy.total > 0 ? (
             <div className="landing-accuracy-pill">
-              <span className="landing-accuracy-num">{accuracy.pct_correct ?? '—'}%</span>
+              <span className="landing-accuracy-num">
+                {accuracy.buySignalWinRate30d ?? accuracy.pct_correct ?? accuracy.tendencyAccuracy ?? '—'}%
+              </span>
               <span className="landing-accuracy-label">
                 {t('landing.accuracyLabel', { count: accuracy.total })}
               </span>
