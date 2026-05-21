@@ -1,0 +1,263 @@
+.cv-social-proof {
+  font-size: 12px;
+  color: var(--text-secondary, #94a3b8);
+  text-align: center;
+  margin: -4px 0 10px;
+  padding: 0 8px;
+}
+
+.cv-aha-card {
+  background: linear-gradient(160deg, rgba(29, 158, 117, 0.12), rgba(55, 138, 221, 0.1));
+  border: 1px solid rgba(29, 158, 117, 0.3);
+}
+
+.cv-aha-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+
+.cv-aha-sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 10px;
+}
+
+.cv-aha-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.cv-aha-foot {
+  font-size: 13px;
+  font-weight: 500;
+  margin: 12px 0 0;
+}
+
+.cv-aha-dismiss {
+  margin-top: 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.cv-profile-card {
+  margin-bottom: 12px;
+}
+
+.cv-profile-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
+.cv-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.cv-profile-num {
+  display: block;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.cv-profile-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.cv-profile-hint {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.cv-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.cv-modal {
+  max-width: 400px;
+  width: 100%;
+  background: var(--bg-card, #1e293b);
+  border-radius: 16px;
+  padding: 24px 20px;
+  position: relative;
+  border: 1px solid var(--border, #334155);
+}
+
+.cv-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.cv-modal-lead {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 10px;
+  line-height: 1.4;
+}
+
+.cv-modal-stats,
+.cv-modal-social {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 8px;
+}
+
+.cv-modal-urgent {
+  font-size: 14px;
+  color: #f59e0b;
+  margin: 12px 0;
+  line-height: 1.45;
+}
+
+.cv-modal-loss {
+  font-size: 14px;
+  margin: 12px 0 16px;
+  line-height: 1.5;
+}
+
+.cv-modal-price {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.cv-modal-price-now {
+  font-size: 32px;
+  font-weight: 700;
+  color: #4ade80;
+  margin-right: 8px;
+}
+
+.cv-modal-price-was {
+  font-size: 16px;
+  text-decoration: line-through;
+  color: var(--text-secondary);
+}
+
+.cv-modal-price-note {
+  display: block;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.cv-modal-cta {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 14px;
+  border-radius: 10px;
+  background: #378add;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 16px;
+}
+
+.cv-modal-risk {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 10px 0 0;
+}
+
+.cv-modal-foot {
+  text-align: center;
+  font-size: 12px;
+  margin: 8px 0 0;
+}
+
+.cv-modal-alt {
+  display: block;
+  text-align: center;
+  margin-top: 12px;
+  font-size: 13px;
+  color: #378add;
+}
+
+.cv-soft-nudge {
+  text-align: center;
+  border: 1px dashed rgba(245, 166, 35, 0.45);
+  background: rgba(245, 166, 35, 0.08);
+}
+
+.cv-soft-nudge-text {
+  font-size: 14px;
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+
+.cv-soft-nudge-btn {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: #378add;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.cv-soft-nudge-skip {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.cv-risk-focus-label {
+  margin-top: 12px;
+}
+
+.cv-risk-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.cv-risk-chip {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: inherit;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.cv-risk-chip--active {
+  border-color: #378add;
+  background: rgba(55, 138, 221, 0.15);
+}
+
+.ma-pro-plus-social {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0 0 10px;
+}

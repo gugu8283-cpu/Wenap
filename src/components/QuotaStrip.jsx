@@ -17,8 +17,8 @@ export default function QuotaStrip({ quotaBanner }) {
     <div className="quota-strip">
       <span className="quota-strip-text">
         {remaining > 0
-          ? t('quotaStrip.remaining', { used: cap - remaining, cap, remaining })
-          : t('quotaStrip.exhausted', { cap })}
+          ? t('quotaStrip.achievement', { count: cap - remaining })
+          : t('quotaStrip.exhaustedLoss', { cap })}
       </span>
       <Link to="/pricing" className="quota-strip-cta">
         {t('quotaStrip.upgrade')}

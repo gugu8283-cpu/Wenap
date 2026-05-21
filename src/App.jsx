@@ -6,6 +6,9 @@ import AnalysisViz from './AnalysisViz.jsx'
 import EconomicsPanel from './EconomicsPanel.jsx'
 import LanguageSwitcher from './components/LanguageSwitcher.jsx'
 import QuotaStrip from './components/QuotaStrip.jsx'
+import ResearchProfileCard from './components/conversion/ResearchProfileCard.jsx'
+import UpgradeDecisionModal from './components/conversion/UpgradeDecisionModal.jsx'
+import './components/conversion/conversion.css'
 import NotificationCenter from './components/NotificationCenter.jsx'
 import { resolveAppLanguage } from './i18n/index.js'
 import { useAuth } from './context/AuthContext.jsx'
@@ -16,6 +19,7 @@ const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 
 const ASSET_TYPE_IDS = ['stock', 'etf', 'reit', 'commodity_etf']
 const HORIZON_IDS = ['1m', '3m', '6m', '1y', '2y']
+const RISK_FOCUS_IDS = ['', 'geo', 'competition', 'macro', 'earnings']
 
 const PRICING = { pro: '$9.99/月', pro_plus: '$19.99/月' }
 const FREE_MONTHLY_CAP = 5
@@ -150,6 +154,9 @@ export default function App() {
   const [historySearch, setHistorySearch] = useState('')
   const [historySignalFilter, setHistorySignalFilter] = useState('')
   const [showUpgradeCta, setShowUpgradeCta] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [researchProfile, setResearchProfile] = useState(null)
+  const [riskFocus, setRiskFocus] = useState('')
   const [vizSnapshot, setVizSnapshot] = useState(null)
   const [quotaBanner, setQuotaBanner] = useState(null)
   const [theme, setTheme] = useState(() => getTheme())
@@ -207,9 +214,20 @@ export default function App() {
     }
   }, [])
 
+  const refreshResearchProfile = useCallback(async () => {
+    if (!user) return
+    try {
+      const p = await apiFetch('/user/research-profile')
+      setResearchProfile(p)
+    } catch {
+      /* ignore */
+    }
+  }, [user])
+
   useEffect(() => {
     refreshQuota()
-  }, [refreshQuota, user?.id])
+    refreshResearchProfile()
+  }, [refreshQuota, refreshResearchProfile, user?.id])
 
   useEffect(() => {
     if (!loading || !loadingLines?.length) return
@@ -256,6 +274,7 @@ export default function App() {
 
       setError('')
       setShowUpgradeCta(false)
+      setShowUpgradeModal(false)
       setMeta(null)
       setVizSnapshot(null)
       setStreamText('')
@@ -279,6 +298,7 @@ export default function App() {
             assetType: ast,
             horizon: hor,
             locale: resolveAppLanguage(i18n.resolvedLanguage || i18n.language),
+            riskFocus: riskFocus || undefined,
           }),
           signal: ac.signal,
         })
@@ -289,6 +309,8 @@ export default function App() {
             const j = await resp.json().catch(() => ({}))
             if (j.error === 'FREE_QUOTA_EXCEEDED') {
               setShowUpgradeCta(true)
+              setShowUpgradeModal(true)
+              refreshResearchProfile()
             }
             if (handleAuthFailure(j)) {
               /* cleared stale session */
@@ -362,6 +384,7 @@ export default function App() {
         }
 
         refreshQuota()
+        refreshResearchProfile()
         refreshUser()
       } catch (e) {
         if (e?.name === 'AbortError') return
@@ -375,7 +398,18 @@ export default function App() {
         setLoading(false)
       }
     },
-    [ticker, assetType, horizon, clientTier, refreshQuota, refreshUser, t, i18n.language],
+    [
+      ticker,
+      assetType,
+      horizon,
+      riskFocus,
+      clientTier,
+      refreshQuota,
+      refreshResearchProfile,
+      refreshUser,
+      t,
+      i18n.language,
+    ],
   )
 
   const addCurrentToWatchlist = useCallback(async () => {
@@ -593,6 +627,20 @@ export default function App() {
           ))}
         </div>
 
+        <p className="label cv-risk-focus-label">{t('convert.riskFocusLabel')}</p>
+        <div className="cv-risk-chips" role="group" aria-label={t('convert.riskFocusLabel')}>
+          {RISK_FOCUS_IDS.map((id) => (
+            <button
+              key={id || 'all'}
+              type="button"
+              className={`cv-risk-chip${riskFocus === id ? ' cv-risk-chip--active' : ''}`}
+              onClick={() => setRiskFocus(id)}
+            >
+              {id ? t(`convert.riskFocus.${id}`) : t('convert.riskFocus.all')}
+            </button>
+          ))}
+        </div>
+
         <button
           type="button"
           className="btn-primary"
@@ -688,21 +736,26 @@ export default function App() {
         </div>
       )}
 
-      {showUpgradeCta && (
-        <div className="card upgrade-card">
-          <p className="upgrade-title">{t('app.upgradeTitle')}</p>
-          <p className="upgrade-row">{t('app.upgradePro', { price: PRICING.pro })}</p>
-          <p className="upgrade-row">{t('app.upgradeProPlus', { price: PRICING.pro_plus })}</p>
-          <a
-            href={SUBSCRIBE_URL || '/pricing'}
-            className="upgrade-cta-btn"
-            target={SUBSCRIBE_URL ? '_blank' : undefined}
-            rel={SUBSCRIBE_URL ? 'noopener noreferrer' : undefined}
-          >
-            {t('app.upgradeBtn')}
-          </a>
-        </div>
-      )}
+      <UpgradeDecisionModal
+        open={showUpgradeModal || showUpgradeCta}
+        onClose={() => {
+          setShowUpgradeModal(false)
+          setShowUpgradeCta(false)
+        }}
+        profile={researchProfile}
+        ticker={meta?.ticker || ticker}
+        catalystHint={
+          vizSnapshot?.actionLineObj?.catalyst
+            ? t('convert.upgradeCatalyst', {
+                ticker: meta?.ticker || ticker,
+                event: vizSnapshot.actionLineObj.catalyst,
+              })
+            : null
+        }
+        subscribeUrl={SUBSCRIBE_URL}
+      />
+
+      {user ? <ResearchProfileCard tier={quotaBanner?.tier || clientTier} /> : null}
 
       {hasResults && !error && (
         <section className="results">

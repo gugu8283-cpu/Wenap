@@ -727,6 +727,23 @@ function tierPromptExtensions(tier) {
 const { searchIntegrityBlock, sourceFreshnessBlock } = require('./lib/promptSearchRules.cjs');
 const { parsePricesFromLine } = require('./lib/parsePrices.cjs');
 
+const RISK_FOCUS_LABELS = {
+  geo: { 'zh-CN': '地缘政治与出口管制', en: 'Geopolitics & export controls' },
+  competition: { 'zh-CN': '竞争与替代品', en: 'Competition & substitutes' },
+  macro: { 'zh-CN': '宏观与利率', en: 'Macro & rates' },
+  earnings: { 'zh-CN': '财报与盈利质量', en: 'Earnings & margins' },
+};
+
+function riskFocusPromptBlock(riskFocus, loc) {
+  const key = String(riskFocus || '').trim().toLowerCase();
+  if (!key || !RISK_FOCUS_LABELS[key]) return '';
+  const zh = loc.startsWith('zh');
+  const label = zh ? RISK_FOCUS_LABELS[key]['zh-CN'] : RISK_FOCUS_LABELS[key].en;
+  return zh
+    ? `\n【用户关注风险】用户希望重点评估：${label}。请在最相关维度的 note、riskBlindSpot 与 outlook 中加强，勿忽略反面证据。`
+    : `\n【User risk focus】Prioritize: ${label}. Strengthen in relevant dimension notes, riskBlindSpot, and outlook; include counter-evidence.`;
+}
+
 function buildMainJsonPrompt({
   ticker,
   assetType,
@@ -736,6 +753,7 @@ function buildMainJsonPrompt({
   exchangeHint,
   tier = 'free',
   locale = 'zh-CN',
+  riskFocus = '',
 }) {
   const loc = normalizeLocale(locale);
   const h = horizonLabel(horizon, loc);
@@ -769,6 +787,7 @@ ${dimensionBoundaryPromptBlock(loc)}
 【书写】禁 URL；角标仅 [SEC][交易所][IR][新闻][披露][行情][研报]。**同一事实只出现一次**（summary/六维/detail/outlook 互斥，勿复述）。无数据填空串。
 
 ${policyDimBlock}
+${riskFocusPromptBlock(riskFocus, loc)}
 ${searchIntegrityBlock(loc)}
 ${sourceFreshnessBlock(loc)}
 只输出一个合法 JSON（禁止 Markdown 围栏与 JSON 外字符）。
@@ -2079,7 +2098,16 @@ async function streamChunkedMarkdown(res, markdown) {
 async function runAnalyzePipeline(
   res,
   apiKey,
-  { symbol, assetType, horizon, tier, userKey, authContext = null, locale = 'zh-CN' },
+  {
+    symbol,
+    assetType,
+    horizon,
+    tier,
+    userKey,
+    authContext = null,
+    locale = 'zh-CN',
+    riskFocus = '',
+  },
 ) {
   const mainModel = mainModelForTier(tier);
   const pipelineStarted = Date.now();
@@ -2126,6 +2154,7 @@ async function runAnalyzePipeline(
       exchangeHint,
       tier,
       locale: normalizeLocale(locale),
+      riskFocus,
     });
     if (bailIfClientGone('main-prompt')) return;
     const mainResult = await openRouterChat(apiKey, {
@@ -2389,6 +2418,39 @@ app.get('/market/sparkline', async (req, res) => {
   }
 });
 
+const { getSocialProof, getUserResearchProfile } = require('./lib/conversionStats.cjs');
+
+/** 公开：社会证明统计（真实 DB） */
+app.get('/stats/social-proof', (req, res) => {
+  try {
+    const store = require('./db/store.cjs');
+    const db = store.getDb();
+    res.json(getSocialProof(db, req.query?.ticker));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/** 登录用户：个人投研档案 */
+app.get('/user/research-profile', requireAuth, (req, res) => {
+  try {
+    const store = require('./db/store.cjs');
+    const db = store.getDb();
+    const profile = getUserResearchProfile(db, req.authUser.id);
+    const used = req.authPublic?.freeTrialsUsed ?? 0;
+    const remaining = req.authPublic?.freeTrialsRemaining ?? 0;
+    res.json({
+      ...profile,
+      tier: authDb.normalizeTier(req.authUser.tier),
+      monthlyUsed: used,
+      monthlyRemaining: remaining,
+      monthlyCap: authDb.FREE_MONTHLY_CAP,
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 /** 公开：当日分析评分百分位（CONVERT-01） */
 app.get('/stats/score-percentile', (req, res) => {
   try {
@@ -2548,7 +2610,7 @@ app.get('/history/:id', requireAuth, (req, res) => {
 });
 
 app.post('/analyze', requireAuth, async (req, res) => {
-  const { ticker, assetType, horizon } = req.body || {};
+  const { ticker, assetType, horizon, riskFocus } = req.body || {};
   const symbol = typeof ticker === 'string' ? ticker.trim().toUpperCase() : '';
   if (!symbol) {
     return res.status(400).json({ error: 'Ticker required' });
@@ -2635,6 +2697,7 @@ app.post('/analyze', requireAuth, async (req, res) => {
     tier,
     userKey,
     locale,
+    riskFocus: String(riskFocus || '').trim(),
     authContext: { userId: req.authUser.id, fingerprint: '', ip },
   });
 });

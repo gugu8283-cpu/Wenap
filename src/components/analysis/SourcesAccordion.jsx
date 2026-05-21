@@ -64,7 +64,7 @@ export default function SourcesAccordion({ sources, sourceCount, timeSaved }) {
   return (
     <details className="ma-card ma-sources-card">
       <summary className="ma-sources-summary">
-        {t('report.sourcesSummary', { count: n, hours: timeSaved ?? 1 })}
+        {t('report.sourcesSummaryLoss', { count: n, hours: timeSaved ?? 3 })}
       </summary>
       {list.map((s, i) => {
         const dateLine = formatSourceDate(s.date, t)

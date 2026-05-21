@@ -40,7 +40,7 @@ export default function CritiqueSection({
       {previewMode && extraLocked > 0 ? (
         <div className="ma-critique-lock">
           <p className="ma-critique-lock-text">
-            {t('report.critiquePreviewLock', { count: extraLocked })}
+            {t('report.critiquePreviewLockLoss', { count: extraLocked })}
           </p>
           {onUpgrade ? (
             <button type="button" className="ma-critique-lock-btn" onClick={onUpgrade}>

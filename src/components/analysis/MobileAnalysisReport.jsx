@@ -6,6 +6,9 @@ import HeroCard from './HeroCard.jsx'
 import CoreConclusionCard from './CoreConclusionCard.jsx'
 import KeyLevelsSection from './KeyLevelsSection.jsx'
 import AccuracyTeaser from './AccuracyTeaser.jsx'
+import SocialProofBanner from '../conversion/SocialProofBanner.jsx'
+import AhaMomentCard, { shouldShowAha, markAhaSeen } from '../conversion/AhaMomentCard.jsx'
+import QuotaSoftNudge from '../conversion/QuotaSoftNudge.jsx'
 import RadarSection from './RadarSection.jsx'
 import ScenarioSection from './ScenarioSection.jsx'
 import SupplyChainSection from './SupplyChainSection.jsx'
@@ -53,6 +56,7 @@ export default function MobileAnalysisReport({
 
   const [revealed, setRevealed] = useState(0)
   const [scorePercentile, setScorePercentile] = useState(null)
+  const [showAha, setShowAha] = useState(() => shouldShowAha())
   const revealKey = report ? `${report.ticker}|${report.dataAsOf}|${report.generatedAt}` : ''
 
   useEffect(() => {
@@ -111,16 +115,29 @@ export default function MobileAnalysisReport({
   return (
     <div className="mobile-analysis-root">
       {vis(1) ? (
-        <HeroCard
-          report={report}
-          showCompare={false}
-          onCompare={onCompare}
-          scorePercentile={scorePercentile}
-        />
+        <>
+          <SocialProofBanner ticker={report.ticker} />
+          <HeroCard
+            report={report}
+            showCompare={false}
+            onCompare={onCompare}
+            scorePercentile={scorePercentile}
+          />
+        </>
       ) : (
         <HeroSkeleton />
       )}
       {vis(2) ? <CoreConclusionCard conclusion={report.coreConclusion} /> : null}
+      {showAha && vis(2) ? (
+        <AhaMomentCard
+          sourceCount={report.sourceCount}
+          hasRiskBlindSpot={Boolean(report.riskBlindSpot)}
+          onDismiss={() => {
+            markAhaSeen()
+            setShowAha(false)
+          }}
+        />
+      ) : null}
       {vis(3) ? <RadarSection dimensions={report.dimensions} /> : <RadarSkeleton />}
       {vis(4) ? (
         <ScenarioSection scenarios={report.scenarios} currentPrice={report.currentPrice} />
@@ -138,7 +155,11 @@ export default function MobileAnalysisReport({
         isProPlus ? (
           <BullBearSection bullBearDebate={report.bullBearDebate} />
         ) : isPro ? (
-          <ProPlusLockedSection hints={report.proPlusFieldHints} onUpgrade={onUpgrade} />
+          <ProPlusLockedSection
+            hints={report.proPlusFieldHints}
+            onUpgrade={onUpgrade}
+            ticker={report.ticker}
+          />
         ) : null
       ) : null}
       {report.keyLevels?.length ? (
@@ -203,7 +224,14 @@ export default function MobileAnalysisReport({
         </div>
       ) : null}
       {isFree ? (
-        <ProUpgradeBar quotaBanner={quotaBanner} subscribeUrl={subscribeUrl} onDevUnlock={onDevUnlock} />
+        <>
+          <QuotaSoftNudge
+            quotaBanner={quotaBanner}
+            ticker={report.ticker}
+            onUpgrade={onUpgrade}
+          />
+          <ProUpgradeBar quotaBanner={quotaBanner} subscribeUrl={subscribeUrl} onDevUnlock={onDevUnlock} />
+        </>
       ) : null}
     </div>
   )

@@ -7,15 +7,15 @@ export default function ProUpgradeBar({ quotaBanner, subscribeUrl, onDevUnlock }
 
   const hint = useMemo(() => {
     if (!quotaBanner || quotaBanner.tier !== 'free') {
-      return t('report.upgradeBar.unlockHint')
+      return t('report.upgradeBar.unlockLoss')
     }
     if (quotaBanner.unlimited) return t('report.upgradeBar.unlockHint')
     const r = quotaBanner.remaining
     if (typeof r !== 'number' || !Number.isFinite(r) || r === Number.POSITIVE_INFINITY) {
-      return t('report.upgradeBar.unlockHint')
+      return t('report.upgradeBar.unlockLoss')
     }
-    if (r > 0) return t('report.upgradeBar.remaining', { count: r })
-    return t('report.upgradeBar.exhausted')
+    if (r > 0) return t('report.upgradeBar.remainingLoss', { count: r })
+    return t('report.upgradeBar.exhaustedLoss')
   }, [quotaBanner, t])
 
   const onCta = () => {
@@ -34,7 +34,7 @@ export default function ProUpgradeBar({ quotaBanner, subscribeUrl, onDevUnlock }
       <div className="ma-upgrade-bar-inner">
         <span className="ma-upgrade-hint">{hint}</span>
         <button type="button" className="ma-upgrade-cta" onClick={onCta}>
-          {t('report.upgradeBar.cta')}
+          {t('report.upgradeBar.ctaLoss')}
         </button>
       </div>
     </div>

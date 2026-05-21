@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+
+const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { apiFetch } from '../lib/api.js'
 import { useAuth } from '../context/AuthContext.jsx'
@@ -44,6 +46,7 @@ export default function PricingPage() {
   const { user } = useAuth()
   const [loadingTier, setLoadingTier] = useState(null)
   const [error, setError] = useState('')
+  const [social, setSocial] = useState(null)
 
   const checkoutStatus = searchParams.get('checkout')
 
@@ -52,6 +55,14 @@ export default function PricingPage() {
       navigate('/', { replace: true })
     }
   }, [checkoutStatus, navigate])
+
+  useEffect(() => {
+    const base = API_BASE.replace(/\/$/, '')
+    fetch(`${base}/stats/social-proof`)
+      .then((r) => r.json())
+      .then(setSocial)
+      .catch(() => {})
+  }, [])
 
   async function handleUpgrade(tier) {
     if (!user) {
@@ -85,6 +96,9 @@ export default function PricingPage() {
       <div className="pricing-hero">
         <h1 className="pricing-title">{t('pricing.title')}</h1>
         <p className="pricing-sub">{t('pricing.sub')}</p>
+        {social?.usersTotal > 0 ? (
+          <p className="pricing-social">{t('convert.upgradeUsers', { count: social.usersTotal })}</p>
+        ) : null}
       </div>
 
       {error && <p className="pricing-error">{error}</p>}

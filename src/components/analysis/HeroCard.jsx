@@ -304,10 +304,29 @@ export default function HeroCard({
           <div className="ma-sparkline-wrap ma-sparkline-wrap--empty" aria-hidden />
         )}
         <span>
-          {t('report.targetPrice')} {fmtPrice(displayTarget)} ·{' '}
-          <span className="ma-upside">
-            {t('report.upside')} {upsideStr}
-          </span>
+          {t('report.targetPrice')} {fmtPrice(displayTarget)}
+          {Number.isFinite(displayUpside) &&
+          displayUpside > 0 &&
+          Number.isFinite(displayTarget) &&
+          Number.isFinite(displayCurrent) ? (
+            <>
+              {' '}
+              ·{' '}
+              <span className="ma-upside ma-upside--loss">
+                {t('report.upsideLoss', {
+                  amount: (displayTarget - displayCurrent).toFixed(0),
+                })}
+              </span>
+            </>
+          ) : (
+            <>
+              {' '}
+              ·{' '}
+              <span className="ma-upside">
+                {quoteLoading ? '…' : t('report.upsidePending')}
+              </span>
+            </>
+          )}
         </span>
       </div>
 
