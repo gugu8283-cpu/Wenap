@@ -63,11 +63,15 @@
 3. 注册 / 登录 → 跑一次分析  
 4. 管理后台 `https://你的域名.onrender.com/admin` → 用 `ADMIN_SECRET` 登录  
 
-## 自定义域名（可选）
+## 自定义域名（wenap.app）
 
-1. Render 服务 → **Settings** → **Custom Domains** → 添加域名  
-2. 在 Cloudflare（或其它 DNS）添加 CNAME 指向 Render  
-3. 把 `APP_PUBLIC_URL` 改成 `https://你的域名` → **Manual Deploy** 或改 env 后自动 redeploy  
+完整步骤见 **[DOMAIN-wenap.app.md](./DOMAIN-wenap.app.md)**。
+
+1. Render → **Custom Domains** → 添加 `wenap.app`（及可选 `www.wenap.app`）  
+2. Cloudflare DNS：根域与 `www` CNAME 到 Render 给出的 `*.onrender.com`  
+3. `APP_PUBLIC_URL=https://wenap.app` → Save（自动 redeploy）  
+4. Stripe Webhook → `https://wenap.app/api/billing/webhook`  
+5. Resend 验证 `wenap.app`，`MAIL_FROM=Wenap <noreply@wenap.app>`  
 
 ## 费用与限制
 

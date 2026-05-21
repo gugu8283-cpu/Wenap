@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 
 import LanguageSwitcher from '../components/LanguageSwitcher.jsx'
 
-import { adminFetch, setAdminToken } from './adminApi.js'
+import { adminFetch, setAdminPin, setAdminToken } from './adminApi.js'
 
 
 
@@ -13,6 +13,7 @@ export default function AdminLogin({ onSuccess }) {
   const { t } = useTranslation()
 
   const [secret, setSecret] = useState('')
+  const [pin, setPin] = useState('')
 
   const [err, setErr] = useState('')
 
@@ -29,6 +30,7 @@ export default function AdminLogin({ onSuccess }) {
     setLoading(true)
 
     setAdminToken(secret)
+    setAdminPin(pin)
 
     try {
 
@@ -85,6 +87,22 @@ export default function AdminLogin({ onSuccess }) {
           onChange={(e) => setSecret(e.target.value)}
 
           placeholder="ADMIN_SECRET"
+
+          autoComplete="off"
+
+        />
+
+        <input
+
+          type="password"
+
+          className="mt-3 w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-white"
+
+          value={pin}
+
+          onChange={(e) => setPin(e.target.value)}
+
+          placeholder="ADMIN_PIN（服务器已配置时必填）"
 
           autoComplete="off"
 

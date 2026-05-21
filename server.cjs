@@ -2740,6 +2740,15 @@ app.post('/analyze', requireAuth, async (req, res) => {
   });
 });
 
+const { adminPathIpGate } = require('./middleware/adminAuth.cjs');
+
+/** /admin 与 /admin-api：可选 IP 白名单（ADMIN_IP_ALLOWLIST） */
+app.use((req, res, next) => {
+  const p = req.path || '';
+  if (!/^\/admin(\/.*)?$/.test(p) && !p.startsWith('/admin-api')) return next();
+  return adminPathIpGate(req, res, next);
+});
+
 /** 生产环境：/admin 为 React 管理页，必须在任何管理 API 之前返回 index.html */
 if (SPA_MODE) {
   const distIndex = path.join(__dirname, 'dist', 'index.html');
@@ -2918,7 +2927,7 @@ app.get('/og/:ticker', (req, res) => {
   <text x="980" y="325" text-anchor="middle" font-family="system-ui,sans-serif" font-size="42" fill="white" font-weight="700">${scoreNum}</text>
   <text x="980" y="355" text-anchor="middle" font-family="system-ui,sans-serif" font-size="18" fill="rgba(255,255,255,0.5)">/ 100</text>
   ` : ''}
-  <text x="80" y="560" font-family="system-ui,sans-serif" font-size="22" fill="rgba(255,255,255,0.3)">wenap.com · AI-powered · Not financial advice</text>
+  <text x="80" y="560" font-family="system-ui,sans-serif" font-size="22" fill="rgba(255,255,255,0.3)">wenap.app · AI-powered · Not financial advice</text>
 </svg>`;
 
   res.setHeader('Content-Type', 'image/svg+xml');

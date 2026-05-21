@@ -44,7 +44,7 @@ Copy `.env.example` to `.env` and fill in:
 | `OPENROUTER_PRO_MODEL` | Optional | Pro tier model (default: google/gemini-2.5-flash-lite) |
 | `OPENROUTER_PRO_PLUS_MODEL` | Optional | Pro+ tier model (default: anthropic/claude-haiku-4-5) |
 | **App** | | |
-| `APP_PUBLIC_URL` | Production | Public URL (e.g. https://wenap.com) |
+| `APP_PUBLIC_URL` | Production | Public URL (e.g. https://wenap.app) |
 | `PORT` | Optional | Server port (default: 3002) |
 | `CRON_ENABLED` | Optional | Set `false` to disable all cron jobs |
 | `CRON_AUTO_ANALYSIS` | Optional | Set `false` to disable weekly auto-analysis |

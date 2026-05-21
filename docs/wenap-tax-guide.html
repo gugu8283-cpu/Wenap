@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<title>Wenap 日本税务 · Stripe 与税理士指南</title>
+<style>
+@page { margin: 18mm; }
+body { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; max-width: 210mm; margin: 0 auto; padding: 12mm; line-height: 1.55; font-size: 10.5pt; color: #1a1a1a; }
+h1 { font-size: 18pt; border-bottom: 2px solid #2d3a8c; padding-bottom: 8px; }
+h2 { font-size: 13pt; color: #2d3a8c; margin-top: 1.4em; page-break-after: avoid; }
+h3 { font-size: 11pt; margin-top: 1em; }
+table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 9.5pt; page-break-inside: avoid; }
+th, td { border: 1px solid #bbb; padding: 5px 7px; text-align: left; }
+th { background: #eef1fb; }
+blockquote { background: #f5f6fa; border-left: 4px solid #6b7fd7; margin: 12px 0; padding: 8px 12px; font-size: 9.5pt; }
+hr { border: none; border-top: 1px solid #ddd; margin: 20px 0; }
+p { margin: 0.4em 0; }
+@media print { body { padding: 0; } }
+</style>
+</head>
+<body>
+<h1>Wenap 日本税务 · Stripe 与税理士指南</h1>
+<blockquote><strong>免责声明</strong>：本文仅供个人备忘与理解框架，不构成税务·法律意见。具体金额与义务请以国税厅最新规则及税理士判断为准。  </blockquote>
+<blockquote><strong>适用场景</strong>：日本 Stripe 账户、网站订阅（wenap.app）、Stripe 选「右边」（自行管理税，非 Managed Payments +3.5%）。</blockquote>
+<hr/>
+<h2>1. 三种税，别混在一起</h2>
+<table>
+<tr><th>税种</th><th>是什么</th><th>日本 Stripe「右边」</th><th>日本 Stripe「左边」+3.5%</th></tr>
+<tr><td><strong>所得税</strong></td><td>赚了多少钱（扣除经费后）要交的税</td><td><strong>自己</strong>确定申告/法人申告</td><td><strong>同样自己</strong></td></tr>
+<tr><td><strong>日本消费税</strong>（10%）</td><td>对日本国内客户卖服务的间接税</td><td><strong>自己</strong>判断是否课税事业者、是否加 10%</td><td><strong>同样自己</strong></td></tr>
+<tr><td><strong>海外 VAT/销售税</strong></td><td>欧盟、英国、美国各州等对数字服务的税</td><td><strong>自己</strong>或 <strong>Stripe Tax</strong> / 税理士</td><td>Stripe 在支持范围内<strong>代征代缴</strong></td></tr>
+</table>
+<p><strong>Stripe 不会替你报日本所得税，也不会包办全部日本消费税实务。</strong></p>
+<hr/>
+<h2>2. Stripe 左边 vs 右边（一句话）</h2>
+<table>
+<tr><th></th><th>右边（推荐起步）</th><th>左边（+约 3.5%/笔）</th></tr>
+<tr><td><strong>你少操心什么</strong></td><td>—</td><td>海外 VAT/销售税（支持国）</td></tr>
+<tr><td><strong>你仍要操心</strong></td><td>所得税 + 日本消费税 + 海外税（或以后 Stripe Tax）</td><td><strong>所得税 + 日本消费税</strong></td></tr>
+<tr><td><strong>有没有法定「营业额到 X 换边」</strong></td><td><strong>没有</strong>；看 3.5% 成本 vs 税理士/OSS 成本</td></tr>
+</table>
+<p><strong>粗算 3.5% 成本（月订阅收入）</strong></p>
+<table>
+<tr><th>月收入（约）</th><th>左边多付/月（约）</th></tr>
+<tr><td>10 万日元</td><td>~3,500 日元</td></tr>
+<tr><td>50 万日元</td><td>~17,500 日元</td></tr>
+<tr><td>100 万日元</td><td>~35,000 日元</td></tr>
+</table>
+<hr/>
+<h2>3. 日本所得税 — 门槛与处理方式</h2>
+<h3>3.1 什么时候要「申报」（和有没有利润不完全等同）</h3>
+<table>
+<tr><th>你的身份</th><th>常见门槛</th><th>处理方式</th></tr>
+<tr><td><strong>法人（株式会社等）</strong></td><td>有法人 → <strong>每年</strong>法人税申告</td><td>税理士 / 法人申告</td></tr>
+<tr><td><strong>个人 + 副业</strong>（另有日本工资）</td><td>工资以外所得合计 <strong>&gt; 约 20 万日元/年</strong> → 一般要<strong>确定申告</strong></td><td>e-Tax・確定申告書 / 税理士</td></tr>
+<tr><td><strong>个人 + 主业（個人事業主）</strong></td><td>营业中 → <strong>基本每年</strong>确定申告</td><td>青色/白色申告、税理士</td></tr>
+</table>
+<h3>3.2 什么时候「所得税金額」会明显变多</h3>
+<table>
+<tr><th>概念</th><th>大约金额</th></tr>
+<tr><td>应税所得</td><td><strong>约 48 万日元以下</strong> → 所得税 often 很少或 0（<strong>住民税另算</strong>）</td></tr>
+<tr><td>以上</td><td>累进税率（约 5%～45% 级距）</td></tr>
+</table>
+<h3>3.3 日常处理流程</h3>
+<p>1. <strong>Stripe</strong> → 每月导出 CSV（日期、金额、手续费、客户国）。  </p>
+<p>2. <strong>台账</strong>：收入表 + 经费表（Render、OpenRouter、域名、Stripe 手续费等，<strong>保留发票</strong>）。  </p>
+<p>3. <strong>每年 2～3 月</strong>：确定申告（或法人申告）；美元按规则换算日元。  </p>
+<hr/>
+<h2>4. 日本消费税 — 门槛与处理方式</h2>
+<h3>4.1 客户在哪里</h3>
+<table>
+<tr><th>客户</th><th>常见处理（需税理士确认）</th></tr>
+<tr><td><strong>日本国内</strong> B2C</td><td>课税事业者 → 一般 <strong>10%</strong>；免税事业者 → 通常不征 10% 但要记账</td></tr>
+<tr><td><strong>日本国外</strong></td><td>多按<strong>对外提供役務</strong> → 往往 <strong>0%（日本消费税）</strong>，要分客户记账</td></tr>
+</table>
+<h3>4.2 要不要登记「课税事业者」</h3>
+<table>
+<tr><th>条件（简化）</th><th>大约金额</th></tr>
+<tr><td><strong>基准期间</strong>应税销售额</td><td><strong>&gt; 约 1,000 万日元/年</strong> → 原则上须登记</td></tr>
+<tr><td><strong>特定期间</strong>（1/1～6/30）</td><td><strong>&gt; 约 1,000 万日元</strong> → 可能当年 <strong>10/1 起</strong>按课税者</td></tr>
+</table>
+<p><strong>免税事业者</strong>：不做消费税申告，但须<strong>监控销售额</strong>是否逼近门槛。</p>
+<h3>4.3 インボイス（发票制度）</h3>
+<p>课税事业者后：对日本 B2B 等可能需要<strong>适格发票</strong>（登记番号 T+13 位）。</p>
+<hr/>
+<h2>5. 海外 VAT — 门槛与处理方式（选右边时）</h2>
+<table>
+<tr><th>地区</th><th>大约门槛（B2C 数字服务）</th><th>处理方式</th></tr>
+<tr><td><strong>欧盟</strong></td><td>跨境 B2C 常引 <strong>约 1 万欧元/年</strong></td><td>OSS 登记 / <strong>Stripe Tax</strong> / 改左边</td></tr>
+<tr><td><strong>英国</strong></td><td>常引 <strong>£90,000/年</strong>（规则以 HMRC 为准）</td><td>税理士 / Stripe Tax</td></tr>
+<tr><td><strong>美国</strong></td><td><strong>按州</strong>，无全国统一数</td><td>体量大再评估</td></tr>
+</table>
+<p><strong>起步</strong>：欧盟远低于 1 万欧元 → <strong>记账即可</strong>；接近或超过再行动。</p>
+<hr/>
+<h2>6. 总门槛一览表</h2>
+<table>
+<tr><th>事项</th><th>大约金额</th><th>怎么处理</th></tr>
+<tr><td>副业确定申告</td><td>副业等 <strong>&gt; 约 20 万日元/年</strong></td><td>e-Tax / 税理士</td></tr>
+<tr><td>主业个人确定申告</td><td>有营业 <strong>基本每年</strong></td><td>同上</td></tr>
+<tr><td>法人税申告</td><td>有法人 <strong>每年</strong></td><td>税理士</td></tr>
+<tr><td>所得税「要多交」</td><td>应税所得 <strong>&gt; 约 48 万日元</strong> 起</td><td>申告时计算</td></tr>
+<tr><td>消费税登记</td><td>销售额 <strong>&gt; 约 1,000 万日元/年</strong></td><td>税務署届出 + 申告</td></tr>
+<tr><td>欧盟 VAT（OSS）</td><td><strong>&gt; 约 1 万欧元/年</strong>（向欧盟 B2C）</td><td>OSS / Stripe Tax / 左边</td></tr>
+<tr><td>Stripe 换左边</td><td><strong>无法定金额</strong></td><td>比 3.5% 与税理士费</td></tr>
+</table>
+<hr/>
+<h2>7. Wenap 定价粗算（1 USD ≈ 150 日元）</h2>
+<table>
+<tr><th>规模</th><th>约月收入</th><th>约年收入</th><th>可能涉及</th></tr>
+<tr><td>5 个 Pro ($9.99)</td><td>~7.5 万日元</td><td>~90 万</td><td>副业可能须申告；消费税多仍免税</td></tr>
+<tr><td>30 个 Pro</td><td>~45 万</td><td>~540 万</td><td>所得税须认真报；消费税多半仍免税</td></tr>
+<tr><td>70 个 Pro</td><td>~105 万</td><td>~1,260 万</td><td>接近消费税登记区间</td></tr>
+<tr><td>欧盟 B2C 订阅</td><td>—</td><td><strong>~1 万欧元+</strong></td><td>考虑 Stripe Tax / OSS</td></tr>
+</table>
+<hr/>
+<h2>8. 推荐「最小流程」清单</h2>
+<p><strong>每笔订阅</strong> → Stripe 入账 → 记入台账（日期 / USD / JPY / 手续费 / 国家 JP or 海外）</p>
+<p><strong>每季度（约 15 分钟）</strong> → 汇总日本 vs 海外销售额；整理经费发票</p>
+<p><strong>每年 11～3 月</strong> → 确定申告；是否消费税登记（税理士）；法人则法人税</p>
+<p><strong>海外 VAT</strong> → 第一年收入低只记账；欧盟变大 → Stripe Tax 或税理士</p>
+<p><strong>网站</strong> → https://wenap.app 、利用規約、プライバシーポリシー、非投资建议声明</p>
+<p><strong>Stripe 本番</strong> → `APP_PUBLIC_URL=https://wenap.app`、Webhook `https://wenap.app/api/billing/webhook`</p>
+<hr/>
+<h2>9. 税理士 · 会計士 — 日语、差别、费用、能帮你什么</h2>
+<h3>9.1 日语对照</h3>
+<table>
+<tr><th>中文</th><th>日语</th><th>英文</th><th>备注</th></tr>
+<tr><td><strong>税理士</strong></td><td><strong>税理士（ぜいりし）</strong></td><td>Tax accountant / Tax agent</td><td>日本<strong>税务</strong>专业资格，可代理税务申告等</td></tr>
+<tr><td><strong>会计师（CPA）</strong></td><td><strong>公認会計士（こうにんかいけいし）</strong></td><td>Certified Public Accountant (JICPA)</td><td>日本<strong>注册会计师</strong>，审计·会计·税务广</td></tr>
+<tr><td><strong>簿记</strong></td><td><strong>簿記（ぼき）</strong></td><td>Bookkeeping</td><td>记账技能，<strong>不等同</strong>税理士资格</td></tr>
+<tr><td><strong>会计事务所</strong></td><td><strong>会計事務所（かいけいじむしょ）</strong></td><td>Accounting firm</td><td>常同时有税理士·公認会計士</td></tr>
+</table>
+<p>日常说「会计师」在日本指业务时，多数对应 <strong>公認会計士</strong> 或事务所里的 <strong>税理士</strong>（看具体担当资格）。</p>
+<h3>9.2 税理士 vs 公認会計士（差别）</h3>
+<table>
+<tr><th></th><th><strong>税理士</strong></th><th><strong>公認会計士</strong></th></tr>
+<tr><td><strong>核心</strong></td><td>税法、申告、税务规划</td><td>财务报表、审计、企业会计全体</td></tr>
+<tr><td><strong>典型客户</strong></td><td>个人事业、中小企业</td><td>上市公司、需审计法人、大企业</td></tr>
+<tr><td><strong>Wenap 起步阶段</strong></td><td><strong>通常先找税理士就够</strong></td><td>收入极大、要审计、IPO 时才刚需</td></tr>
+<tr><td><strong>能否代理报税</strong></td><td>可（在代理范围内）</td><td>税理士登记范围内也可涉及税务</td></tr>
+<tr><td><strong>法律资格</strong></td><td>税理士法</td><td>公認会計士法</td></tr>
+</table>
+<p><strong>找谁</strong>：Wenap 这种 <strong>个人/小法人 SaaS + Stripe 订阅</strong> → <strong>税理士</strong> 优先；不必一开始就请四大 CPA。</p>
+<h3>9.3 咨询一次大概多少钱（日本·2024～2025 量级）</h3>
+<p><strong>因都道府县·事务所·线上/线下差异很大，以下为常见区间：</strong></p>
+<table>
+<tr><th>项目</th><th>大约费用（日元）</th></tr>
+<tr><td><strong>初次相谈（30 分～1 時間）</strong></td><td><strong>0（免费）～ 11,000</strong>；有的收 <strong>5,000～15,000/时</strong></td></tr>
+<tr><td><strong>确定申告委托（个人·白色·收入简单）</strong></td><td><strong>5 万～15 万/年</strong></td></tr>
+<tr><td><strong>确定申告（个人·青色·副业+Stripe）</strong></td><td><strong>8 万～25 万/年</strong></td></tr>
+<tr><td><strong>法人申告（小法人）</strong></td><td><strong>15 万～40 万+/年</strong></td></tr>
+<tr><td><strong>月次顾问（记账+咨询）</strong></td><td><strong>1 万～3 万/月</strong>（小事业）</td></tr>
+<tr><td><strong>消费税申告追加</strong></td><td>Often <strong>+2 万～10 万/年</strong></td></tr>
+</table>
+<p><strong>线上税理士·免费初回</strong> 较多；都内面对面偏贵。</p>
+<h3>9.4 税理士能帮你做什么（和 Wenap 相关）</h3>
+<table>
+<tr><th>服务</th><th>内容</th></tr>
+<tr><td><strong>初次咨询</strong></td><td>个人 or 法人、副业 20 万规则、要不要消费税登记</td></tr>
+<tr><td><strong>记账指导</strong></td><td>Stripe 导出怎么记入、经费什么能扣</td></tr>
+<tr><td><strong>确定申告/法人申告</strong></td><td>制作申告书、e-Tax 提交、计算税额</td></tr>
+<tr><td><strong>消费税</strong></td><td>是否届出课税事业者、中间申告、インボイス</td></tr>
+<tr><td><strong>税务规划</strong></td><td>青色申告、经费合理化（合法范围内）</td></tr>
+<tr><td><strong>海外 VAT 方向</strong></td><td>何时考虑 OSS、Stripe Tax vs 左边（与跨境数字服务相关）</td></tr>
+<tr><td><strong>被税務署询问</strong></td><td>对应书信（额外费用）</td></tr>
+</table>
+<p><strong>通常不做</strong>：帮你写代码、Render 部署、Stripe 技术对接（那是工程师的事）。</p>
+<h3>9.5 第一次去咨询带什么</h3>
+<p>1. 日本 Stripe <strong>売上</strong> 截图或 CSV（若有）  </p>
+<p>2. <strong>经费</strong> 列表（Render、OpenRouter、域名等）  </p>
+<p>3. 客户 <strong>日本 / 海外</strong> 比例（估计即可）  </p>
+<p>4. 是否 <strong>有工资</strong>、是否 <strong>法人</strong>  </p>
+<p>5. 问题清单（见下）</p>
+<p><strong>可问税理士的三句话（日文例）</strong>  </p>
+<p>- 個人事業主として Wenap の Stripe 収入をどう申告しますか。  </p>
+<p>- 消費税の免税事業者のままでよいか、登録が必要か。  </p>
+<p>- 海外（EU）向けサブスクの VAT はどう対応すべきか。</p>
+<h3>9.6 哪里找</h3>
+<p>- <strong>税理士検索</strong>（日本税理士会連合会）  </p>
+<p>- <strong>freee・マネーフォワード</strong> 提携税理士  </p>
+<p>- 华人税理士（中文咨询，东京/大阪较多）  </p>
+<p>- 英文 <strong>English-speaking tax accountant in Japan</strong></p>
+<hr/>
+<h2>10. 三条硬规则（备忘）</h2>
+<p>1. <strong>副业 + Wenap 有收入</strong> → 先假定超过 <strong>20 万日元/年</strong> 要准备<strong>确定申告</strong>。  </p>
+<p>2. <strong>销售额</strong>（非利润）盯 <strong>1,000 万日元/年</strong> → <strong>消费税</strong>登记。  </p>
+<p>3. <strong>欧盟 B2C 订阅</strong> 盯 <strong>约 1 万欧元/年</strong> → 海外 VAT；此前 <strong>右边 + 记账</strong> 通常够。</p>
+<hr/>
+<h2>11. 与 Play Store / App Store</h2>
+<table>
+<tr><th>渠道</th><th>税务特点</th></tr>
+<tr><td><strong>网站 Stripe</strong></td><td>本文全部适用</td></tr>
+<tr><td><strong>App 内购 IAP</strong></td><td>平台常代为处理部分消费税；你记 <strong>平台入账净额</strong>，与 Stripe 分开账本</td></tr>
+</table>
+<hr/>
+<p><strong>文档版本</strong>：2026-05-21  </p>
+<p><strong>产品</strong>：Wenap · https://wenap.app  </p>
+<p><strong>联系备忘</strong>：support@wenap.app（建议 Cloudflare Email Routing）</p>
+<p style="margin-top:2em;font-size:9pt;color:#666;">生成日期：2026-05-21 · Wenap · https://wenap.app</p>
+</body>
+</html>

@@ -1,5 +1,6 @@
 const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 const STORAGE_KEY = 'wenap_admin_auth'
+const PIN_STORAGE_KEY = 'wenap_admin_pin'
 
 /** 生产环境 /admin 为 SPA；管理接口统一走 /admin-api */
 function toAdminApiPath(path) {
@@ -24,15 +25,30 @@ export function setAdminToken(token) {
 
 export function clearAdminToken() {
   sessionStorage.removeItem(STORAGE_KEY)
+  sessionStorage.removeItem(PIN_STORAGE_KEY)
+}
+
+export function setAdminPin(pin) {
+  sessionStorage.setItem(PIN_STORAGE_KEY, String(pin || '').trim())
+}
+
+export function getAdminPin() {
+  try {
+    return sessionStorage.getItem(PIN_STORAGE_KEY) || ''
+  } catch {
+    return ''
+  }
 }
 
 export async function adminFetch(path, options = {}) {
   const token = getAdminToken()
+  const pin = getAdminPin()
   const res = await fetch(`${API_BASE}${toAdminApiPath(path)}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
+      ...(pin ? { 'X-Admin-Pin': pin } : {}),
       ...(options.headers || {}),
     },
   })

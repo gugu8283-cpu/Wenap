@@ -21,6 +21,12 @@ const { signAccessToken } = require('../lib/jwtAuth.cjs');
 const { isDisposableEmail } = require('../lib/disposableEmail.cjs');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../lib/emailSend.cjs');
 const { requireAuth } = require('../middleware/requireAuth.cjs');
+const {
+  clientIp: loginClientIp,
+  isLoginLocked,
+  recordLoginFail,
+  clearLoginFail,
+} = require('../middleware/loginGuard.cjs');
 
 const router = express.Router();
 
@@ -97,6 +103,14 @@ router.post('/register', async (req, res) => {
 
 router.post('/login', async (req, res) => {
   try {
+    const lip = loginClientIp(req);
+    if (isLoginLocked(lip)) {
+      return res.status(429).json({
+        error: 'LOGIN_LOCKED',
+        message: '登录尝试过多，请稍后再试',
+      });
+    }
+
     const email = String(req.body?.email || '')
       .trim()
       .toLowerCase();
@@ -104,11 +118,13 @@ router.post('/login', async (req, res) => {
 
     const user = getUserByEmail(email);
     if (!user || !(await verifyPassword(password, user.password_hash))) {
+      recordLoginFail(lip);
       return res.status(401).json({
         error: 'INVALID_CREDENTIALS',
         message: '邮箱或密码不正确',
       });
     }
+    clearLoginFail(lip);
     if (user.is_banned) {
       return res.status(403).json({ error: 'BANNED', message: '账号已被限制' });
     }
