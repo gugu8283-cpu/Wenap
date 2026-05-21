@@ -724,6 +724,9 @@ function tierPromptExtensions(tier) {
   return ext;
 }
 
+const { searchIntegrityBlock, sourceFreshnessBlock } = require('./lib/promptSearchRules.cjs');
+const { parsePricesFromLine } = require('./lib/parsePrices.cjs');
+
 function buildMainJsonPrompt({
   ticker,
   assetType,
@@ -766,6 +769,8 @@ ${dimensionBoundaryPromptBlock(loc)}
 【书写】禁 URL；角标仅 [SEC][交易所][IR][新闻][披露][行情][研报]。**同一事实只出现一次**（summary/六维/detail/outlook 互斥，勿复述）。无数据填空串。
 
 ${policyDimBlock}
+${searchIntegrityBlock(loc)}
+${sourceFreshnessBlock(loc)}
 只输出一个合法 JSON（禁止 Markdown 围栏与 JSON 外字符）。
 
 JSON 字段与要求：
@@ -997,7 +1002,39 @@ function normalizeReportExtensions(data, alphaOverview, latestPrice, listingCurr
   data.leaderInsiderSummary = String(data.leaderInsiderSummary || '').trim();
   data.peerVsSectorLine = String(data.peerVsSectorLine || '').trim();
   let apl = String(data.analystPriceLine || '').trim();
-  if (!apl && alphaOverview) {
+  let targetFromLine = parsePricesFromLine(apl, latestPrice).target;
+  if (!Number.isFinite(targetFromLine) && alphaOverview) {
+    const tpNum = parseFloat(String(alphaOverview.AnalystTargetPrice || '').replace(/[^\d.-]/g, ''));
+    if (Number.isFinite(tpNum) && tpNum > 0) targetFromLine = tpNum;
+  }
+  if (!Number.isFinite(targetFromLine) && data.scenarios?.bull?.range) {
+    const bullNums = String(data.scenarios.bull.range || '').match(/[\d,]+(?:\.\d+)?/g);
+    if (bullNums && bullNums.length >= 2) {
+      const a = parseFloat(bullNums[0].replace(/,/g, ''));
+      const b = parseFloat(bullNums[1].replace(/,/g, ''));
+      if (Number.isFinite(a) && Number.isFinite(b)) targetFromLine = Math.max(a, b);
+    }
+    if (Number.isFinite(max)) targetFromLine = max;
+  }
+  const cur =
+    Number.isFinite(latestPrice) && latestPrice > 0
+      ? latestPrice
+      : parsePricesFromLine(apl, NaN).current;
+  const loc = normalizeLocale(ctx.locale || 'zh-CN');
+  if (Number.isFinite(cur) && cur > 0) {
+    const curS = formatListingPrice(cur, listingCurrency);
+    const zh = loc.startsWith('zh');
+    if (Number.isFinite(targetFromLine) && targetFromLine > 0) {
+      const pct = ((targetFromLine - cur) / cur) * 100;
+      const sg = pct >= 0 ? '+' : '';
+      const tpS = formatListingPrice(targetFromLine, listingCurrency);
+      apl = zh
+        ? `当前价 ${curS} | 目标价 ${tpS} | 空间 ${sg}${pct.toFixed(1)}%`
+        : `Current ${curS} | Target ${tpS} | Upside ${sg}${pct.toFixed(1)}%`;
+    } else {
+      apl = zh ? `当前价 ${curS}` : `Current ${curS}`;
+    }
+  } else if (!apl && alphaOverview) {
     const tpNum = parseFloat(String(alphaOverview.AnalystTargetPrice || '').replace(/[^\d.-]/g, ''));
     if (Number.isFinite(tpNum) && tpNum > 0 && Number.isFinite(latestPrice) && latestPrice > 0) {
       const pct = ((tpNum - latestPrice) / latestPrice) * 100;
@@ -1616,6 +1653,17 @@ function clipToCompleteThought(s, maxChars, minRatio = 0.45) {
   return slice.replace(/\s+$/u, '').trim();
 }
 
+/** 去掉估值桥接等字段末尾未写完的标点（避免前端出现「数据加载中」类截断） */
+function trimIncompleteTrailingClause(s) {
+  let t = String(s || '').trim();
+  if (!t) return '';
+  t = t.replace(/…（数据加载中）$/u, '').replace(/数据加载中$/u, '').trim();
+  if (/[，,、；;：:]$/.test(t)) {
+    t = t.replace(/[，,、；;：:]+$/u, '').trim();
+  }
+  return t;
+}
+
 /** 去掉段尾人为「…」或未写完的省略号感 */
 function trimSuspensionSuffix(s) {
   return String(s || '')
@@ -1846,7 +1894,7 @@ function stripDataForViz(data, { tier = 'free', latestPrice = NaN, locale = 'zh-
     identityCheck: String(data.identityCheck || '').trim().slice(0, 200),
     technicalSnapshot: String(data.technicalSnapshot || '').trim().slice(0, 200),
     outlook: String(data.outlook || '').trim().slice(0, 1200),
-    valuationBridge: String(data.valuationBridge || '').trim().slice(0, 200),
+    valuationBridge: trimIncompleteTrailingClause(String(data.valuationBridge || '').trim()).slice(0, 200),
     dimensions: (data.dimensions || []).map((d) => ({
       name: d.name,
       score: d.score,
@@ -2311,6 +2359,26 @@ app.get('/market/sparkline', async (req, res) => {
     res.json({ ticker, points });
   } catch (e) {
     res.status(502).json({ error: e.message || 'sparkline failed' });
+  }
+});
+
+/** 公开：单标的最新价（供报告现价/涨幅补全） */
+app.get('/market/quote', async (req, res) => {
+  const ticker = String(req.query?.ticker || '').trim().toUpperCase();
+  if (!ticker) return res.status(400).json({ error: '需要 ticker' });
+  const avKey = getAlphaVantageKey();
+  if (!avKey) return res.json({ ticker, price: null, currency: 'USD' });
+  try {
+    const sym = ticker.replace(/\.(HK|SS|SZ|T|TO)$/i, '');
+    const quote = await alphaVantageJson({ function: 'GLOBAL_QUOTE', symbol: sym }, avKey);
+    const price = latestPriceFromGlobalQuote(quote);
+    res.json({
+      ticker,
+      price: Number.isFinite(price) && price > 0 ? price : null,
+      currency: 'USD',
+    });
+  } catch (e) {
+    res.status(502).json({ error: e.message || 'quote failed' });
   }
 });
 

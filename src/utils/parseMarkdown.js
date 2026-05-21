@@ -32,9 +32,17 @@ export function renderMarkdownParagraphs(str, className = '') {
   return paras
 }
 
+/** 估值桥接句是否明显未写完（勿展示「数据加载中」占位） */
+export function isIncompleteAssumption(text) {
+  const t = String(text || '').trim()
+  if (!t) return false
+  if (/数据加载中/.test(t)) return true
+  return /[，,、；;：:]$/.test(t) || (t.length < 12 && /[，,]$/.test(t))
+}
+
 export function fixTruncatedAssumption(text) {
   const t = String(text || '').trim()
   if (!t) return ''
-  if (/[，,、；;]$/.test(t)) return `${t}…（数据加载中）`
+  if (isIncompleteAssumption(t)) return ''
   return t
 }

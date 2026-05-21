@@ -42,6 +42,12 @@ export default function HeroCard({ report, onShare, showCompare, onCompare, onRe
 
   const [ringReady, setRingReady] = useState(false)
   const [sparkPoints, setSparkPoints] = useState(null)
+  const [quotePrice, setQuotePrice] = useState(() =>
+    Number.isFinite(report.currentPrice) ? report.currentPrice : null,
+  )
+  const [quoteLoading, setQuoteLoading] = useState(
+    () => !Number.isFinite(report.currentPrice) && Boolean(report.ticker),
+  )
 
   useEffect(() => {
     setRingReady(false)
@@ -69,18 +75,67 @@ export default function HeroCard({ report, onShare, showCompare, onCompare, onRe
     }
   }, [report.ticker])
 
+  useEffect(() => {
+    if (Number.isFinite(report.currentPrice)) {
+      setQuotePrice(report.currentPrice)
+      setQuoteLoading(false)
+      return undefined
+    }
+    const sym = String(report.ticker || '').trim().toUpperCase()
+    if (!sym) {
+      setQuoteLoading(false)
+      return undefined
+    }
+    let cancelled = false
+    setQuoteLoading(true)
+    const base = API_BASE.replace(/\/$/, '')
+    fetch(`${base}/market/quote?ticker=${encodeURIComponent(sym)}`)
+      .then((res) => res.json())
+      .then((j) => {
+        if (cancelled) return
+        const p = Number(j.price)
+        if (Number.isFinite(p) && p > 0) setQuotePrice(p)
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setQuoteLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [report.ticker, report.currentPrice])
+
   const gen = useMemo(() => formatGeneratedAt(report.generatedAt), [report.generatedAt])
   const dataAsOf = String(report.dataAsOf || '—').trim()
 
-  const fmtPrice = (n) => {
+  const displayCurrent = Number.isFinite(quotePrice) ? quotePrice : report.currentPrice
+  const displayTarget = report.targetPrice
+  const displayUpside = useMemo(() => {
+    if (Number.isFinite(report.upside) && report.upside !== 0 && Number.isFinite(report.currentPrice)) {
+      return report.upside
+    }
+    if (
+      Number.isFinite(displayCurrent) &&
+      Number.isFinite(displayTarget) &&
+      displayCurrent > 0
+    ) {
+      return Math.round(((displayTarget - displayCurrent) / displayCurrent) * 100)
+    }
+    return NaN
+  }, [report.upside, report.currentPrice, displayCurrent, displayTarget])
+
+  const fmtPrice = (n, loading = false) => {
+    if (loading) return '…'
     if (!Number.isFinite(n)) return '—'
     return `$${n.toFixed(2)}`
   }
 
   const upsideStr =
-    Number.isFinite(report.upside) && report.upside !== 0
-      ? `${report.upside > 0 ? '+' : ''}${report.upside}%`
-      : '—'
+    Number.isFinite(displayUpside) && displayUpside !== 0
+      ? `${displayUpside > 0 ? '+' : ''}${displayUpside}%`
+      : quoteLoading
+        ? '…'
+        : '—'
 
   const handleShare = async () => {
     const url = `${window.location.origin}${window.location.pathname}?symbol=${encodeURIComponent(report.ticker)}`
@@ -163,7 +218,7 @@ export default function HeroCard({ report, onShare, showCompare, onCompare, onRe
 
       <div className="ma-hero-prices ma-num">
         <span>
-          {t('report.currentPrice')} {fmtPrice(report.currentPrice)}
+          {t('report.currentPrice')} {fmtPrice(displayCurrent, quoteLoading)}
         </span>
         {sparkPoints ? (
           <div className="ma-sparkline-wrap">
@@ -173,7 +228,7 @@ export default function HeroCard({ report, onShare, showCompare, onCompare, onRe
           <div className="ma-sparkline-wrap ma-sparkline-wrap--empty" aria-hidden />
         )}
         <span>
-          {t('report.targetPrice')} {fmtPrice(report.targetPrice)} ·{' '}
+          {t('report.targetPrice')} {fmtPrice(displayTarget)} ·{' '}
           <span className="ma-upside">
             {t('report.upside')} {upsideStr}
           </span>

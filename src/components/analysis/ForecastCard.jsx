@@ -1,13 +1,20 @@
 import { useTranslation } from 'react-i18next'
 import './MobileAnalysisReport.css'
-import { splitParagraphs, fixTruncatedAssumption, stripMarkdownInline } from '../../utils/parseMarkdown.js'
+import {
+  splitParagraphs,
+  fixTruncatedAssumption,
+  isIncompleteAssumption,
+  stripMarkdownInline,
+} from '../../utils/parseMarkdown.js'
 
 export default function ForecastCard({ forecast, assumption, technicalSnapshot }) {
   const { t } = useTranslation()
   const bodyRaw = [technicalSnapshot, forecast].filter(Boolean).join('\n\n')
   const paragraphs = splitParagraphs(bodyRaw)
+  const assumptionRaw = String(assumption || '').trim()
+  const assumptionIncomplete = isIncompleteAssumption(assumptionRaw)
   const assumptionText = fixTruncatedAssumption(assumption)
-  if (!paragraphs.length && !assumptionText) return null
+  if (!paragraphs.length && !assumptionText && !assumptionIncomplete) return null
 
   return (
     <div className="ma-card ma-forecast-card">
@@ -17,7 +24,11 @@ export default function ForecastCard({ forecast, assumption, technicalSnapshot }
           {p}
         </p>
       ))}
-      {assumptionText ? (
+      {assumptionIncomplete ? (
+        <p className="ma-forecast-assumption ma-forecast-assumption--loading" aria-busy="true">
+          …
+        </p>
+      ) : assumptionText ? (
         <p className="ma-forecast-assumption">{stripMarkdownInline(assumptionText)}</p>
       ) : null}
     </div>
