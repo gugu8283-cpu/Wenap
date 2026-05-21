@@ -29,6 +29,10 @@ if (!keys.has('JWT_SECRET')) {
   console.log('[setup-env] Generated JWT_SECRET');
 }
 if (!keys.has('APP_PUBLIC_URL')) toAdd.push('APP_PUBLIC_URL=http://localhost:5173');
+if (!keys.has('RESEND_API_KEY')) {
+  toAdd.push('# RESEND_API_KEY=re_...  # 生产必填：邮箱验证');
+}
+if (!keys.has('MAIL_FROM')) toAdd.push('MAIL_FROM=Wenap <noreply@wenap.app>');
 
 if (!toAdd.length) {
   console.log('[setup-env] .env already has admin/cron keys — nothing to add');

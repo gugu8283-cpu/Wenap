@@ -20,7 +20,17 @@ const bcrypt = require('bcryptjs');
 const { signAccessToken } = require('../lib/jwtAuth.cjs');
 const { isDisposableEmail } = require('../lib/disposableEmail.cjs');
 const { countryFromRequest } = require('../lib/countryFromRequest.cjs');
-const { sendVerificationEmail, sendPasswordResetEmail } = require('../lib/emailSend.cjs');
+const { sendVerificationEmail, sendPasswordResetEmail, sendWelcomeEmail } = require('../lib/emailSend.cjs');
+const { emailStatus, isProductionRuntime } = require('../lib/emailConfig.cjs');
+const { pickLocale } = require('../lib/emailTemplates.cjs');
+
+function requestLocale(req) {
+  const body = String(req.body?.locale || '').trim();
+  if (body) return pickLocale(body);
+  const accept = String(req.headers['accept-language'] || '');
+  return pickLocale(accept.split(',')[0]);
+}
+
 const { requireAuth } = require('../middleware/requireAuth.cjs');
 const {
   clientIp: loginClientIp,
@@ -30,6 +40,10 @@ const {
 } = require('../middleware/loginGuard.cjs');
 
 const router = express.Router();
+
+router.get('/email-status', (req, res) => {
+  res.json(emailStatus());
+});
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -70,7 +84,21 @@ router.post('/register', async (req, res) => {
       countryCode: countryFromRequest(req),
     });
     setVerifyEmailSent(user.id);
-    await sendVerificationEmail({ to: email, token: verifyToken });
+    const locale = requestLocale(req);
+    const mail = await sendVerificationEmail({ to: email, token: verifyToken, locale });
+    if (isProductionRuntime() && mail.mode === 'console') {
+      return res.status(503).json({
+        error: 'EMAIL_NOT_CONFIGURED',
+        message: '邮件服务未配置，无法发送验证邮件。请联系站点管理员。',
+      });
+    }
+    if (!mail.sent && mail.mode !== 'console') {
+      return res.status(502).json({
+        error: 'EMAIL_SEND_FAILED',
+        message: '验证邮件发送失败，请稍后重试或使用「重新发送」。',
+        detail: mail.error || null,
+      });
+    }
 
     if (referralCode) {
       try {
@@ -91,6 +119,7 @@ router.post('/register', async (req, res) => {
       message: 'Registration successful. Please check your email to verify.',
       email,
       requiresVerification: true,
+      emailDelivery: mail.mode,
     });
   } catch (e) {
     if (e.code === 'EMAIL_EXISTS') {
@@ -162,6 +191,10 @@ router.get('/verify-email', (req, res) => {
     }
     const user = verifyEmailByToken(token);
     const jwt = signAccessToken(user);
+    const locale = requestLocale(req);
+    sendWelcomeEmail({ to: user.email, locale }).catch((e) =>
+      console.warn('[Wenap] welcome email:', e.message),
+    );
     res.json({ ok: true, message: '邮箱验证成功', token: jwt, user: publicUser(user) });
   } catch (e) {
     const code = e.code || 'INVALID_TOKEN';
@@ -190,8 +223,22 @@ router.post('/resend-verify', async (req, res) => {
       });
     }
     const verifyToken = refreshVerifyToken(user.id);
-    await sendVerificationEmail({ to: email, token: verifyToken });
-    res.json({ ok: true, message: '验证邮件已发送' });
+    const locale = requestLocale(req);
+    const mail = await sendVerificationEmail({ to: email, token: verifyToken, locale });
+    if (isProductionRuntime() && mail.mode === 'console') {
+      return res.status(503).json({
+        error: 'EMAIL_NOT_CONFIGURED',
+        message: '邮件服务未配置，无法发送验证邮件。',
+      });
+    }
+    if (!mail.sent && mail.mode !== 'console') {
+      return res.status(502).json({
+        error: 'EMAIL_SEND_FAILED',
+        message: '发送失败，请稍后再试',
+        detail: mail.error || null,
+      });
+    }
+    res.json({ ok: true, message: '验证邮件已发送', emailDelivery: mail.mode });
   } catch (e) {
     console.error('[Wenap] resend-verify:', e);
     res.status(500).json({ error: 'SERVER_ERROR', message: '发送失败' });

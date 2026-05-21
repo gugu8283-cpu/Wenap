@@ -14,6 +14,7 @@ const DEVICE_FINGERPRINT_ENABLED =
   process.env.WENAP_DEVICE_FINGERPRINT === '1' || process.env.WENAP_DEVICE_FINGERPRINT === 'true';
 const IP_REGISTER_DAILY_CAP = 3;
 const IP_ANALYSIS_HOURLY_CAP = 20;
+const VERIFY_TTL_MS = Number(process.env.EMAIL_VERIFY_TTL_MS) || 24 * 60 * 60 * 1000;
 
 function uuid() {
   return crypto.randomUUID();
@@ -362,7 +363,7 @@ async function createUserWithPassword({ email, password, ip, countryCode }) {
   const id = uuid();
   const passwordHash = await hashPassword(password);
   const verifyToken = crypto.randomBytes(32).toString('hex');
-  const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+  const expires = new Date(Date.now() + VERIFY_TTL_MS).toISOString();
   const monthStart = utcMonthStartIso();
   const externalKey = `email:${email.toLowerCase()}`;
 
@@ -403,7 +404,7 @@ function setVerifyEmailSent(userId) {
 function refreshVerifyToken(userId) {
   initDb();
   const verifyToken = crypto.randomBytes(32).toString('hex');
-  const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+  const expires = new Date(Date.now() + VERIFY_TTL_MS).toISOString();
   getDb()
     .prepare(
       `UPDATE users SET email_verify_token = ?, email_verify_expires = ?, verify_email_sent_at = datetime('now') WHERE id = ?`,

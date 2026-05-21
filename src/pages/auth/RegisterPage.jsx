@@ -18,7 +18,7 @@ function passwordStrength(pw) {
 const STRENGTH_COLORS = ['#2a2a2a', '#e24b4a', '#f5a623', '#00d4aa', '#00d4aa']
 
 export default function RegisterPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const referralCode = searchParams.get('ref') || ''
@@ -48,13 +48,20 @@ export default function RegisterPage() {
           email,
           password,
           passwordConfirm: confirm,
+          locale: i18n.language,
           ...(referralCode ? { referralCode } : {}),
         }),
       })
       const verifyUrl = `/verify-email?email=${encodeURIComponent(email)}${prefilledSymbol ? `&symbol=${encodeURIComponent(prefilledSymbol)}` : ''}`
       navigate(verifyUrl)
     } catch (err) {
-      setError(err.message || t('auth.registerFail'))
+      if (err.code === 'EMAIL_NOT_CONFIGURED') {
+        setError(t('auth.emailNotConfigured'))
+      } else if (err.code === 'EMAIL_SEND_FAILED') {
+        setError(t('auth.emailSendFailed'))
+      } else {
+        setError(err.message || t('auth.registerFail'))
+      }
     } finally {
       setLoading(false)
     }
