@@ -8,6 +8,8 @@ import LanguageSwitcher from '../../components/LanguageSwitcher.jsx'
 
 import { useAuth } from '../../context/AuthContext.jsx'
 
+import LegalFooter from '../../components/LegalFooter.jsx'
+import '../../components/LegalFooter.css'
 import './AuthPages.css'
 
 
@@ -219,6 +221,8 @@ export default function LoginPage() {
         <Link to="/register">{t('auth.registerLink')}</Link>
 
       </p>
+
+      <LegalFooter className="auth-legal-footer" />
 
     </div>
 

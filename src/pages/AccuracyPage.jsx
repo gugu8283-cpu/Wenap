@@ -7,6 +7,8 @@ import { fetchPublicAccuracy } from '../admin/adminApi.js'
 import { fmtDate, fmtPct, tendencyLabel } from '../admin/components.jsx'
 
 import LanguageSwitcher from '../components/LanguageSwitcher.jsx'
+import LegalFooter from '../components/LegalFooter.jsx'
+import '../components/LegalFooter.css'
 
 import i18n, { resolveAppLanguage } from '../i18n/index.js'
 
@@ -213,6 +215,8 @@ export default function AccuracyPage() {
               </a>
 
             </p>
+
+            <LegalFooter showDisclaimerLine className="mt-8" />
 
           </>
 

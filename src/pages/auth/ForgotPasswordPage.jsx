@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { apiFetch } from '../../lib/api.js'
+import LegalFooter from '../../components/LegalFooter.jsx'
+import '../../components/LegalFooter.css'
 import './AuthPages.css'
 
 export default function ForgotPasswordPage() {
@@ -68,6 +70,7 @@ export default function ForgotPasswordPage() {
         <p className="auth-bottom">
           <Link to="/login">{t('auth.forgotBack')}</Link>
         </p>
+        <LegalFooter className="auth-legal-footer" />
       </div>
     </div>
   )

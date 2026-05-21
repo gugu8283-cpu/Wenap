@@ -3,6 +3,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '../../components/LanguageSwitcher.jsx'
 import { apiFetch } from '../../lib/api.js'
+import LegalFooter from '../../components/LegalFooter.jsx'
+import '../../components/LegalFooter.css'
 import './AuthPages.css'
 
 function passwordStrength(pw) {
@@ -29,6 +31,7 @@ export default function RegisterPage() {
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [agreed, setAgreed] = useState(false)
 
   const strength = useMemo(() => passwordStrength(password), [password])
   const mismatch = confirm.length > 0 && password !== confirm
@@ -38,6 +41,10 @@ export default function RegisterPage() {
     setError('')
     if (password !== confirm) {
       setError(t('auth.passwordMismatch'))
+      return
+    }
+    if (!agreed) {
+      setError(t('legal.registerMustAgree'))
       return
     }
     setLoading(true)
@@ -138,7 +145,21 @@ export default function RegisterPage() {
           />
           {mismatch ? <p className="auth-field-error">{t('auth.passwordMismatch')}</p> : null}
         </div>
-        <button type="submit" className="auth-btn" disabled={loading || mismatch}>
+        <label className="auth-terms-agree">
+          <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
+          <span>
+            {t('legal.registerAgreePrefix')}{' '}
+            <Link to="/terms" target="_blank" rel="noopener noreferrer">
+              {t('legal.nav.terms')}
+            </Link>{' '}
+            {t('legal.registerAgreeJoin')}{' '}
+            <Link to="/privacy" target="_blank" rel="noopener noreferrer">
+              {t('legal.nav.privacy')}
+            </Link>
+            {t('legal.registerAgreeSuffix')}
+          </span>
+        </label>
+        <button type="submit" className="auth-btn" disabled={loading || mismatch || !agreed}>
           {loading ? (
             <>
               <span className="auth-spinner" />
@@ -149,6 +170,7 @@ export default function RegisterPage() {
           )}
         </button>
       </form>
+      <LegalFooter className="auth-legal-footer" />
     </div>
   )
 }

@@ -208,3 +208,27 @@
   color: rgba(255,255,255,0.6);
   line-height: 1.6;
 }
+
+.pricing-legal-note {
+  margin: 32px auto 16px;
+  max-width: 640px;
+  text-align: center;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.pricing-legal-footer {
+  margin-bottom: 40px;
+}
+
+.auth-legal-footer {
+  margin-top: 28px;
+  padding-top: 16px;
+}
+
+.settings-legal-footer {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}

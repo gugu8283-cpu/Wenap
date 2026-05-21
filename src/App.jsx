@@ -16,6 +16,8 @@ import { apiFetch, getToken } from './lib/api.js'
 import { applyTheme, getTheme } from './utils/theme.js'
 import { resolveTickerInput } from './utils/tickerResolve.js'
 import TickerQuickPicks from './components/TickerQuickPicks.jsx'
+import LegalFooter from './components/LegalFooter.jsx'
+import './components/LegalFooter.css'
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 
@@ -830,9 +832,7 @@ export default function App() {
       {(import.meta.env.DEV || import.meta.env.VITE_SHOW_ECONOMICS === '1') && <EconomicsPanel />}
 
       <footer className="disclaimer">
-        <p>
-          {t('app.disclaimer')}
-        </p>
+        <LegalFooter showDisclaimerLine />
         <p className="mt-2 text-center text-sm">
           <a href="/accuracy" className="text-blue-400 hover:underline">
             {t('app.accuracyLink')}

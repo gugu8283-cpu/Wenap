@@ -3,6 +3,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { apiFetch, setToken } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
+import LegalFooter from '../../components/LegalFooter.jsx'
+import '../../components/LegalFooter.css'
 import './AuthPages.css'
 
 export default function VerifyEmailPage() {
@@ -134,6 +136,7 @@ export default function VerifyEmailPage() {
         <p className="auth-bottom" style={{ marginTop: 32 }}>
           <Link to="/login">{t('auth.backToLogin')}</Link>
         </p>
+        <LegalFooter className="auth-legal-footer" />
       </div>
     </div>
   )

@@ -91,6 +91,13 @@ export default function AboutPage() {
         <section className="about-section">
           <h2>6. Disclaimer</h2>
           <p className="about-disclaimer">Wenap is not a registered investment advisor. All content is for informational and educational purposes only. Past prediction accuracy does not guarantee future results. Never invest based solely on AI-generated analysis. Always do your own research and consult a qualified financial professional before making investment decisions.</p>
+          <p className="about-disclaimer">
+            <Link to="/disclaimer">{t('legal.nav.disclaimer')}</Link>
+            {' · '}
+            <Link to="/terms">{t('legal.nav.terms')}</Link>
+            {' · '}
+            <Link to="/privacy">{t('legal.nav.privacy')}</Link>
+          </p>
         </section>
       </div>
 
@@ -98,6 +105,9 @@ export default function AboutPage() {
         <Link to="/">Home</Link>
         <Link to="/pricing">Pricing</Link>
         <Link to="/accuracy">Accuracy</Link>
+        <Link to="/disclaimer">{t('legal.nav.disclaimer')}</Link>
+        <Link to="/privacy">{t('legal.nav.privacy')}</Link>
+        <Link to="/terms">{t('legal.nav.terms')}</Link>
         <Link to="/app">App</Link>
       </footer>
     </div>

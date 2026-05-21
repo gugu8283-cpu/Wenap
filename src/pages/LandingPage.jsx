@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '../components/LanguageSwitcher.jsx'
+import LegalFooter from '../components/LegalFooter.jsx'
+import '../components/LegalFooter.css'
 import './LandingPage.css'
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api'
@@ -173,7 +175,7 @@ export default function LandingPage() {
       </section>
 
       <footer className="landing-footer">
-        <p>{t('app.disclaimer')}</p>
+        <LegalFooter showDisclaimerLine className="landing-legal-footer" />
         <div className="landing-footer-links">
           <Link to="/accuracy">{t('app.accuracyLink')}</Link>
           <Link to="/about">About</Link>

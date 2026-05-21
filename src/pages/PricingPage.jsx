@@ -5,6 +5,8 @@ const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { apiFetch } from '../lib/api.js'
 import { useAuth } from '../context/AuthContext.jsx'
+import LegalFooter from '../components/LegalFooter.jsx'
+import '../components/LegalFooter.css'
 import './PricingPage.css'
 
 const PLANS = [
@@ -165,6 +167,9 @@ export default function PricingPage() {
           <p>{t('pricing.faq3A')}</p>
         </details>
       </div>
+
+      <p className="pricing-legal-note">{t('pricing.legalNote')}</p>
+      <LegalFooter showDisclaimerLine className="pricing-legal-footer" />
     </div>
   )
 }

@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { apiFetch } from '../lib/api.js'
 import { useAuth } from '../context/AuthContext.jsx'
+import LegalFooter from '../components/LegalFooter.jsx'
+import '../components/LegalFooter.css'
 import './SettingsPage.css'
 
 export default function SettingsPage() {
@@ -125,6 +127,8 @@ export default function SettingsPage() {
           {t('settings.signOut')}
         </button>
       </div>
+
+      <LegalFooter className="settings-legal-footer" />
     </div>
   )
 }
