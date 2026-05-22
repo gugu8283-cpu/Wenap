@@ -520,7 +520,16 @@ async function fetchAlphaVantageContextBundle(symbol, apiKey) {
   const ttl = alphaVantageCacheTtlMs();
   if (ttl > 0) {
     const hit = alphaVantageBundleCache.get(sym);
-    if (hit && Date.now() - hit.t < ttl && hit.bundle) return hit.bundle;
+    if (hit && Date.now() - hit.t < ttl && hit.bundle) {
+      const ageMin = Math.round((Date.now() - hit.t) / 60000);
+      if (ageMin >= 1 && hit.bundle.text) {
+        return {
+          ...hit.bundle,
+          text: `${hit.bundle.text}\n- 行情缓存：约 ${ageMin} 分钟前拉取（分析时将要求与联网结果交叉核对）`,
+        };
+      }
+      return hit.bundle;
+    }
   }
   const quote = await alphaVantageJson({ function: 'GLOBAL_QUOTE', symbol: sym }, apiKey);
   const e1 = alphaVantageMetaError(quote);
@@ -724,7 +733,8 @@ function tierPromptExtensions(tier) {
   return ext;
 }
 
-const { searchIntegrityBlock, sourceFreshnessBlock } = require('./lib/promptSearchRules.cjs');
+const { searchIntegrityBlock, sourceFreshnessBlock, accuracyTrustPromptBlock } = require('./lib/promptSearchRules.cjs');
+const { enforceReportAccuracy } = require('./lib/reportAccuracy.cjs');
 const { parsePricesFromLine } = require('./lib/parsePrices.cjs');
 const {
   resolveTickerInput,
@@ -803,6 +813,7 @@ ${etfSharePricePromptBlock(assetType, ticker, loc)}
 ${assetType === 'stock' ? stockPricePromptBlock(ticker, loc) : ''}
 ${searchIntegrityBlock(loc)}
 ${sourceFreshnessBlock(loc)}
+${accuracyTrustPromptBlock(loc)}
 只输出一个合法 JSON（禁止 Markdown 围栏与 JSON 外字符）。
 
 JSON 字段与要求：
@@ -1192,7 +1203,7 @@ Output JSON only: {"name":"${policyName}","score":0-100,"note":"…"}`
 ${hint ? `${hint}\n` : ''}
 第 6 维「${policyName}」：评估政府及监管机构对该公司或行业的定向干预风险，包括出口管制、AI 监管立法、反垄断、行业专项监管、税务政策变化、知识产权保护。
 边界：地缘政治=国家 vs 国家；${policyName}=政府 vs 企业/行业。勿写 CEO/管理层人事。
-规则：1）单一普通股/行业主体才写；note≤72字，可核验监管要点+角标。2）ETF/基金：score=0，note「${insuf}」。3）禁编造。${retryBlock}
+规则：1）单一普通股/行业主体才写；note≤72字，可核验监管要点+角标，优先7日内来源，超14日须标注可能过时。2）ETF/基金：score=0，note「${insuf}」。3）禁编造；无最新监管事实则 score=0。${retryBlock}
 
 只输出一个 JSON：{"name":"${policyName}","score":0-100,"note":"…"}`;
     const policyWeb = openRouterLeaderUseWeb();
@@ -1932,6 +1943,9 @@ function stripDataForViz(
           .filter((k) => Number.isFinite(k.price) && k.price > 0 && k.label)
       : [],
     dataAsOf: data.dataAsOf,
+    quoteAsOf: data.quoteAsOf || data.dataAsOf,
+    freshnessScore: Number.isFinite(Number(data.freshnessScore)) ? data.freshnessScore : null,
+    trustWarnings: Array.isArray(data.trustWarnings) ? data.trustWarnings.slice(0, 6) : [],
     reportTier: tier,
     latestPriceUsd:
       Number.isFinite(curForSnap) && curForSnap > 0
@@ -2062,11 +2076,17 @@ async function runSecondPassCritique(apiKey, data, symbol, locale, model) {
   const loc = normalizeLocale(locale);
   const lang = loc === 'zh-CN' || loc === 'zh-TW' ? 'Chinese' : loc === 'ja' ? 'Japanese' : loc === 'ko' ? 'Korean' : loc === 'de' ? 'German' : 'English';
 
-  const prompt = `You are a skeptical financial analyst. Given this ${symbol} analysis summary, identify exactly 3 specific weaknesses, blind spots, or risks the main analysis may have underweighted.
+  const staleNote = Array.isArray(data.trustWarnings) && data.trustWarnings.length
+    ? `Freshness flags: ${data.trustWarnings.join('; ')}`
+    : '';
+  const prompt = `You are a skeptical financial analyst. Given this ${symbol} analysis summary, identify exactly 3 specific weaknesses, blind spots, or risks the main analysis may have underweighted—especially stale data, undated sources, policy-vs-execution gaps, or overconfident BUY/SELL.
 
 Summary: ${summary}
 Signal: ${signal} | Risk/Reward: ${riskReward}
 Dimensions: ${dims}
+${staleNote}
+
+Rules: cite whether an issue is about outdated news, missing counter-evidence, or entity/ticker mismatch. Do not repeat generic disclaimers.
 
 Respond ONLY with JSON: {"weaknesses": ["weakness 1", "weakness 2", "weakness 3"]}
 Each weakness should be 1 concise sentence in ${lang}.`;
@@ -2151,6 +2171,7 @@ async function runAnalyzePipeline(
     const avKey = getAlphaVantageKey();
     let alphaBlock = '';
     let alphaOverview = null;
+    let alphaGlobalQuote = null;
     let latestPrice = NaN;
     if (avKey) {
       try {
@@ -2158,6 +2179,7 @@ async function runAnalyzePipeline(
         const bundle = await fetchAlphaVantageContextBundle(symbol, avKey);
         alphaBlock = bundle.text;
         alphaOverview = bundle.overview;
+        alphaGlobalQuote = bundle.globalQuote;
         latestPrice = latestPriceFromGlobalQuote(bundle.globalQuote);
       } catch (e) {
         console.warn('[Wenap] Alpha Vantage:', e.message);
@@ -2246,6 +2268,10 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
     }
     ensureSupplyChainAndScenarios(data, symbol);
     enrichSourcesForOutput(data);
+    enforceReportAccuracy(data, {
+      locale: normalizeLocale(locale),
+      globalQuote: alphaGlobalQuote,
+    });
     polishDomainBracketCites(data);
     applyAlphaIdentity(data, alphaOverview, symbol, locale);
     data.dimensions = alignDimensionSlots(data.dimensions, effectiveAssetType, locale);

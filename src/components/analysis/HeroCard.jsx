@@ -128,7 +128,9 @@ export default function HeroCard({
   }, [report.ticker, report.currentPrice])
 
   const gen = useMemo(() => formatGeneratedAt(report.generatedAt), [report.generatedAt])
-  const dataAsOf = String(report.dataAsOf || '—').trim()
+  const dataAsOf = String(
+    (report.quoteAsOf && report.quoteAsOf !== '—' ? report.quoteAsOf : report.dataAsOf) || '—',
+  ).trim()
 
   const displayCurrent = Number.isFinite(quotePrice) ? quotePrice : report.currentPrice
   const displayTarget = report.targetPrice

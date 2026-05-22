@@ -10,7 +10,29 @@ router.get('/stats/overview', (req, res) => {
 });
 
 router.get('/stats/revenue', (req, res) => {
-  res.json(store.revenueStats());
+  const q = req.query || {};
+  res.json(
+    store.revenueStats({
+      period: q.period,
+      from: q.from,
+      to: q.to,
+    }),
+  );
+});
+
+router.get('/stats/analytics', (req, res) => {
+  const q = req.query || {};
+  try {
+    res.json(
+      store.adminAnalytics({
+        period: q.period,
+        from: q.from,
+        to: q.to,
+      }),
+    );
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 router.get('/bookkeeping/stats', (req, res) => {
@@ -125,8 +147,18 @@ router.put('/users/:id/tier', (req, res) => {
   if (!['free', 'pro', 'pro_plus', 'proplus'].includes(tier)) {
     return res.status(400).json({ error: '无效 tier' });
   }
-  store.updateUserTier(req.params.id, tier === 'proplus' ? 'pro_plus' : tier);
-  res.json({ ok: true });
+  try {
+    store.updateUserTier(
+      req.params.id,
+      tier === 'proplus' ? 'pro_plus' : tier,
+      req.body?.note || 'admin',
+    );
+    const detail = store.getUserDetail(req.params.id);
+    res.json({ ok: true, ...detail });
+  } catch (e) {
+    if (e.message === 'USER_NOT_FOUND') return res.status(404).json({ error: 'NOT_FOUND' });
+    res.status(500).json({ error: e.message });
+  }
 });
 
 router.put('/users/:id/reset-trials', (req, res) => {

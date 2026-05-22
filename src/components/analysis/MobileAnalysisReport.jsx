@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { snapshotToMobileReport } from '../../utils/snapshotToMobileReport.js'
 import './MobileAnalysisReport.css'
 import HeroCard from './HeroCard.jsx'
+import TrustBanner from './TrustBanner.jsx'
 import CoreConclusionCard from './CoreConclusionCard.jsx'
 import KeyLevelsSection from './KeyLevelsSection.jsx'
 import AccuracyTeaser from './AccuracyTeaser.jsx'
@@ -122,6 +123,11 @@ export default function MobileAnalysisReport({
             showCompare={false}
             onCompare={onCompare}
             scorePercentile={scorePercentile}
+          />
+          <TrustBanner
+            warnings={report.trustWarnings}
+            freshnessScore={report.freshnessScore}
+            quoteAsOf={report.quoteAsOf}
           />
         </>
       ) : (

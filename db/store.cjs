@@ -5,6 +5,7 @@ const Database = require('better-sqlite3');
 const { fetchClosePrice } = require('../lib/alphaPrice.cjs');
 const { checkTendency, checkScenario } = require('../lib/predictionLogic.cjs');
 const { savePrediction, insertAnalysisLog } = require('../jobs/savePrediction.cjs');
+const { periodGroupExpr, resolveRange } = require('../lib/adminPeriod.cjs');
 
 const DB_PATH = process.env.SQLITE_PATH || path.join(__dirname, '..', 'data', 'wenap.db');
 const VERIFY_DAYS = Number(process.env.PREDICTION_VERIFY_DAYS) || 30;
@@ -54,12 +55,201 @@ function migrateFinanceSchema() {
       created_at TEXT DEFAULT (datetime('now'))
     )
   `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS billing_events (
+      id TEXT PRIMARY KEY,
+      user_id TEXT,
+      stripe_invoice_id TEXT UNIQUE,
+      amount_usd REAL NOT NULL,
+      tier TEXT,
+      event_type TEXT DEFAULT 'invoice.paid',
+      paid_at TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    )
+  `);
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_billing_events_paid ON billing_events(paid_at)
+  `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS admin_tier_changes (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      old_tier TEXT,
+      new_tier TEXT NOT NULL,
+      note TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    )
+  `);
   try {
     const { getDb } = require('../routes/billingDb.cjs');
     getDb();
   } catch (e) {
     console.warn('[Wenap] billing schema migrate:', e.message);
   }
+}
+
+const TIER_MRR_USD = { pro: 9.99, pro_plus: 19.99, proplus: 19.99 };
+
+function estimateMrrFromTiers() {
+  initDb();
+  const tiers = db.prepare(`SELECT tier, COUNT(*) AS c FROM users GROUP BY tier`).all();
+  const pro = tiers.find((t) => t.tier === 'pro')?.c || 0;
+  const proPlus =
+    (tiers.find((t) => t.tier === 'pro_plus')?.c || 0) +
+    (tiers.find((t) => t.tier === 'proplus')?.c || 0);
+  return {
+    pro,
+    proPlus,
+    mrr: Math.round((pro * TIER_MRR_USD.pro + proPlus * TIER_MRR_USD.pro_plus) * 100) / 100,
+  };
+}
+
+function recordBillingEvent({ userId, stripeInvoiceId, amountUsd, tier, paidAt, eventType }) {
+  initDb();
+  const amount = Number(amountUsd);
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+  const invId = String(stripeInvoiceId || '').trim();
+  if (!invId) return null;
+  const existing = db
+    .prepare('SELECT id FROM billing_events WHERE stripe_invoice_id = ?')
+    .get(invId);
+  if (existing) return { id: existing.id, duplicate: true };
+  const id = uuid();
+  const paid = String(paidAt || '').slice(0, 19) || new Date().toISOString();
+  db.prepare(
+    `INSERT INTO billing_events (id, user_id, stripe_invoice_id, amount_usd, tier, event_type, paid_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    id,
+    userId || null,
+    invId,
+    Math.round(amount * 100) / 100,
+    tier ? String(tier).slice(0, 32) : null,
+    eventType || 'invoice.paid',
+    paid,
+  );
+  return { id };
+}
+
+function adminAnalytics(opts = {}) {
+  initDb();
+  const { period, from, to } = resolveRange(opts);
+  const bucket = periodGroupExpr('created_at', period);
+  const bucketPaid = periodGroupExpr('paid_at', period);
+
+  const logSummary = db
+    .prepare(
+      `SELECT
+        COUNT(*) AS total,
+        SUM(CASE WHEN status='success' THEN 1 ELSE 0 END) AS success,
+        SUM(CASE WHEN status='failed' THEN 1 ELSE 0 END) AS failed,
+        COALESCE(SUM(CASE WHEN status='success' THEN input_tokens ELSE 0 END), 0) AS inputTokens,
+        COALESCE(SUM(CASE WHEN status='success' THEN output_tokens ELSE 0 END), 0) AS outputTokens,
+        COALESCE(SUM(CASE WHEN status='success' THEN cost_usd ELSE 0 END), 0) AS costUsd
+       FROM analysis_logs
+       WHERE date(created_at) >= date(?) AND date(created_at) <= date(?)`,
+    )
+    .get(from, to);
+
+  const newUsers = db
+    .prepare(
+      `SELECT COUNT(*) AS c FROM users
+       WHERE date(created_at) >= date(?) AND date(created_at) <= date(?)`,
+    )
+    .get(from, to).c;
+
+  const revenueCash = db
+    .prepare(
+      `SELECT COALESCE(SUM(amount_usd), 0) AS s, COUNT(*) AS n
+       FROM billing_events
+       WHERE date(paid_at) >= date(?) AND date(paid_at) <= date(?)`,
+    )
+    .get(from, to);
+
+  const analysisSeries = db
+    .prepare(
+      `SELECT ${bucket} AS bucket,
+        COUNT(*) AS analyses,
+        SUM(CASE WHEN status='success' THEN 1 ELSE 0 END) AS success,
+        COALESCE(SUM(CASE WHEN status='success' THEN input_tokens ELSE 0 END), 0) AS inputTokens,
+        COALESCE(SUM(CASE WHEN status='success' THEN output_tokens ELSE 0 END), 0) AS outputTokens,
+        COALESCE(SUM(CASE WHEN status='success' THEN cost_usd ELSE 0 END), 0) AS costUsd
+       FROM analysis_logs
+       WHERE date(created_at) >= date(?) AND date(created_at) <= date(?)
+       GROUP BY bucket ORDER BY bucket`,
+    )
+    .all(from, to);
+
+  const revenueSeries = db
+    .prepare(
+      `SELECT ${bucketPaid} AS bucket,
+        COALESCE(SUM(amount_usd), 0) AS amountUsd,
+        COUNT(*) AS payments
+       FROM billing_events
+       WHERE date(paid_at) >= date(?) AND date(paid_at) <= date(?)
+       GROUP BY bucket ORDER BY bucket`,
+    )
+    .all(from, to);
+
+  const userSeries = db
+    .prepare(
+      `SELECT ${periodGroupExpr('created_at', period)} AS bucket, COUNT(*) AS newUsers
+       FROM users
+       WHERE date(created_at) >= date(?) AND date(created_at) <= date(?)
+       GROUP BY bucket ORDER BY bucket`,
+    )
+    .all(from, to);
+
+  const mrrNow = estimateMrrFromTiers();
+  const monthStart = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`;
+  const monthRevenueCash = db
+    .prepare(
+      `SELECT COALESCE(SUM(amount_usd), 0) AS s FROM billing_events WHERE date(paid_at) >= date(?)`,
+    )
+    .get(monthStart).s;
+
+  return {
+    period,
+    from,
+    to,
+    dataSources: {
+      analyses: 'analysis_logs（每次分析写入的 token 与估算成本）',
+      revenueCash: 'billing_events（Stripe invoice.paid  webhook）',
+      revenueMrr: '当前付费用户数 × 标价（估算，非 Stripe 账单）',
+    },
+    summary: {
+      analysesTotal: logSummary?.total || 0,
+      analysesSuccess: logSummary?.success || 0,
+      analysesFailed: logSummary?.failed || 0,
+      inputTokens: logSummary?.inputTokens || 0,
+      outputTokens: logSummary?.outputTokens || 0,
+      costUsd: Math.round((logSummary?.costUsd || 0) * 10000) / 10000,
+      newUsers: newUsers || 0,
+      revenueCashUsd: Math.round((revenueCash?.s || 0) * 100) / 100,
+      revenueCashCount: revenueCash?.n || 0,
+      revenueMrrEstimate: mrrNow.mrr,
+      paidPro: mrrNow.pro,
+      paidProPlus: mrrNow.proPlus,
+      monthRevenueCashUsd: Math.round((monthRevenueCash || 0) * 100) / 100,
+    },
+    series: {
+      analyses: analysisSeries.map((r) => ({
+        bucket: r.bucket,
+        analyses: r.analyses,
+        success: r.success,
+        inputTokens: r.inputTokens,
+        outputTokens: r.outputTokens,
+        costUsd: Math.round((r.costUsd || 0) * 10000) / 10000,
+      })),
+      revenueCash: revenueSeries.map((r) => ({
+        bucket: r.bucket,
+        amountUsd: Math.round((r.amountUsd || 0) * 100) / 100,
+        payments: r.payments,
+      })),
+      newUsers: userSeries,
+    },
+    updatedAt: new Date().toISOString(),
+  };
 }
 
 function countryBucket(code) {
@@ -446,6 +636,18 @@ function adminOverview() {
         `SELECT COALESCE(SUM(cost_usd),0) AS s FROM analysis_logs WHERE status='success' AND created_at >= ?`,
       )
       .get(monthStart).s || 0;
+  const monthTokens = db
+    .prepare(
+      `SELECT COALESCE(SUM(input_tokens),0) AS inp, COALESCE(SUM(output_tokens),0) AS out
+       FROM analysis_logs WHERE status='success' AND created_at >= ?`,
+    )
+    .get(monthStart);
+  const mrrNow = estimateMrrFromTiers();
+  const monthRevenueCash = db
+    .prepare(
+      `SELECT COALESCE(SUM(amount_usd),0) AS s FROM billing_events WHERE date(paid_at) >= date(?)`,
+    )
+    .get(monthStart).s || 0;
 
   const recentLogs = db
     .prepare(
@@ -463,7 +665,20 @@ function adminOverview() {
     )
     .all();
 
-  return { usersTotal, usersToday, analysesTotal, analysesToday, accuracy: acc, monthCost, recentLogs, recentResults };
+  return {
+    usersTotal,
+    usersToday,
+    analysesTotal,
+    analysesToday,
+    accuracy: acc,
+    monthCost,
+    monthInputTokens: monthTokens?.inp || 0,
+    monthOutputTokens: monthTokens?.out || 0,
+    monthRevenueCashUsd: Math.round((monthRevenueCash || 0) * 100) / 100,
+    mrrEstimate: mrrNow.mrr,
+    recentLogs,
+    recentResults,
+  };
 }
 
 function listUsers(filters = {}) {
@@ -499,17 +714,63 @@ function getUserDetail(id) {
   initDb();
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
   if (!user) return null;
-  const logs = db
+  const usage = db
     .prepare(
-      `SELECT * FROM analysis_logs WHERE user_id = ? ORDER BY created_at DESC LIMIT 10`,
+      `SELECT COUNT(*) AS analyses,
+        COALESCE(SUM(cost_usd), 0) AS totalCostUsd,
+        COALESCE(SUM(input_tokens), 0) AS inputTokens,
+        COALESCE(SUM(output_tokens), 0) AS outputTokens
+       FROM analysis_logs WHERE user_id = ? AND status = 'success'`,
+    )
+    .get(id);
+  const billing = db.prepare('SELECT * FROM billing WHERE user_id = ?').get(id);
+  const tierHistory = db
+    .prepare(
+      `SELECT old_tier, new_tier, note, created_at FROM admin_tier_changes
+       WHERE user_id = ? ORDER BY created_at DESC LIMIT 10`,
     )
     .all(id);
-  return { user, logs };
+  const logs = db
+    .prepare(
+      `SELECT id, ticker, tier, model, input_tokens, output_tokens, cost_usd, duration_ms, status, created_at
+       FROM analysis_logs WHERE user_id = ? ORDER BY created_at DESC LIMIT 20`,
+    )
+    .all(id);
+  return {
+    user,
+    usage: {
+      analyses: usage?.analyses || 0,
+      totalCostUsd: Math.round((usage?.totalCostUsd || 0) * 10000) / 10000,
+      inputTokens: usage?.inputTokens || 0,
+      outputTokens: usage?.outputTokens || 0,
+    },
+    billing: billing
+      ? {
+          ...billing,
+          tier: billing.tier === 'proplus' ? 'pro_plus' : billing.tier,
+        }
+      : null,
+    tierHistory,
+    logs,
+  };
 }
 
-function updateUserTier(id, tier) {
+function updateUserTier(id, tier, note = '') {
   initDb();
-  db.prepare(`UPDATE users SET tier = ? WHERE id = ?`).run(tier, id);
+  const prev = db.prepare('SELECT tier FROM users WHERE id = ?').get(id);
+  if (!prev) throw new Error('USER_NOT_FOUND');
+  const normalized = tier === 'proplus' ? 'pro_plus' : tier;
+  db.prepare(`UPDATE users SET tier = ? WHERE id = ?`).run(normalized, id);
+  const billing = db.prepare('SELECT user_id FROM billing WHERE user_id = ?').get(id);
+  if (billing) {
+    db.prepare(
+      `UPDATE billing SET tier = ?, updated_at = datetime('now') WHERE user_id = ?`,
+    ).run(normalized, id);
+  }
+  db.prepare(
+    `INSERT INTO admin_tier_changes (id, user_id, old_tier, new_tier, note)
+     VALUES (?, ?, ?, ?, ?)`,
+  ).run(uuid(), id, prev.tier, normalized, String(note || 'admin').slice(0, 200));
 }
 
 function resetUserTrials(id) {
@@ -563,7 +824,9 @@ function listAnalysisLogs(filters = {}) {
     .prepare(
       `SELECT COALESCE(SUM(cost_usd),0) AS totalCost, COUNT(*) AS cnt,
         SUM(CASE WHEN status='success' THEN 1 ELSE 0 END) AS ok,
-        AVG(CASE WHEN duration_ms IS NOT NULL THEN duration_ms END) AS avgMs
+        AVG(CASE WHEN duration_ms IS NOT NULL THEN duration_ms END) AS avgMs,
+        COALESCE(SUM(CASE WHEN status='success' THEN input_tokens ELSE 0 END), 0) AS inputTokens,
+        COALESCE(SUM(CASE WHEN status='success' THEN output_tokens ELSE 0 END), 0) AS outputTokens
        FROM analysis_logs l WHERE ${where}`,
     )
     .get(...params);
@@ -571,41 +834,36 @@ function listAnalysisLogs(filters = {}) {
   return { rows, total, agg };
 }
 
-function revenueStats() {
+function revenueStats(opts = {}) {
   initDb();
-  const tiers = db
-    .prepare(`SELECT tier, COUNT(*) AS c FROM users GROUP BY tier`)
-    .all();
+  const analytics = adminAnalytics({ period: 'day', ...opts });
+  const tiers = db.prepare(`SELECT tier, COUNT(*) AS c FROM users GROUP BY tier`).all();
   const totalUsers = tiers.reduce((s, t) => s + t.c, 0) || 1;
-  const paid = tiers.filter((t) => t.tier === 'pro' || t.tier === 'pro_plus' || t.tier === 'proplus');
-  const mrr =
-    (tiers.find((t) => t.tier === 'pro')?.c || 0) * 9.99 +
-    (tiers.find((t) => t.tier === 'pro_plus' || t.tier === 'proplus')?.c || 0) * 19.99;
-  const dailyUsers = db
-    .prepare(
-      `SELECT date(created_at) AS d, COUNT(*) AS c FROM users
-       WHERE created_at >= datetime('now', '-30 days') GROUP BY date(created_at) ORDER BY d`,
-    )
-    .all();
+  const mrrNow = estimateMrrFromTiers();
+  const paidTotal = mrrNow.pro + mrrNow.proPlus;
+  const dailyUsers = analytics.series.newUsers.map((r) => ({ d: r.bucket, c: r.newUsers }));
   const dailyPaid = db
     .prepare(
-      `SELECT date(created_at) AS d, COUNT(*) AS c FROM users
-       WHERE tier IN ('pro','pro_plus','proplus')
-       AND created_at >= datetime('now', '-30 days')
-       GROUP BY date(created_at) ORDER BY d`,
+      `SELECT date(paid_at) AS d, COUNT(*) AS c, COALESCE(SUM(amount_usd), 0) AS amount
+       FROM billing_events
+       WHERE date(paid_at) >= date(?)
+       GROUP BY date(paid_at) ORDER BY d`,
     )
-    .all();
-  const paidTotal =
-    (tiers.find((t) => t.tier === 'pro')?.c || 0) +
-    (tiers.find((t) => t.tier === 'pro_plus')?.c || 0) +
-    (tiers.find((t) => t.tier === 'proplus')?.c || 0);
+    .all(analytics.from);
   return {
     tiers,
     totalUsers,
     paidTotal,
-    mrr: Math.round(mrr * 100) / 100,
+    mrr: mrrNow.mrr,
+    mrrEstimate: true,
+    revenueCashUsd: analytics.summary.revenueCashUsd,
+    monthRevenueCashUsd: analytics.summary.monthRevenueCashUsd,
     dailyUsers,
     dailyPaid,
+    dailyRevenueCash: dailyPaid.map((r) => ({ d: r.d, amountUsd: Math.round((r.amount || 0) * 100) / 100 })),
+    period: analytics.period,
+    from: analytics.from,
+    to: analytics.to,
   };
 }
 
@@ -776,4 +1034,7 @@ module.exports = {
   getPublicAccuracy,
   getScorePercentile,
   getBuySignalWinRate30d,
+  adminAnalytics,
+  recordBillingEvent,
+  estimateMrrFromTiers,
 };

@@ -216,6 +216,26 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         }
         console.log(`[Wenap] Stripe: subscription ${status} for customer ${customerId}`);
       }
+    } else if (event.type === 'invoice.paid') {
+      const inv = event.data.object;
+      const amountUsd = (Number(inv.amount_paid) || 0) / 100;
+      const customerId = inv.customer;
+      const paidAt = inv.status_transitions?.paid_at
+        ? new Date(inv.status_transitions.paid_at * 1000).toISOString()
+        : new Date().toISOString();
+      const billingRow = customerId
+        ? db.prepare('SELECT user_id, tier FROM billing WHERE stripe_customer_id = ?').get(customerId)
+        : null;
+      const { recordBillingEvent } = require('../db/store.cjs');
+      recordBillingEvent({
+        userId: billingRow?.user_id || null,
+        stripeInvoiceId: inv.id,
+        amountUsd,
+        tier: billingRow?.tier || null,
+        paidAt,
+        eventType: 'invoice.paid',
+      });
+      console.log(`[Wenap] Stripe: invoice.paid $${amountUsd} customer=${customerId}`);
     } else if (event.type === 'customer.subscription.deleted') {
       const sub = event.data.object;
       const customerId = sub.customer;

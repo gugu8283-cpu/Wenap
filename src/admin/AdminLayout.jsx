@@ -20,6 +20,7 @@ const NAV_KEYS = [
 
   { to: '/admin/analysis-logs', key: 'logs' },
 
+  { to: '/admin/analytics', key: 'analytics' },
   { to: '/admin/revenue', key: 'revenue' },
 
   { to: '/admin/finance', key: 'finance' },

@@ -17,7 +17,7 @@ function CredBadge({ level, t }) {
   return <span className={`ma-cred ${c}`}>{label}</span>
 }
 
-function isStaleSourceDate(raw) {
+function isStaleSourceDate(raw, title = '') {
   const s = String(raw || '').trim()
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s)
   let d
@@ -30,7 +30,9 @@ function isStaleSourceDate(raw) {
     }
   }
   if (!d || Number.isNaN(d.getTime())) return false
-  return Date.now() - d.getTime() > 14 * 24 * 60 * 60 * 1000
+  const policyLike = /政策|监管|禁令|出口|合规|regulat|sanction|export control/i.test(title)
+  const maxDays = policyLike ? 7 : 14
+  return Date.now() - d.getTime() > maxDays * 24 * 60 * 60 * 1000
 }
 
 function formatSourceDate(raw, t) {
@@ -68,7 +70,9 @@ export default function SourcesAccordion({ sources, sourceCount, timeSaved }) {
       </summary>
       {list.map((s, i) => {
         const dateLine = formatSourceDate(s.date, t)
-        const stale = isStaleSourceDate(s.date) || /⚠️|可能过时|may be stale/i.test(s.title || '')
+        const stale =
+          isStaleSourceDate(s.date, s.title) ||
+          /⚠️|可能过时|may be stale|无日期|undated/i.test(s.title || '')
         const fullTitle = s.title || s.url || '来源'
         const shortTitle = truncateTitle(fullTitle)
         return (

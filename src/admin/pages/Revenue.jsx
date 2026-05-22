@@ -138,9 +138,21 @@ export default function RevenuePage() {
 
       <p className="mb-4 text-xs text-slate-500">{t('admin.revenue.note')}</p>
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
-        <Card title={t('admin.revenue.mrrMonth')} value={`$${data.mrr}`} />
+        <Card title={t('admin.revenue.mrrMonth')} value={`$${data.mrr}`} sub={t('admin.revenue.mrrEstimate')} />
+
+        <Card
+
+          title={t('admin.revenue.cashPeriod')}
+
+          value={`$${Number(data.revenueCashUsd || 0).toFixed(2)}`}
+
+          sub={t('admin.revenue.cashFromStripe')}
+
+        />
+
+        <Card title={t('admin.revenue.cashMonth')} value={`$${Number(data.monthRevenueCashUsd || 0).toFixed(2)}`} />
 
         <Card
 
@@ -151,8 +163,6 @@ export default function RevenuePage() {
           sub={t('admin.revenue.convSub', { n: conv })}
 
         />
-
-        <Card title={t('admin.revenue.totalUsers')} value={data.totalUsers} />
 
       </div>
 

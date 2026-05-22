@@ -88,6 +88,46 @@ export default function OverviewPage() {
 
       </div>
 
+      <div className="mt-4 grid gap-4 sm:grid-cols-3">
+
+        <Card
+
+          title={t('admin.overview.monthTokens')}
+
+          value={((data.monthInputTokens || 0) + (data.monthOutputTokens || 0)).toLocaleString()}
+
+          sub={t('admin.overview.monthTokensSub', {
+
+            inp: (data.monthInputTokens || 0).toLocaleString(),
+
+            out: (data.monthOutputTokens || 0).toLocaleString(),
+
+          })}
+
+        />
+
+        <Card
+
+          title={t('admin.overview.monthRevenue')}
+
+          value={`$${Number(data.monthRevenueCashUsd || 0).toFixed(2)}`}
+
+          sub={t('admin.overview.monthRevenueSub')}
+
+        />
+
+        <Card
+
+          title={t('admin.overview.mrrEstimate')}
+
+          value={`$${Number(data.mrrEstimate || 0).toFixed(2)}`}
+
+          sub={t('admin.overview.mrrSub')}
+
+        />
+
+      </div>
+
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
 
         <section>

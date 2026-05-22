@@ -188,7 +188,19 @@ export default function AnalysisLogsPage() {
 
       </FilterBar>
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-4">
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+
+        <div className="rounded-lg border border-slate-700 p-3">
+
+          <p className="text-xs text-slate-500">{t('admin.logs.totalTokens')}</p>
+
+          <p className="text-lg text-white">
+
+            {((agg.inputTokens || 0) + (agg.outputTokens || 0)).toLocaleString()}
+
+          </p>
+
+        </div>
 
         <div className="rounded-lg border border-slate-700 p-3">
 
