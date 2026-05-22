@@ -2022,6 +2022,10 @@ function stripDataForViz(
   };
 
   if (tier === 'free') {
+    const bb =
+      snap.bullBearDebate && typeof snap.bullBearDebate === 'object'
+        ? snap.bullBearDebate
+        : { bull: [], bear: [] };
     return {
       ...snap,
       actionLine: '',
@@ -2030,7 +2034,7 @@ function stripDataForViz(
       catalystTimeline: [],
       leaderInsiderSummary: '',
       peerVsSectorLine: '',
-      bullBearDebate: { bull: [], bear: [] },
+      bullBearDebate: bb,
       proFieldHints: proHints,
       proPlusFieldHints: proPlusHints,
     };

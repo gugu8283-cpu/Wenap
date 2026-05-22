@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import './MobileAnalysisReport.css'
 import { useInView } from '../../hooks/useInView.js'
+import ProSectionLock from './ProSectionLock.jsx'
+import ProLockPrompt from './ProLockPrompt.jsx'
 
 const W = 320
 
@@ -21,7 +23,7 @@ function priceInAnyInterval(price, intervals) {
   return intervals.some((iv) => price >= iv.min && price <= iv.max)
 }
 
-export default function ScenarioSection({ scenarios, currentPrice }) {
+export default function ScenarioSection({ scenarios, currentPrice, locked = false, onUpgrade }) {
   const { t } = useTranslation()
   const { ref: sectionRef, inView } = useInView({ threshold: 0.15 })
   const [chartAnim, setChartAnim] = useState(false)
@@ -93,12 +95,26 @@ export default function ScenarioSection({ scenarios, currentPrice }) {
           <div>
             <div className="ma-scen-mid">
               {scenLabel(s.type)} ·{' '}
-              {Number.isFinite(s.rangeMin) && Number.isFinite(s.rangeMax)
-                ? `$${s.rangeMin.toFixed(0)} – $${s.rangeMax.toFixed(0)}`
-                : s.rangeLabel || '—'}
+              {locked ? (
+                <span className="ma-scen-range-lock">
+                  <span className="ma-scen-range-mask">––––</span>
+                  <button
+                    type="button"
+                    className="ma-scen-range-lock-btn"
+                    onClick={onUpgrade}
+                    aria-label={t('report.scenarioUnlockPro')}
+                  >
+                    <span className="ma-tier-lock-badge">Pro</span>
+                  </button>
+                </span>
+              ) : Number.isFinite(s.rangeMin) && Number.isFinite(s.rangeMax) ? (
+                `$${s.rangeMin.toFixed(0)} – $${s.rangeMax.toFixed(0)}`
+              ) : (
+                s.rangeLabel || '—'
+              )}
             </div>
             <div className="ma-scen-trig">{s.trigger}</div>
-            {s.triggerPrice || s.timeWindow ? (
+            {!locked && (s.triggerPrice || s.timeWindow) ? (
               <div className="ma-scen-detail">
                 {Number.isFinite(s.triggerPrice)
                   ? t('report.triggerAt', { price: s.triggerPrice.toFixed(2) })
@@ -114,59 +130,81 @@ export default function ScenarioSection({ scenarios, currentPrice }) {
         <p className="ma-scen-outside-hint">{t('report.scenarioOutside')}</p>
       ) : null}
       {axis ? (
-        <svg className="ma-axis-svg" viewBox={`0 0 ${W} 56`} preserveAspectRatio="none" aria-hidden>
-          <rect
-            x={0}
-            y={14}
-            width={chartAnim ? W : 0}
-            height={20}
-            fill="rgba(255,255,255,0.04)"
-            rx={4}
-            style={{ transition: 'width 500ms ease-out' }}
-          />
-          {axis.segs.map((seg, si) => (
+        locked ? (
+          <ProSectionLock ctaText={t('report.scenarioUnlockPro')} onUnlock={onUpgrade} className="ma-scen-chart-lock">
+            <svg className="ma-axis-svg" viewBox={`0 0 ${W} 56`} preserveAspectRatio="none" aria-hidden>
+              <rect x={0} y={14} width={W} height={20} fill="rgba(255,255,255,0.04)" rx={4} />
+              {axis.segs.map((seg) => (
+                <rect
+                  key={seg.type}
+                  x={seg.x1}
+                  y={14}
+                  width={seg.w}
+                  height={20}
+                  fill={fillFor(seg.type)}
+                  rx={3}
+                />
+              ))}
+            </svg>
+          </ProSectionLock>
+        ) : (
+          <svg className="ma-axis-svg" viewBox={`0 0 ${W} 56`} preserveAspectRatio="none" aria-hidden>
             <rect
-              key={seg.type}
-              x={seg.x1}
+              x={0}
               y={14}
-              width={chartAnim ? seg.w : 0}
+              width={chartAnim ? W : 0}
               height={20}
-              fill={fillFor(seg.type)}
-              rx={3}
-              style={{ transition: `width 500ms ease-out ${si * 80}ms` }}
+              fill="rgba(255,255,255,0.04)"
+              rx={4}
+              style={{ transition: 'width 500ms ease-out' }}
             />
-          ))}
-          {Number.isFinite(currentPrice) && currentPrice > 0 ? (
-            <g>
-              <line
-                x1={axis.scale(currentPrice)}
-                y1={8}
-                x2={axis.scale(currentPrice)}
-                y2={44}
-                stroke="#378ADD"
-                strokeWidth={2}
+            {axis.segs.map((seg, si) => (
+              <rect
+                key={seg.type}
+                x={seg.x1}
+                y={14}
+                width={chartAnim ? seg.w : 0}
+                height={20}
+                fill={fillFor(seg.type)}
+                rx={3}
+                style={{ transition: `width 500ms ease-out ${si * 80}ms` }}
               />
-              <text
-                x={axis.scale(currentPrice)}
-                y={6}
-                textAnchor="middle"
-                fontSize={12}
-                fill={axis.priceOutside ? 'rgba(255,255,255,0.4)' : '#FFFFFF'}
-                className="ma-num"
-              >
-                {axis.priceOutside
-                  ? `$${currentPrice.toFixed(0)} · ${t('report.watchRange')}`
-                  : `$${currentPrice.toFixed(0)}`}
-              </text>
-            </g>
-          ) : null}
-          <text x={0} y={52} fontSize="10" fill="var(--text-secondary)" className="ma-num">
-            ${axis.bearMin.toFixed(0)}
-          </text>
-          <text x={W} y={52} textAnchor="end" fontSize="10" fill="var(--text-secondary)" className="ma-num">
-            ${axis.bullMax.toFixed(0)}
-          </text>
-        </svg>
+            ))}
+            {Number.isFinite(currentPrice) && currentPrice > 0 ? (
+              <g>
+                <line
+                  x1={axis.scale(currentPrice)}
+                  y1={8}
+                  x2={axis.scale(currentPrice)}
+                  y2={44}
+                  stroke="#378ADD"
+                  strokeWidth={2}
+                />
+                <text
+                  x={axis.scale(currentPrice)}
+                  y={6}
+                  textAnchor="middle"
+                  fontSize={12}
+                  fill={axis.priceOutside ? 'rgba(255,255,255,0.4)' : '#FFFFFF'}
+                  className="ma-num"
+                >
+                  {axis.priceOutside
+                    ? `$${currentPrice.toFixed(0)} · ${t('report.watchRange')}`
+                    : `$${currentPrice.toFixed(0)}`}
+                </text>
+              </g>
+            ) : null}
+            <text x={0} y={52} fontSize="10" fill="var(--text-secondary)" className="ma-num">
+              ${axis.bearMin.toFixed(0)}
+            </text>
+            <text x={W} y={52} textAnchor="end" fontSize="10" fill="var(--text-secondary)" className="ma-num">
+              ${axis.bullMax.toFixed(0)}
+            </text>
+          </svg>
+        )
+      ) : null}
+      {locked ? (
+        <ProLockPrompt text={t('report.scenarioUnlockPro')} onUnlock={onUpgrade} />
       ) : null}
       <p className="ma-scenario-disclaimer">{t('report.scenarioProbDisclaimer')}</p>
     </div>

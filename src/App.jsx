@@ -796,6 +796,7 @@ export default function App() {
               }
               onCompareToast={() => {}}
               onReanalyze={() => runAnalyze()}
+              onRequestUpgrade={() => setShowUpgradeModal(true)}
             />
           ) : (
             <>

@@ -183,6 +183,9 @@ export default function HeroCard({
 
   const tier = report.reportTier || 'free'
   const showScoreTierHint = tier === 'pro' || tier === 'pro_plus'
+  const scoreNum = Number(report.score) || 0
+  const showSignalScoreHint =
+    scoreNum > 65 && (report.tendency === 'hold' || report.tendency === 'sell')
 
   const handleShare = async () => {
     const url = `${window.location.origin}${window.location.pathname}?symbol=${encodeURIComponent(report.ticker)}`
@@ -254,7 +257,12 @@ export default function HeroCard({
       </div>
 
       <div className="ma-pills">
-        <span className={`ma-pill ma-pill--${report.tendency}`}>{sigLabel(report.tendency)}</span>
+        <span className="ma-pill-signal-wrap">
+          <span className={`ma-pill ma-pill--${report.tendency}`}>{sigLabel(report.tendency)}</span>
+          {showSignalScoreHint ? (
+            <span className="ma-signal-score-hint">{t('report.signalScoreHint')}</span>
+          ) : null}
+        </span>
         <span className="ma-pill">{t('report.risk', { level: mapRiskLevel(report.risk, t) })}</span>
         {rrDisplay ? (
           <span className="ma-pill ma-pill--rr">
@@ -263,20 +271,35 @@ export default function HeroCard({
               className="ma-rr-btn"
               aria-expanded={rrOpen}
               onClick={() => setRrOpen((v) => !v)}
-              title={t('report.rrTooltipTitle')}
+              title={t('report.rrExplain')}
             >
               RR {rrDisplay}
             </button>
-            {rrOpen && rrCalc ? (
+            <button
+              type="button"
+              className="ma-rr-info"
+              aria-label={t('report.rrExplain')}
+              aria-expanded={rrOpen}
+              title={t('report.rrExplain')}
+              onClick={() => setRrOpen((v) => !v)}
+            >
+              ⓘ
+            </button>
+            {rrOpen ? (
               <span className="ma-rr-popover" role="tooltip">
-                {t('report.rrFormula', {
-                  rr: rrCalc.ratio.toFixed(1),
-                  target: rrCalc.target.toFixed(2),
-                  current: rrCalc.current.toFixed(2),
-                  stop: rrCalc.stop.toFixed(2),
-                  reward: rrCalc.reward.toFixed(2),
-                  risk: rrCalc.risk.toFixed(2),
-                })}
+                <span className="ma-rr-popover-lead">{t('report.rrExplain')}</span>
+                {rrCalc ? (
+                  <span className="ma-rr-popover-formula">
+                    {t('report.rrFormula', {
+                      rr: rrCalc.ratio.toFixed(1),
+                      target: rrCalc.target.toFixed(2),
+                      current: rrCalc.current.toFixed(2),
+                      stop: rrCalc.stop.toFixed(2),
+                      reward: rrCalc.reward.toFixed(2),
+                      risk: rrCalc.risk.toFixed(2),
+                    })}
+                  </span>
+                ) : null}
               </span>
             ) : null}
           </span>
@@ -287,12 +310,8 @@ export default function HeroCard({
           </span>
         ) : null}
         {report.model ? (
-          <span className="ma-pill ma-pill--model" title={t('report.modelBadge', { model: report.model })}>
-            {report.model.includes('sonnet')
-              ? '✦ Sonnet'
-              : report.model.includes('haiku')
-                ? '✦ Haiku'
-                : '✦ Flash'}
+          <span className="ma-pill ma-pill--model" title={t('report.aiEnhanced')}>
+            {t('report.aiEnhanced')}
           </span>
         ) : null}
       </div>

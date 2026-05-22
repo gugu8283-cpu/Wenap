@@ -11,6 +11,7 @@ export default function AnalysisViz({
   onDevUnlock,
   onCompareToast,
   onReanalyze,
+  onRequestUpgrade,
 }) {
   return (
     <MobileAnalysisReport
@@ -24,6 +25,7 @@ export default function AnalysisViz({
       onDevUnlock={onDevUnlock}
       onCompareToast={onCompareToast}
       onReanalyze={onReanalyze}
+      onRequestUpgrade={onRequestUpgrade}
     />
   )
 }

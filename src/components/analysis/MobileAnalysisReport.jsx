@@ -36,6 +36,7 @@ export default function MobileAnalysisReport({
   onAnalyzeSymbol,
   onDevUnlock,
   onCompareToast,
+  onRequestUpgrade,
 }) {
   const { t } = useTranslation()
   const report = useMemo(
@@ -95,6 +96,11 @@ export default function MobileAnalysisReport({
     else if (onDevUnlock) onDevUnlock()
   }
 
+  const handleUpgrade = () => {
+    if (onRequestUpgrade) onRequestUpgrade()
+    else onUpgrade()
+  }
+
   const onCompare = () => {
     if (onCompareToast) onCompareToast()
     else window.alert(t('report.compareComingSoon'))
@@ -112,6 +118,22 @@ export default function MobileAnalysisReport({
 
   const vis = (n) => revealed >= n
   const eventTeaser = report.proFieldHints?.catalystCount || 0
+
+  const bullBearForFree =
+    report.bullBearDebate?.bull?.length || report.bullBearDebate?.bear?.length
+      ? report.bullBearDebate
+      : report.proPlusFieldHints?.hasBullBear
+        ? {
+            bull: [
+              { reason: t('report.proPlus.bullBearTeaser'), weight: '' },
+              { reason: '···', weight: '' },
+            ],
+            bear: [
+              { reason: t('report.proPlus.bullBearTeaser'), weight: '' },
+              { reason: '···', weight: '' },
+            ],
+          }
+        : null
 
   return (
     <div className="mobile-analysis-root">
@@ -146,13 +168,23 @@ export default function MobileAnalysisReport({
       ) : null}
       {vis(3) ? <RadarSection dimensions={report.dimensions} /> : <RadarSkeleton />}
       {vis(4) ? (
-        <ScenarioSection scenarios={report.scenarios} currentPrice={report.currentPrice} />
+        <ScenarioSection
+          scenarios={report.scenarios}
+          currentPrice={report.currentPrice}
+          locked={isFree}
+          onUpgrade={handleUpgrade}
+        />
       ) : (
         <BlockSkeleton h={100} />
       )}
       {vis(5) ? (
         report.supplyChain?.length ? (
-          <SupplyChainSection rows={report.supplyChain} onAnalyzeCode={onAnalyzeSymbol} />
+          <SupplyChainSection
+            rows={report.supplyChain}
+            onAnalyzeCode={onAnalyzeSymbol}
+            previewMode={isFree}
+            onUpgrade={handleUpgrade}
+          />
         ) : null
       ) : report.supplyChain?.length ? (
         <BlockSkeleton h={72} />
@@ -163,8 +195,14 @@ export default function MobileAnalysisReport({
         ) : isPro ? (
           <ProPlusLockedSection
             hints={report.proPlusFieldHints}
-            onUpgrade={onUpgrade}
+            onUpgrade={handleUpgrade}
             ticker={report.ticker}
+          />
+        ) : bullBearForFree ? (
+          <BullBearSection
+            bullBearDebate={bullBearForFree}
+            previewMode
+            onUpgrade={handleUpgrade}
           />
         ) : null
       ) : null}
@@ -175,7 +213,7 @@ export default function MobileAnalysisReport({
         <ProFieldsSection
           report={report}
           locked={isFree}
-          onUpgrade={onUpgrade}
+          onUpgrade={handleUpgrade}
           keyEventsTeaserCount={eventTeaser}
         />
       ) : (
@@ -218,7 +256,7 @@ export default function MobileAnalysisReport({
               critique={critique}
               previewMode
               lockedCount={Math.max(2, n > 1 ? n - 1 : 2)}
-              onUpgrade={onUpgrade}
+              onUpgrade={handleUpgrade}
             />
           )
         }
@@ -234,7 +272,7 @@ export default function MobileAnalysisReport({
           <QuotaSoftNudge
             quotaBanner={quotaBanner}
             ticker={report.ticker}
-            onUpgrade={onUpgrade}
+            onUpgrade={handleUpgrade}
           />
           <ProUpgradeBar quotaBanner={quotaBanner} subscribeUrl={subscribeUrl} onDevUnlock={onDevUnlock} />
         </>
