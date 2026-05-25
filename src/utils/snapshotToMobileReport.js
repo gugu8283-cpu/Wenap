@@ -122,9 +122,11 @@ function credToLevel(c) {
   return 'mid'
 }
 
+import { defaultSourceLabel, localizeMobileReportCitations } from './localizeCitations.js'
+
 /**
  * @param {object} snapshot
- * @param {{ ticker?: string, startedAt?: string }} meta
+ * @param {{ ticker?: string, startedAt?: string, locale?: string }} meta
  * @returns {import('../types/analysis.js').MobileReport | null}
  */
 export function snapshotToMobileReport(snapshot, meta = {}) {
@@ -220,7 +222,7 @@ export function snapshotToMobileReport(snapshot, meta = {}) {
     }
     return {
       title: String(s.text || '').trim(),
-      source: host || '来源',
+      source: host || defaultSourceLabel(meta.locale),
       date: String(s.time || '').trim(),
       credibility: credToLevel(s.credibility),
       url: String(s.url || '').trim(),
@@ -288,7 +290,7 @@ export function snapshotToMobileReport(snapshot, meta = {}) {
   })
   const keyLevels = parseKeyLevelsFromSnapshot(snapshot)
 
-  return {
+  const report = {
     ticker,
     name,
     exchange,
@@ -332,6 +334,7 @@ export function snapshotToMobileReport(snapshot, meta = {}) {
     proPlusFieldHints: snapshot.proPlusFieldHints || {},
     secondPassCritique: snapshot.secondPassCritique || null,
   }
+  return meta.locale ? localizeMobileReportCitations(report, meta.locale) : report
 }
 
 export { COLORS }

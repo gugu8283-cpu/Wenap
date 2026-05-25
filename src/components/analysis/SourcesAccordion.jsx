@@ -68,7 +68,7 @@ export default function SourcesAccordion({ sources, sourceCount, timeSaved }) {
         const stale =
           isStaleSourceDate(s.date, s.title) ||
           /⚠️|可能过时|may be stale|无日期|undated/i.test(s.title || '')
-        const fullTitle = s.title || s.url || '来源'
+        const fullTitle = s.title || s.url || t('report.sourceFallback', { defaultValue: 'Source' })
         return (
           <div key={i} className="ma-source-row">
             <CredBadge level={s.credibility} t={t} />

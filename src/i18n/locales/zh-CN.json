@@ -377,6 +377,7 @@
     "credMid": "中",
     "credLow": "低",
     "dateUnknown": "日期未知",
+    "sourceFallback": "来源",
     "triggerAt": "触发价 ${{price}}",
     "window": "窗口 {{window}}",
     "coreConclusionTitle": "核心结论",

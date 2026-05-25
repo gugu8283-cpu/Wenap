@@ -768,6 +768,11 @@ function riskFocusPromptBlock(riskFocus, loc) {
 
 const { buildMainJsonPromptIntl } = require('./lib/mainAnalyzePrompt.cjs');
 const { sanitizeReportDisplayFields } = require('./lib/reportDisplayText.cjs');
+const {
+  guessSourceCite,
+  defaultCiteLabel,
+  localizeReportCitations,
+} = require('./lib/citationLocale.cjs');
 
 function buildMainJsonPrompt({
   ticker,
@@ -1504,36 +1509,6 @@ function alignDimensionSlots(dimensions, assetType, locale = 'zh-CN') {
 
 const SUPPLY_CHAIN_PLACEHOLDER_RE = /待结合|待补充|上下游代表|暂无|更新中|待公告/;
 
-/** 角标以 url 为准；忽略模型返回的长 cite，避免「Venture Glob」类截断 */
-function guessSourceCite(src) {
-  const u = String(src?.url || '').trim();
-  const low = u.toLowerCase();
-  if (/^https?:\/\//i.test(u)) {
-    if (/sec\.gov/.test(low)) return 'SEC';
-    if (/nasdaq\.com|nyse\.com|cboe\.com|hkex\.com|sse\.com|szse\.cn/.test(low)) return '交易所';
-    if (/investor\.|ir\.|\/investor|\/investors|shareholder|edf\.google/.test(low)) return 'IR';
-    if (/ventureglobal\.com/.test(low)) return 'IR';
-    if (/stocktitan\.net/.test(low)) return '披露';
-    if (/finance\.sina|sina\.com\.cn/.test(low)) return '新闻';
-    if (/wsj\.com|ft\.com|bloomberg|reuters|cnbc|marketwatch|fool\.com/.test(low)) return '新闻';
-    if (/arxiv|ssrn|doi\.org|researchgate/.test(low)) return '研报';
-    if (
-      /trefis\.com|fairvaluelabs\.com|simplywall\.st|gurufocus\.com|seekingalpha\.com|tipranks\.com|zacks\.com|morningstar\.com|sentieo\.com/.test(
-        low,
-      )
-    )
-      return '研报';
-    if (/tradingkey\.com|investing\.com|finviz\.com|barchart\.com|benzinga\.com/.test(low)) return '新闻';
-    if (/alphavantage\.co/.test(low)) return '行情';
-    if (/yahoo\.|finance\.yahoo/.test(low)) return '新闻';
-    if (/eastmoney|163\.com|qq\.com\/finance/.test(low)) return '新闻';
-    return '来源';
-  }
-  const raw = String(src?.cite || '').trim();
-  if (raw.length > 0 && raw.length <= 6 && !/\s/.test(raw)) return raw.slice(0, 6);
-  return '来源';
-}
-
 const BRACKET_CANON = new Set([
   'sec',
   'ir',
@@ -1547,7 +1522,8 @@ const BRACKET_CANON = new Set([
   '媒体',
 ]);
 
-function buildBracketAliasMap(sources) {
+function buildBracketAliasMap(sources, locale = 'zh-CN') {
+  const fallback = defaultCiteLabel(locale);
   const m = new Map();
   const add = (key, cite) => {
     const k = String(key || '')
@@ -1559,7 +1535,7 @@ function buildBracketAliasMap(sources) {
   };
   for (const s of sources || []) {
     if (!s || typeof s !== 'object') continue;
-    const cite = String(s.cite || guessSourceCite(s)).trim() || '来源';
+    const cite = String(s.cite || guessSourceCite(s, locale)).trim() || fallback;
     const url = String(s.url || '').toLowerCase();
     const text = String(s.text || '');
 
@@ -1595,7 +1571,8 @@ function buildBracketAliasMap(sources) {
 }
 
 /** 将正文中的 [hostname.tld] 或 [Yahoo Finance] 等换成与 sources 一致的短角标 */
-function buildHostCitationMap(sources) {
+function buildHostCitationMap(sources, locale = 'zh-CN') {
+  const fallback = defaultCiteLabel(locale);
   const m = new Map();
   for (const s of sources || []) {
     if (!s || typeof s !== 'object') continue;
@@ -1607,7 +1584,7 @@ function buildHostCitationMap(sources) {
     } catch {
       continue;
     }
-    const cite = String(s.cite || guessSourceCite(s)).trim() || '来源';
+    const cite = String(s.cite || guessSourceCite(s, locale)).trim() || fallback;
     const bare = host.replace(/^www\./, '');
     if (!m.has(host)) m.set(host, cite);
     if (!m.has(bare)) m.set(bare, cite);
@@ -1650,9 +1627,9 @@ function rewriteBracketCitations(text, hostMap, aliasMap) {
   return t.trim();
 }
 
-function polishDomainBracketCites(data) {
-  const hostMap = buildHostCitationMap(data.sources);
-  const aliasMap = buildBracketAliasMap(data.sources);
+function polishDomainBracketCites(data, locale = 'zh-CN') {
+  const hostMap = buildHostCitationMap(data.sources, locale);
+  const aliasMap = buildBracketAliasMap(data.sources, locale);
   const keys = [
     'identityCheck',
     'summary',
@@ -1688,11 +1665,11 @@ function polishDomainBracketCites(data) {
   }
 }
 
-function enrichSourcesForOutput(data) {
+function enrichSourcesForOutput(data, locale = 'zh-CN') {
   const arr = Array.isArray(data.sources) ? data.sources : [];
   data.sources = arr.map((s) => {
     if (!s || typeof s !== 'object') return s;
-    const cite = guessSourceCite(s);
+    const cite = guessSourceCite(s, locale);
     return { ...s, cite };
   });
 }
@@ -1923,7 +1900,7 @@ function jsonToMarkdownFourParts(data, tier = 'free', locale = 'zh-CN') {
   s3 += '| --- | --- | --- | --- | --- |\n';
   (data.sources || []).forEach((src) => {
     if (!src || typeof src !== 'object') return;
-    const cite = src.cite || guessSourceCite(src);
+    const cite = src.cite || guessSourceCite(src, loc);
     const text = String(src.text || '')
       .replace(/\|/g, '｜')
       .replace(/\r?\n/g, ' ')
@@ -1996,8 +1973,16 @@ function jsonToMarkdownFourParts(data, tier = 'free', locale = 'zh-CN') {
 /** 供前端图表用，控制体积 */
 function stripDataForViz(
   data,
-  { tier = 'free', latestPrice = NaN, locale = 'zh-CN', listingCurrency = 'USD', model = '', assetType = 'stock' } = {},
+  {
+    tier = 'free',
+    latestPrice = NaN,
+    locale = 'zh-CN',
+    listingCurrency = 'USD',
+    model = '',
+    assetType = 'stock',
+  } = {},
 ) {
+  const loc = normalizeLocale(locale);
   const curForSnap = reconcileCurrentPrice({
     quotePrice: latestPrice,
     analystPriceLine: data.analystPriceLine,
@@ -2086,7 +2071,7 @@ function stripDataForViz(
       url: s.url,
       time: s.time,
       credibility: s.credibility,
-      cite: s.cite || guessSourceCite(s),
+      cite: s.cite || guessSourceCite(s, loc),
     })),
     listingCurrency: String(listingCurrency || 'USD'),
     reportTier: tier,
@@ -2365,12 +2350,13 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
       }
     }
     ensureSupplyChainAndScenarios(data, symbol);
-    enrichSourcesForOutput(data);
+    enrichSourcesForOutput(data, locale);
     enforceReportAccuracy(data, {
       locale: normalizeLocale(locale),
       globalQuote: alphaGlobalQuote,
     });
-    polishDomainBracketCites(data);
+    polishDomainBracketCites(data, locale);
+    localizeReportCitations(data, locale);
     applyAlphaIdentity(data, alphaOverview, symbol, locale);
     data.dimensions = alignDimensionSlots(data.dimensions, effectiveAssetType, locale);
     data.dimensions = applyPolicyDimensionBackdropFloor(data.dimensions, locale);

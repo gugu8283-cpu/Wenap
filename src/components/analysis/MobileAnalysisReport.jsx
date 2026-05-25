@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import i18n from 'i18next'
 import { snapshotToMobileReport } from '../../utils/snapshotToMobileReport.js'
 import './MobileAnalysisReport.css'
 import HeroCard from './HeroCard.jsx'
@@ -40,8 +41,13 @@ export default function MobileAnalysisReport({
 }) {
   const { t } = useTranslation()
   const report = useMemo(
-    () => snapshotToMobileReport(snapshot, { ...meta, fallbackTicker: ticker }),
-    [snapshot, meta, ticker],
+    () =>
+      snapshotToMobileReport(snapshot, {
+        ...meta,
+        fallbackTicker: ticker,
+        locale: i18n.language,
+      }),
+    [snapshot, meta, ticker, i18n.language],
   )
 
   const targetPriceMismatch = useMemo(() => {

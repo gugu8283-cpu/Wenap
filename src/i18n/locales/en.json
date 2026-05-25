@@ -377,6 +377,7 @@
     "credMid": "Med",
     "credLow": "Low",
     "dateUnknown": "Date unknown",
+    "sourceFallback": "Source",
     "triggerAt": "Trigger ${{price}}",
     "window": "Window {{window}}",
     "coreConclusionTitle": "Core takeaway",
