@@ -766,6 +766,7 @@ function riskFocusPromptBlock(riskFocus, loc) {
 }
 
 const { buildMainJsonPromptIntl } = require('./lib/mainAnalyzePrompt.cjs');
+const { sanitizeReportDisplayFields } = require('./lib/reportDisplayText.cjs');
 
 function buildMainJsonPrompt({
   ticker,
@@ -1000,12 +1001,12 @@ function normalizeKeyEventsField(data) {
     .filter((x) => x && typeof x === 'object')
     .slice(0, 6)
     .map((x) => ({
-      date: String(x.date || x.eta || '').trim().slice(0, 36),
-      event: String(x.event || x.label || '').trim().slice(0, 48),
+      date: String(x.date || x.eta || '').trim().slice(0, 48),
+      event: String(x.event || x.label || '').trim().slice(0, 400),
     }))
     .filter((x) => x.date || x.event);
   data.catalystTimeline = data.keyEvents.map((x) => ({
-    label: x.event.slice(0, 12),
+    label: x.event.slice(0, 120),
     eta: x.date,
     detail: x.event,
   }));
@@ -1022,9 +1023,9 @@ function normalizeBullBearDebateField(data) {
     (Array.isArray(arr) ? arr : [])
       .slice(0, 3)
       .map((x) => {
-        if (typeof x === 'string') return { reason: x.trim().slice(0, 360), weight: '' };
+        if (typeof x === 'string') return { reason: x.trim().slice(0, 2000), weight: '' };
         return {
-          reason: String(x?.reason || x?.text || '').trim().slice(0, 360),
+          reason: String(x?.reason || x?.text || '').trim().slice(0, 2000),
           weight: String(x?.weight || x?.p || '').trim().slice(0, 12),
         };
       })
@@ -1047,8 +1048,8 @@ function normalizeSupplyChainProPlusFields(data) {
   if (!data || typeof data !== 'object' || !Array.isArray(data.supplyChain)) return;
   data.supplyChain = data.supplyChain.map((c) => {
     if (!c || typeof c !== 'object') return c;
-    const analysis = String(c.analysis || '').trim().slice(0, 80);
-    const relation = String(c.relation || c.reason || '').trim().slice(0, 72);
+    const analysis = String(c.analysis || '').trim().slice(0, 600);
+    const relation = String(c.relation || c.reason || '').trim().slice(0, 600);
     return { ...c, relation, analysis: analysis || relation };
   });
 }
@@ -1136,7 +1137,7 @@ function mergePeerLineIntoDimensions(dimensions, peerLine) {
   const idx = dimensions.findIndex((d) => /市场情/.test(String(d?.name || '')));
   if (idx < 0) return;
   const note = String(dimensions[idx].note || '').trim();
-  const short = clipToCompleteThought(line, 52, 0.25) || line;
+  const short = clipToCompleteThought(line, 220, 0.25) || line;
   if (note.includes(short.slice(0, 8))) return;
   dimensions[idx].note = `${note} ${short}`.trim();
 }
@@ -1728,7 +1729,7 @@ function ensureSupplyChainAndScenarios(data, ticker) {
     let relation = scrubNotFoundMetaPhrases(
       stripHttpUrls(String(c.relation || c.reason || '').trim()),
     );
-    relation = clipToCompleteThought(relation, 72, 0.22);
+    relation = relation.slice(0, 600);
     if (relation && SUPPLY_CHAIN_PLACEHOLDER_RE.test(relation)) {
       relation = '';
     }
@@ -1846,52 +1847,6 @@ function trimSuspensionSuffix(s) {
     .replace(/\s*…{1,}\s*$/u, '')
     .replace(/\s*\.{3,}\s*$/u, '')
     .trim();
-}
-
-function clampVerboseChineseFields(data) {
-  if (!data || typeof data !== 'object') return;
-  data.identityCheck = clipToCompleteThought(data.identityCheck, 56);
-  data.summary = clipToCompleteThought(data.summary, 36);
-  data.technicalSnapshot = clipToCompleteThought(data.technicalSnapshot, 64);
-  data.detailAnalysis = clipToCompleteThought(String(data.detailAnalysis || '').trim(), DETAIL_MARKDOWN_MAX_CHARS);
-  data.outlook = clipToCompleteThought(data.outlook, 120);
-  data.valuationBridge = clipToCompleteThought(data.valuationBridge, 44);
-  data.leaderInsiderSummary = clipToCompleteThought(data.leaderInsiderSummary, 48);
-  const ct = Array.isArray(data.catalystTimeline) ? data.catalystTimeline : [];
-  data.catalystTimeline = ct.slice(0, 4).map((x) => {
-    if (!x || typeof x !== 'object') return x;
-    return {
-      ...x,
-      label: clipToCompleteThought(String(x.label || '').trim(), 16),
-      detail: clipToCompleteThought(String(x.detail || '').trim(), 24),
-    };
-  });
-  const dims = Array.isArray(data.dimensions) ? data.dimensions : [];
-  for (const d of dims) {
-    if (!d || typeof d !== 'object') continue;
-    const sc = Number(d.score);
-    if (!Number.isFinite(sc) || sc === 0) continue;
-    d.note = scrubInternalDraftMarks(clipToCompleteThought(String(d.note || '').trim(), 56));
-  }
-  const chain = Array.isArray(data.supplyChain) ? data.supplyChain : [];
-  for (const c of chain) {
-    if (c && typeof c === 'object') {
-      c.reason = clipToCompleteThought(String(c.reason || '').trim(), 44);
-    }
-  }
-  if (data.scenarios && typeof data.scenarios === 'object') {
-    for (const k of ['bull', 'base', 'bear']) {
-      const z = data.scenarios[k];
-      if (!z || typeof z !== 'object') continue;
-      z.range = clipToCompleteThought(String(z.range || '').trim(), 40);
-    }
-  }
-  if (Array.isArray(data.sources)) {
-    data.sources = data.sources.slice(0, 5).map((s) => {
-      if (!s || typeof s !== 'object') return s;
-      return { ...s, text: clipToCompleteThought(String(s.text || '').trim(), 48) };
-    });
-  }
 }
 
 function jsonToMarkdownFourParts(data, tier = 'free', locale = 'zh-CN') {
@@ -2049,8 +2004,8 @@ function stripDataForViz(
     assetType,
   });
   const detailFull = trimSuspensionSuffix(String(data.detailAnalysis || '').trim());
-  const detailPreview = clipToCompleteThought(detailFull, DETAIL_MARKDOWN_MAX_CHARS, 0.32);
-  const detailNeedsFold = [...detailFull].length > DETAIL_MARKDOWN_MAX_CHARS;
+  const detailPreview = detailFull;
+  const detailNeedsFold = false;
   const srcArr = Array.isArray(data.sources) ? data.sources : [];
   const snap = {
     score: data.score,
@@ -2061,19 +2016,19 @@ function stripDataForViz(
     coreConclusion:
       data.coreConclusion && typeof data.coreConclusion === 'object'
         ? {
-            headline: String(data.coreConclusion.headline || '').trim().slice(0, 320),
-            ifBull: String(data.coreConclusion.ifBull || data.coreConclusion.bullCase || '').trim().slice(0, 480),
-            ifBear: String(data.coreConclusion.ifBear || data.coreConclusion.bearCase || '').trim().slice(0, 480),
-            action: String(data.coreConclusion.action || '').trim().slice(0, 480),
+            headline: String(data.coreConclusion.headline || '').trim(),
+            ifBull: String(data.coreConclusion.ifBull || data.coreConclusion.bullCase || '').trim(),
+            ifBear: String(data.coreConclusion.ifBear || data.coreConclusion.bearCase || '').trim(),
+            action: String(data.coreConclusion.action || '').trim(),
           }
         : null,
-    riskBlindSpot: String(data.riskBlindSpot || '').trim().slice(0, 120),
+    riskBlindSpot: String(data.riskBlindSpot || '').trim(),
     keyLevels: Array.isArray(data.keyLevels)
       ? data.keyLevels
           .slice(0, 4)
           .map((k) => ({
             price: Number(k?.price),
-            label: String(k?.label || k?.source || '').trim().slice(0, 48),
+            label: String(k?.label || k?.source || '').trim(),
           }))
           .filter((k) => Number.isFinite(k.price) && k.price > 0 && k.label)
       : [],
@@ -2113,15 +2068,15 @@ function stripDataForViz(
     sourcesCount: srcArr.length,
     researchFooterLine: researchFooterLineLocale(normalizeLocale(locale), srcArr.length),
     companyName: String(data.companyName || '').trim(),
-    identityCheck: String(data.identityCheck || '').trim().slice(0, 200),
-    technicalSnapshot: String(data.technicalSnapshot || '').trim().slice(0, 200),
-    outlook: String(data.outlook || '').trim().slice(0, 1200),
-    valuationBridge: trimIncompleteTrailingClause(String(data.valuationBridge || '').trim()).slice(0, 200),
+    identityCheck: String(data.identityCheck || '').trim(),
+    technicalSnapshot: String(data.technicalSnapshot || '').trim(),
+    outlook: String(data.outlook || '').trim(),
+    valuationBridge: trimIncompleteTrailingClause(String(data.valuationBridge || '').trim()),
     dimensions: (data.dimensions || []).map((d) => ({
       name: d.name,
       score: d.scoreUnavailable ? null : d.score,
       scoreUnavailable: Boolean(d.scoreUnavailable),
-      note: String(d.note || '').trim().slice(0, 220),
+      note: String(d.note || '').trim(),
     })),
     scenarios: data.scenarios && typeof data.scenarios === 'object' ? data.scenarios : null,
     supplyChain: Array.isArray(data.supplyChain) ? data.supplyChain : [],
@@ -2433,7 +2388,12 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
       locale,
       assetType: effectiveAssetType,
     });
-    clampVerboseChineseFields(data);
+    sanitizeReportDisplayFields(data, {
+      stripHttpUrls,
+      scrubNotFoundMetaPhrases,
+      scrubInternalDraftMarks,
+      trimSuspensionSuffix,
+    });
     sanitizeRiskRewardField(data);
     if (!String(data.riskReward || '').trim()) fillRiskRewardIfEmpty(data);
     const md = jsonToMarkdownFourParts(data, tier, locale);

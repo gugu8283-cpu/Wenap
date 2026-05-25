@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import './MobileAnalysisReport.css'
+import ExpandableText from './ExpandableText.jsx'
 import {
   splitParagraphs,
   fixTruncatedAssumption,
@@ -20,16 +21,18 @@ export default function ForecastCard({ forecast, assumption, technicalSnapshot }
     <div className="ma-card ma-forecast-card">
       <h2 className="ma-section-title">{t('report.forecast')}</h2>
       {paragraphs.map((p, i) => (
-        <p key={i} className="ma-forecast-p">
-          {p}
-        </p>
+        <ExpandableText key={i} text={p} className="ma-forecast-p" collapsedLines={0} />
       ))}
       {assumptionIncomplete ? (
         <p className="ma-forecast-assumption ma-forecast-assumption--loading" aria-busy="true">
           …
         </p>
       ) : assumptionText ? (
-        <p className="ma-forecast-assumption">{stripMarkdownInline(assumptionText)}</p>
+        <ExpandableText
+          text={stripMarkdownInline(assumptionText)}
+          className="ma-forecast-assumption"
+          collapsedLines={0}
+        />
       ) : null}
     </div>
   )

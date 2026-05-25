@@ -333,13 +333,13 @@
   gap: 8px;
 }
 .ma-dim-name {
-  flex: 0 0 80px;
-  width: 80px;
-  min-width: 80px;
+  flex: 1 1 72px;
+  min-width: 0;
+  max-width: 42%;
   font-size: 12px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.35;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 .ma-dim-bar-track {
   flex: 1;
@@ -902,6 +902,8 @@
 .ma-trust-list {
   margin: 0 0 6px;
   padding-left: 1.1rem;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .ma-trust-foot {
@@ -1018,6 +1020,8 @@
   line-height: 1.8;
   color: var(--color-text-primary);
   margin: 0 0 12px;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .ma-forecast-assumption {

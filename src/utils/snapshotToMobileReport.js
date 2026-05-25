@@ -313,9 +313,7 @@ export function snapshotToMobileReport(snapshot, meta = {}) {
     scenarios: scenariosWithDetail.length ? scenariosWithDetail : scenarios,
     supplyChain,
     forecast: String(snapshot.outlook || '').trim(),
-    forecastAssumption: String(snapshot.valuationBridge || snapshot.detailAnalysisPreview || '')
-      .trim()
-      .slice(0, 200),
+    forecastAssumption: String(snapshot.valuationBridge || snapshot.detailAnalysisPreview || '').trim(),
     sources,
     sourceCount: srcN,
     timeSaved: timeSavedFromFooter(snapshot.researchFooterLine, srcN),

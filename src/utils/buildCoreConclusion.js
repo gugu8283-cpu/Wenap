@@ -29,7 +29,7 @@ export function normalizeCoreConclusion(raw, report = {}) {
     ifBear = `不及预期 → 回测约 $${bear.rangeMin.toFixed(0)} 风险`
   }
 
-  const headline = summary || catalyst || outlook.slice(0, 40)
+  const headline = summary || catalyst || outlook
   let action = ''
   if (suggestion || stop) {
     action = [suggestion, stop ? `止损 ${stop}` : ''].filter(Boolean).join('，')
