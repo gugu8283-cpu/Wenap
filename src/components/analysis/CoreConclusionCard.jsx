@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import ExpandableText from './ExpandableText.jsx'
+import ReportKvTable from './ReportKvTable.jsx'
 import './MobileAnalysisReport.css'
 
 /**
@@ -9,40 +10,24 @@ export default function CoreConclusionCard({ conclusion }) {
   const { t } = useTranslation()
   if (!conclusion) return null
   const { headline, ifBull, ifBear, action } = conclusion
-  const hasBody = [headline, ifBull, ifBear, action].some((s) => String(s || '').trim())
-  if (!hasBody) return null
+  const rows = []
+  if (ifBull) rows.push({ label: t('report.coreIfBull'), value: ifBull, tone: 'bull' })
+  if (ifBear) rows.push({ label: t('report.coreIfBear'), value: ifBear, tone: 'bear' })
+  if (action) rows.push({ label: t('report.coreAction'), value: action, tone: 'action' })
+  if (!headline && !rows.length) return null
 
   return (
-    <section className="ma-card ma-core-conclusion" aria-label={t('report.coreConclusionTitle')}>
-      <h2 className="ma-core-conclusion-label">{t('report.coreConclusionTitle')}</h2>
+    <section className="ma-card ma-core-conclusion ma-card--accent" aria-label={t('report.coreConclusionTitle')}>
+      <h2 className="ma-section-title ma-section-title--accent">{t('report.coreConclusionTitle')}</h2>
       {headline ? (
         <ExpandableText
           text={headline}
           className="ma-core-conclusion-headline"
-          collapsedLines={4}
-          minChars={120}
+          collapsedLines={2}
+          minChars={72}
         />
       ) : null}
-      <ul className="ma-core-conclusion-list">
-        {ifBull ? (
-          <li className="ma-core-conclusion-row ma-core-conclusion-row--bull">
-            <span className="ma-core-conclusion-k">{t('report.coreIfBull')}</span>
-            <ExpandableText text={ifBull} as="span" className="ma-core-conclusion-v" collapsedLines={5} minChars={140} />
-          </li>
-        ) : null}
-        {ifBear ? (
-          <li className="ma-core-conclusion-row ma-core-conclusion-row--bear">
-            <span className="ma-core-conclusion-k">{t('report.coreIfBear')}</span>
-            <ExpandableText text={ifBear} as="span" className="ma-core-conclusion-v" collapsedLines={5} minChars={140} />
-          </li>
-        ) : null}
-        {action ? (
-          <li className="ma-core-conclusion-row ma-core-conclusion-row--action">
-            <span className="ma-core-conclusion-k">{t('report.coreAction')}</span>
-            <ExpandableText text={action} as="span" className="ma-core-conclusion-v" collapsedLines={5} minChars={140} />
-          </li>
-        ) : null}
-      </ul>
+      {rows.length ? <ReportKvTable rows={rows} /> : null}
     </section>
   )
 }

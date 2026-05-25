@@ -237,7 +237,7 @@ export default function RadarSection({ dimensions }) {
                 <ExpandableText
                   text={d.reason}
                   className="ma-dim-reason"
-                  collapsedLines={6}
+                  collapsedLines={4}
                   minChars={180}
                 />
               </div>

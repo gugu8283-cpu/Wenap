@@ -246,6 +246,8 @@
       "actionTitle": "アクション · ストップ · 触媒",
       "actionTeaser": "推奨アクション… · ストップ $… · 触媒: …",
       "eventsTitle": "主要イベント",
+      "eventsColDate": "日付",
+      "eventsColEvent": "イベント",
       "eventsTeaser": "{{count}} 件のイベントをまとめました — Pro にアップグレードして全リストを表示",
       "insiderTitle": "インサイダー動向",
       "insiderTeaser": "Form 4 · 純買/売傾向…",

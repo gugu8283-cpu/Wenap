@@ -97,6 +97,10 @@ User (browser)
 
 **Report UI modules** (`src/components/analysis/`): `HeroCard`, `RadarSection`, `CoreConclusionCard`, `ScenarioSection`, `BullBearSection`, `CritiqueSection`, `KeyLevelsSection`, `SourcesAccordion`, `ExportPdfButton` (Pro+, client print/PDF).
 
+**Orchestrator:** `MobileAnalysisReport.jsx` maps snapshot → sections via `snapshotToMobileReport.js`.
+
+See **§19** for the 2026-05 “report slimming + visual density” pass (tables/bullets, prompt limits, CSS). Do not undo that pass when polishing UI unless the user explicitly asks.
+
 ---
 
 ## 6. Authentication & legal consent
@@ -249,11 +253,92 @@ db/store.cjs               # predictions, admin stats, bookkeeping CSV
 db/auth.cjs                # users, quotas, legal consent
 lib/emailSend.cjs          # transactional email
 lib/legalConsent.cjs       # consent recording
+lib/mainAnalyzePrompt.cjs  # English main analyze JSON spec (keep in sync with server.cjs)
+src/utils/compactReportText.js
+src/components/analysis/ReportKvTable.jsx
+src/components/analysis/ReportBulletPanel.jsx
 src/App.jsx                # main analysis form + report
 src/admin/                 # admin SPA
 src/pages/auth/            # register, login, verify, accept-legal
 src/pages/legal/           # privacy, terms, disclaimer pages
 ```
+
+---
+
+## 19. Mobile report: text slimming & visual density (2026-05)
+
+**Product intent (for Claude):** Paid users should still get **full facts and quality**; the goal is **less repetition and easier scanning** — not hiding Pro/Pro+ content. Prefer **tables, bullet panels, and mini charts** over long prose blocks. **Keep existing charts unchanged:** `RadarSection` (Chart.js radar), `ScenarioSection` (bull/base/bear bars), supply-chain row layout.
+
+### 19.1 UI presentation rules
+
+| Area | Before (roughly) | After |
+|------|------------------|-------|
+| Core conclusion | Stacked paragraphs | `headline` + `ExpandableText` (2 lines default); `ifBull` / `ifBear` / `action` → **`ReportKvTable`** |
+| Key levels | Bullet list only | If `currentPrice` is finite → **horizontal price bars** (`KeyLevelsSection`); else fallback list |
+| Forecast | Long `outlook` paragraph | `ReportBulletPanel` (splits `forecast` + `technicalSnapshot`); **assumption** in KV row |
+| Pro fields | Multi-line labels | Action → **KV table**; `keyEvents` → **`ma-mini-table`**; insider → bullets |
+| Bull/Bear, Critic, radar dim notes | Often fully expanded | Default **`collapsedLines` 3–4** via `ExpandableText`; user can expand |
+
+**Shared components (reuse, don’t duplicate):**
+
+- `ReportKvTable.jsx` — label/value rows, tones: `bull` \| `bear` \| `action` \| `neutral`
+- `ReportBulletPanel.jsx` — uses `src/utils/compactReportText.js` (`splitToBullets`, `firstSentence` available but **not** used on core headline — full headline preserved for quality)
+- `ExpandableText.jsx` — `collapsedLines=0` means always full text
+
+**CSS** (`MobileAnalysisReport.css`): `.ma-card--accent`, `.ma-card--soft`, `.ma-kv-table`, `.ma-bullet-panel`, `.ma-mini-table`, `.ma-key-levels-chart`, `.ma-section-title--accent`. Dark mobile style unchanged; polish only.
+
+**Props:** `MobileAnalysisReport` passes `currentPrice={report.currentPrice}` into `KeyLevelsSection`.
+
+### 19.2 Model output limits (prompts)
+
+Tighter caps reduce duplicate prose across sections; **same fact once** rule stays in prompts.
+
+| Field | Limit (zh prompt in `server.cjs` `buildMainJsonPrompt`) | English mirror in `lib/mainAnalyzePrompt.cjs` |
+|-------|-----------------------------------------------------------|--------------------------------------------------|
+| `detailAnalysis` | 180–260 字 | 180–260 chars |
+| `outlook` | ≤72 字; don’t repeat summary/dimensions | ≤72 words |
+| `technicalSnapshot` | ≤56 字 | ≤56 words |
+| Pro+ `bullBearDebate.*.reason` | ≤72 字 per item, complete sentence | (tier block in `server.cjs` `tierPromptExtensions`) |
+
+**Unchanged chart data:** `dimensions`, `scenarios`, radar/scenario rendering — do not replace with text.
+
+**Cached reports:** 1h analysis cache / old JSON may still contain longer strings; new UI still renders them (tables/bullets/collapse). Shorter copy appears after **re-analyze** (or cache miss).
+
+### 19.3 i18n keys added
+
+Under `report.*` in `zh-CN.json` / `en.json` (and `eventsCol*` in `ja.json`):
+
+- `forecastAssumptionLabel`
+- `report.pro.eventsColDate`, `report.pro.eventsColEvent`
+- Shorter `report.proPlus.critiqueSub` (subtitle only; critique body unchanged)
+
+### 19.4 File map (this feature)
+
+```
+src/utils/compactReportText.js
+src/components/analysis/ReportKvTable.jsx
+src/components/analysis/ReportBulletPanel.jsx
+src/components/analysis/CoreConclusionCard.jsx   # KV + headline expand
+src/components/analysis/KeyLevelsSection.jsx   # bar chart vs list
+src/components/analysis/ForecastCard.jsx
+src/components/analysis/ProFieldsSection.jsx
+src/components/analysis/CritiqueSection.jsx
+src/components/analysis/BullBearSection.jsx
+src/components/analysis/RadarSection.jsx       # dim note collapsedLines 4
+src/components/analysis/MobileAnalysisReport.jsx
+src/components/analysis/MobileAnalysisReport.css
+server.cjs                                     # buildMainJsonPrompt + tierPromptExtensions
+lib/mainAnalyzePrompt.cjs                      # English analyze prompt limits
+src/i18n/locales/zh-CN.json, en.json, ja.json  # table column labels
+```
+
+### 19.5 Instructions for Claude editing reports
+
+1. **Do not** remove `RadarSection` / `ScenarioSection` charts to “save space.”
+2. **Do** use `ReportKvTable` / `ReportBulletPanel` for new structured report fields instead of new `<p>` walls.
+3. **Do not** truncate paid-user fields in the UI (e.g. don’t `firstSentence()` on `coreConclusion.headline`); slim via **prompt limits** and **layout**.
+4. If adding a new text block, set a **prompt max length** in both `server.cjs` (zh) and `mainAnalyzePrompt.cjs` (en).
+5. New table columns need i18n in **all** active locales or they fall back to key names.
 
 ---
 
@@ -289,7 +374,8 @@ Manual: register (3 checkboxes) → email link → analyze on `/app` → upgrade
 4. **Admin API** paths use `/admin-api` prefix on server; frontend uses `/admin/...` with rewrite in `adminApi.js`.
 5. **Minimal diffs** — match existing `.cjs` backend + JSX frontend patterns.
 6. **Never commit** secrets; `.env` is local only.
+7. **Report UI:** follow **§19** — tables/bullets/mini charts for scanability; don’t regress radar/scenario charts or strip Pro copy in the frontend.
 
 ---
 
-*Last updated: 2026-05-21 (reflects commits through legal consent + finance admin ~ff337df).*
+*Last updated: 2026-05-20 — §19 report slimming/visual density; prior: legal consent + finance admin (~ff337df).*

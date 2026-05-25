@@ -215,7 +215,11 @@ export default function MobileAnalysisReport({
         ) : null
       ) : null}
       {report.keyLevels?.length ? (
-        <KeyLevelsSection levels={report.keyLevels} listingCurrency={report.listingCurrency} />
+        <KeyLevelsSection
+          levels={report.keyLevels}
+          listingCurrency={report.listingCurrency}
+          currentPrice={report.currentPrice}
+        />
       ) : null}
       {vis(7) ? (
         <ProFieldsSection

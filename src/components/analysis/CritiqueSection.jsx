@@ -24,11 +24,11 @@ export default function CritiqueSection({
     <div className="ma-card ma-critique-card">
       <h2 className="ma-section-title">{t('report.proPlus.critiqueTitle')}</h2>
       <p className="ma-critique-sub">{t('report.proPlus.critiqueSub')}</p>
-      <ul className="ma-critique-list">
+      <ul className="ma-critique-list ma-critique-list--compact">
         {visible.map((w, i) => (
           <li key={i} className="ma-critique-item">
             <span className="ma-critique-num">{i + 1}</span>
-            <ExpandableText text={w} className="ma-critique-text" collapsedLines={4} minChars={160} />
+            <ExpandableText text={w} className="ma-critique-text" collapsedLines={3} minChars={110} />
           </li>
         ))}
         {hidden.map((w, i) => (

@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import './MobileAnalysisReport.css'
-import ExpandableText from './ExpandableText.jsx'
+import ReportBulletPanel from './ReportBulletPanel.jsx'
+import ReportKvTable from './ReportKvTable.jsx'
 import {
-  splitParagraphs,
   fixTruncatedAssumption,
   isIncompleteAssumption,
   stripMarkdownInline,
@@ -10,28 +10,32 @@ import {
 
 export default function ForecastCard({ forecast, assumption, technicalSnapshot }) {
   const { t } = useTranslation()
-  const bodyRaw = [technicalSnapshot, forecast].filter(Boolean).join('\n\n')
-  const paragraphs = splitParagraphs(bodyRaw)
+  const bodyRaw = [forecast, technicalSnapshot].filter(Boolean).join('\n\n')
   const assumptionRaw = String(assumption || '').trim()
   const assumptionIncomplete = isIncompleteAssumption(assumptionRaw)
   const assumptionText = fixTruncatedAssumption(assumption)
-  if (!paragraphs.length && !assumptionText && !assumptionIncomplete) return null
+  if (!bodyRaw.trim() && !assumptionText && !assumptionIncomplete) return null
 
   return (
-    <div className="ma-card ma-forecast-card">
+    <div className="ma-card ma-forecast-card ma-card--soft">
       <h2 className="ma-section-title">{t('report.forecast')}</h2>
-      {paragraphs.map((p, i) => (
-        <ExpandableText key={i} text={p} className="ma-forecast-p" collapsedLines={0} />
-      ))}
+      {bodyRaw.trim() ? (
+        <ReportBulletPanel text={bodyRaw} maxBullets={4} collapsedLines={2} className="ma-forecast-p" />
+      ) : null}
       {assumptionIncomplete ? (
         <p className="ma-forecast-assumption ma-forecast-assumption--loading" aria-busy="true">
           …
         </p>
       ) : assumptionText ? (
-        <ExpandableText
-          text={stripMarkdownInline(assumptionText)}
-          className="ma-forecast-assumption"
-          collapsedLines={0}
+        <ReportKvTable
+          className="ma-forecast-assumption-wrap"
+          rows={[
+            {
+              label: t('report.forecastAssumptionLabel', { defaultValue: 'Assumption' }),
+              value: stripMarkdownInline(assumptionText),
+              tone: 'neutral',
+            },
+          ]}
         />
       ) : null}
     </div>

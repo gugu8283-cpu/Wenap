@@ -8,7 +8,7 @@ function BbItem({ item, side, locked = false }) {
     <li className={`ma-bb-item${locked ? ' ma-bb-item--locked' : ''}`} aria-hidden={locked || undefined}>
       <span className="ma-bb-bullet">·</span>
       <div className="ma-bb-item-body">
-        <ExpandableText text={item.reason} className="ma-bb-reason" collapsedLines={0} />
+        <ExpandableText text={item.reason} className="ma-bb-reason" collapsedLines={3} minChars={100} />
         {item.weight ? (
           <span className={`ma-bb-weight ma-bb-weight--${side}`}>{item.weight}</span>
         ) : null}

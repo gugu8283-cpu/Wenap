@@ -724,8 +724,8 @@ function tierPromptExtensions(tier) {
 
 【Pro+ 附加字段】在 Pro 字段之外再输出：
   "bullBearDebate": {
-    "bull": [ { "reason": "完整句子≤120字，勿在词中间截断", "weight": "如60%" }, ...共3条 ],
-    "bear": [ { "reason": "完整句子≤120字，勿在词中间截断", "weight": "如40%" }, ...共3条 ]
+    "bull": [ { "reason": "完整句≤72字，一条论点", "weight": "如60%" }, ...共3条 ],
+    "bear": [ { "reason": "完整句≤72字，一条论点", "weight": "如40%" }, ...共3条 ]
   }
   scenarios 每项（bull/base/bear）追加 "triggerPrice": 数字或 null、"timeWindow": "如2026 Q3"
   supplyChain 每项追加 "analysis": "与主标的联动逻辑≤50字"
@@ -887,7 +887,7 @@ JSON 字段与要求：
   "keyLevels": [ { "price": 0, "label": "如120日均线阻力位；最多4条，price为数字" } ],
   "analystPriceLine": "单行：目标价/现价/空间%（现价须与行情API一致，ETF禁止用现货金价）；无则空",
   "dimensions": [ ${dimensionJsonSpec(assetType, loc)} ],
-  "detailAnalysis": "260-360 chars; new facts only; escape quotes in JSON",
+  "detailAnalysis": "180-260字；仅新事实；JSON 内转义引号",
   "sources": [ { "text": "", "url": "https://...", "time": "", "credibility": "高|中|低", "cite": "SEC" } ],
   "supplyChain": [
     { "ticker": "TSM", "name": "台积电", "exchange": "NYSE", "relation": "AI芯片代工制造，NVDA最大晶圆代工商", "score": 0-100 }
@@ -898,8 +898,8 @@ JSON 字段与要求：
     "bear": { "p": 0-100, "range": "…", "trigger": "≤36字" }
   },
   "valuationBridge": "≤36字或空",
-  "technicalSnapshot": "≤80字；关键技术位须写为 $价格（来源说明），如 $236.54（120日均线阻力位）",
-  "outlook": "≤120字；与期限 ${h} 一致",
+  "technicalSnapshot": "≤56字；关键技术位写 $价格（来源），如 $236.54（120日均线阻力）",
+  "outlook": "≤72字；与期限 ${h} 一致；勿复述 summary/六维",
   "disclaimer": "${defaultDisclaimer(loc).replace(/"/g, '\\"')}"
 }
 
