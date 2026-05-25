@@ -144,13 +144,17 @@ export function snapshotToMobileReport(snapshot, meta = {}) {
   const currentPrice = Number.isFinite(latest) ? latest : current
 
   const dims = snapshot.dimensions.slice(0, 6).map((d) => {
-    const sc = Math.min(100, Math.max(0, Number(d.score) || 0))
-    const { hex } = scoreHue(sc)
+    const raw = Number(d.score)
+    const unavailable =
+      Boolean(d.scoreUnavailable) || !Number.isFinite(raw) || raw === 0
+    const sc = unavailable ? null : Math.min(100, Math.max(0, raw))
+    const { hex } = scoreHue(unavailable ? 50 : sc)
     return {
       name: String(d.name || '—'),
       score: sc,
+      scoreUnavailable: unavailable,
       reason: String(d.note || '').trim(),
-      color: hex,
+      color: unavailable ? '#6b7280' : hex,
     }
   })
 

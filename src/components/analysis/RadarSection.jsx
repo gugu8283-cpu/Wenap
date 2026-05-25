@@ -72,13 +72,14 @@ export default function RadarSection({ dimensions }) {
     let min = Infinity
     let idx = 0
     dims.forEach((d, i) => {
-      const s = Number(d.score) || 0
+      if (d.scoreUnavailable || d.score == null || !Number.isFinite(Number(d.score))) return
+      const s = Number(d.score)
       if (s < min) {
         min = s
         idx = i
       }
     })
-    return idx
+    return min === Infinity ? -1 : idx
   }, [dims])
 
   const data = useMemo(
@@ -86,11 +87,31 @@ export default function RadarSection({ dimensions }) {
       labels: dims.map((d) => d.name),
       datasets: [
         {
-          data: dims.map((d) => Number(d.score) || 0),
-          backgroundColor: theme.fill,
-          borderColor: theme.border,
+          data: dims.map((d) =>
+            d.scoreUnavailable || d.score == null || !Number.isFinite(Number(d.score))
+              ? null
+              : Number(d.score),
+          ),
+          backgroundColor: (ctx) => {
+            const d = dims[ctx.dataIndex]
+            return d?.scoreUnavailable ? 'rgba(107, 114, 128, 0.12)' : theme.fill
+          },
+          borderColor: (ctx) => {
+            const d = dims[ctx.dataIndex]
+            return d?.scoreUnavailable ? 'rgba(107, 114, 128, 0.55)' : theme.border
+          },
           borderWidth: 2,
-          pointRadius: 2,
+          borderDash: (ctx) => (dims[ctx.dataIndex]?.scoreUnavailable ? [6, 4] : []),
+          pointRadius: (ctx) => (dims[ctx.dataIndex]?.scoreUnavailable ? 5 : 2),
+          pointBackgroundColor: (ctx) => {
+            const d = dims[ctx.dataIndex]
+            return d?.scoreUnavailable ? 'rgba(107, 114, 128, 0.35)' : theme.border
+          },
+          pointBorderColor: (ctx) => {
+            const d = dims[ctx.dataIndex]
+            return d?.scoreUnavailable ? 'rgba(156, 163, 175, 0.9)' : theme.border
+          },
+          spanGaps: false,
         },
       ],
     }),
@@ -160,14 +181,19 @@ export default function RadarSection({ dimensions }) {
         />
       </div>
       {dims.map((d, i) => {
-        const sc = Math.min(100, Math.max(0, Number(d.score) || 0))
+        const unavailable =
+          Boolean(d.scoreUnavailable) ||
+          d.score == null ||
+          !Number.isFinite(Number(d.score)) ||
+          Number(d.score) === 0
+        const sc = unavailable ? null : Math.min(100, Math.max(0, Number(d.score)))
         const open = openIdx === i
-        const isLowest = i === lowestIdx && sc < 100
+        const isLowest = !unavailable && i === lowestIdx && sc < 100
         const hasReason = Boolean(String(d.reason || '').trim())
         return (
           <div
             key={i}
-            className={`ma-dim-row${isLowest ? ' ma-dim-row--lowest' : ''}`}
+            className={`ma-dim-row${unavailable ? ' ma-dim-row--unavailable' : ''}${isLowest ? ' ma-dim-row--lowest' : ''}`}
             role="button"
             tabIndex={0}
             onClick={() => handleRowClick(i)}
@@ -181,16 +207,29 @@ export default function RadarSection({ dimensions }) {
             <div className="ma-dim-head">
               <span className="ma-dim-name">{d.name}</span>
               <div className="ma-dim-bar-track">
-                <div
-                  className="ma-dim-bar-fill"
-                  style={{
-                    width: barsAnim ? `${sc}%` : '0%',
-                    background: d.color,
-                    transition: `width 400ms ease-out ${i * 60}ms`,
-                  }}
-                />
+                {!unavailable ? (
+                  <div
+                    className="ma-dim-bar-fill"
+                    style={{
+                      width: barsAnim ? `${sc}%` : '0%',
+                      background: d.color,
+                      transition: `width 400ms ease-out ${i * 60}ms`,
+                    }}
+                  />
+                ) : (
+                  <div className="ma-dim-bar-fill ma-dim-bar-fill--na" aria-hidden />
+                )}
               </div>
-              <span className="ma-dim-score ma-num">{sc}</span>
+              {unavailable ? (
+                <span
+                  className="ma-dim-score ma-dim-score--na"
+                  title={t('report.dimScoreUnavailableTip')}
+                >
+                  {t('report.dimScoreUnavailable')}
+                </span>
+              ) : (
+                <span className="ma-dim-score ma-num">{sc}</span>
+              )}
             </div>
             {hasReason ? (
               <div className={`ma-dim-reason-wrap${open ? ' ma-dim-reason-wrap--open' : ''}`}>

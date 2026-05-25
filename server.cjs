@@ -1184,6 +1184,86 @@ function buildDetailBodyForMarkdown(data) {
 }
 
 
+function logPolicyRegulationDimension(symbol, stage, dim) {
+  const row = dim && typeof dim === 'object' ? dim : {};
+  const rawScore = row.score;
+  const note = String(row.note || '').trim();
+  console.log(
+    `[Wenap] ${symbol} Policy & regulation (${stage}): rawScore=${JSON.stringify(rawScore)} parsed=${Number(rawScore)} noteLen=${note.length} preview=${JSON.stringify(note.slice(0, 140))}`,
+  );
+}
+
+function isPolicyDimensionName(name, locale = 'zh-CN') {
+  const canonical = policyDimensionName(normalizeLocale(locale));
+  const n = String(name || '').trim();
+  if (n === canonical) return true;
+  return /政策法规|政策法規|Policy\s*&\s*regulation|Policy|Regulation|規制|규제|Regulierung/i.test(n);
+}
+
+function hasRegulatoryCueInNote(note) {
+  const t = String(note || '').trim();
+  if (t.length < 12) return false;
+  if (
+    /(管制|监管|立法|反垄断|出口限制|实体清单|禁令|执法|合规|税务|知识产权|AI Act|芯片禁令|出口管制)/i.test(t)
+  )
+    return true;
+  return /(regulation|antitrust|export control|sanction|compliance|entity list|sec\b|ftc|cfius|itar|ear\b|ofac)/i.test(
+    t,
+  );
+}
+
+function isInsufficientDimensionNote(note, locale) {
+  const insuf = insufficientDataNote(normalizeLocale(locale));
+  const t = String(note || '').trim();
+  if (!t || t === insuf) return true;
+  return /数据不足|Insufficient data|データ不足|데이터 부족|Unzureichende Daten/i.test(t);
+}
+
+/** Listed equities: if note cites regulation but model returned 0, apply minimum backdrop score. */
+function applyPolicyDimensionBackdropFloor(dimensions, locale = 'zh-CN') {
+  const loc = normalizeLocale(locale);
+  const insuf = insufficientDataNote(loc);
+  return (Array.isArray(dimensions) ? dimensions : []).map((d) => {
+    if (!d || typeof d !== 'object' || !isPolicyDimensionName(d.name, loc)) return d;
+    const raw = Number(d.score);
+    if (Number.isFinite(raw) && raw > 0) return d;
+    const note = String(d.note || '').trim();
+    if (!hasRegulatoryCueInNote(note) || isInsufficientDimensionNote(note, loc)) return d;
+    const floor = 12;
+    console.log(
+      `[Wenap] policy-reg backdrop floor: score 0/null → ${floor} (regulatory cues in note)`,
+    );
+    return {
+      ...d,
+      score: floor,
+      scoreUnavailable: false,
+      note: note || insuf,
+    };
+  });
+}
+
+function markUnavailableDimensionScores(dimensions, locale = 'zh-CN') {
+  const loc = normalizeLocale(locale);
+  const insuf = insufficientDataNote(loc);
+  return (Array.isArray(dimensions) ? dimensions : []).map((d) => {
+    if (!d || typeof d !== 'object') return d;
+    const raw = Number(d.score);
+    const note = String(d.note || '').trim();
+    const missing = !Number.isFinite(raw);
+    const zero = raw === 0;
+    const unavailable = missing || zero || (raw < 10 && isInsufficientDimensionNote(note, loc));
+    if (!unavailable) {
+      return { ...d, scoreUnavailable: false };
+    }
+    return {
+      ...d,
+      score: null,
+      scoreUnavailable: true,
+      note: note || insuf,
+    };
+  });
+}
+
 function extractPolicyRegulationDimension(dimensions) {
   const arr = Array.isArray(dimensions) ? dimensions : [];
   const idx = arr.findIndex((d) =>
@@ -1234,13 +1314,14 @@ async function fetchPolicyRegulationDimension(apiKey, ticker, hLabel, ctx = {}, 
 You are a regulatory policy analyst. Ticker: ${ticker}; horizon: ${hLabel}.
 ${hint ? `${hint}\n` : ''}
 Dimension 6 "${policyName}": government/regulator risk (export controls, entity lists, AI regulation, antitrust, sector rules, tax, IP). Geopolitics ≠ ${policyName}. No CEO/management focus.
-Rules: verifiable facts + [cite] in note≤72 words; ETFs/funds → score 0, note "${insuf}". No fabrication.${retryBlock}
+Rules: verifiable facts + [cite] in note≤72 words; ETFs/funds → score 0, note "${insuf}". No fabrication.
+Scoring: score current regulatory backdrop (export controls, antitrust, trade rules, sector regulation). Never use 0 for listed stocks unless zero regulatory exposure; minimum 10 if any regulatory context exists.${retryBlock}
 Output JSON only: {"name":"${policyName}","score":0-100,"note":"…"}`
         : `你是监管政策分析师。标的：${ticker}；期限：${hLabel}。
 ${hint ? `${hint}\n` : ''}
 第 6 维「${policyName}」：评估政府及监管机构对该公司或行业的定向干预风险，包括出口管制、AI 监管立法、反垄断、行业专项监管、税务政策变化、知识产权保护。
 边界：地缘政治=国家 vs 国家；${policyName}=政府 vs 企业/行业。勿写 CEO/管理层人事。
-规则：1）单一普通股/行业主体才写；note≤72字，可核验监管要点+角标，优先7日内来源，超14日须标注可能过时。2）ETF/基金：score=0，note「${insuf}」。3）禁编造；无最新监管事实则 score=0。${retryBlock}
+规则：1）单一普通股/行业主体才写；note≤72字，可核验监管要点+角标，优先7日内来源，超14日须标注可能过时。2）ETF/基金：score=0，note「${insuf}」。3）禁编造。4）须对当前监管环境打分；禁止轻易 0 分，有监管背景时最低 10；仅完全无事实时 score=0。${retryBlock}
 
 只输出一个 JSON：{"name":"${policyName}","score":0-100,"note":"…"}`;
     const policyWeb = openRouterLeaderUseWeb();
@@ -1252,12 +1333,18 @@ ${hint ? `${hint}\n` : ''}
       maxOutputTokens: openRouterMaxOutputTokensLeader(),
     });
     const obj = extractJsonObject(raw);
+    const rawScore = obj.score;
+    const parsed = Math.min(100, Math.max(0, Number(rawScore) || 0));
+    console.log(
+      `[Wenap] policy-reg fallback model raw: score=${JSON.stringify(rawScore)} parsed=${parsed}`,
+    );
     return {
       name: policyName,
-      score: Math.min(100, Math.max(0, Number(obj.score) || 0)),
+      score: parsed,
       note: String(obj.note || insuf).trim() || insuf,
       _usage: usage,
       _usedWeb: policyWeb,
+      _rawScore: rawScore,
     };
   };
 
@@ -1397,7 +1484,8 @@ function alignDimensionSlots(dimensions, assetType, locale = 'zh-CN') {
   return names.map((canonical, i) => {
     const d = src[i] || {};
     let score = Number(d.score);
-    if (!Number.isFinite(score)) score = 0;
+    const scoreWasMissing = !Number.isFinite(score);
+    if (scoreWasMissing) score = 0;
     score = Math.min(100, Math.max(0, Math.round(score)));
     let note = String(d.note || '').trim();
     if (score === 0) {
@@ -1408,7 +1496,7 @@ function alignDimensionSlots(dimensions, assetType, locale = 'zh-CN') {
       note = scrubInternalDraftMarks(note);
       if (!note) note = DIMENSION_NOTE_FALLBACK;
     }
-    return { name: canonical, score, note };
+    return { name: canonical, score, note, scoreWasMissing };
   });
 }
 
@@ -2032,7 +2120,8 @@ function stripDataForViz(
     valuationBridge: trimIncompleteTrailingClause(String(data.valuationBridge || '').trim()).slice(0, 200),
     dimensions: (data.dimensions || []).map((d) => ({
       name: d.name,
-      score: d.score,
+      score: d.scoreUnavailable ? null : d.score,
+      scoreUnavailable: Boolean(d.scoreUnavailable),
       note: String(d.note || '').trim().slice(0, 220),
     })),
     scenarios: data.scenarios && typeof data.scenarios === 'object' ? data.scenarios : null,
@@ -2290,6 +2379,7 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
     }
     if (assetType === 'stock' && !looksLikeFund) {
       const mainPolicy = extractPolicyRegulationDimension(data.dimensions);
+      logPolicyRegulationDimension(symbol, 'main-model-raw', mainPolicy);
       if (mainPolicyDimensionSufficient(mainPolicy)) {
         usageLog.leaderSkipped = true;
         console.log(`[Wenap] ${symbol}：主模型政策法规维已达标，无需补刀`);
@@ -2309,6 +2399,7 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
           );
           usageLog.leader = policyRow._usage || null;
           data.dimensions = mergePolicyRegulationIntoDimensions(data.dimensions, policyRow, locale);
+          logPolicyRegulationDimension(symbol, 'after-fallback', extractPolicyRegulationDimension(data.dimensions));
           console.log(`[Wenap] ${symbol}：政策法规维补刀（${mainModel}）`);
         } catch (e) {
           console.warn('[Wenap] 政策法规维补刀失败，保留主模型结果：', e.message);
@@ -2327,6 +2418,13 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
     polishDomainBracketCites(data);
     applyAlphaIdentity(data, alphaOverview, symbol, locale);
     data.dimensions = alignDimensionSlots(data.dimensions, effectiveAssetType, locale);
+    data.dimensions = applyPolicyDimensionBackdropFloor(data.dimensions, locale);
+    data.dimensions = markUnavailableDimensionScores(data.dimensions, locale);
+    logPolicyRegulationDimension(
+      symbol,
+      'after-align-viz',
+      extractPolicyRegulationDimension(data.dimensions),
+    );
     if (tier === 'pro' || tier === 'pro_plus') {
       mergePeerLineIntoDimensions(data.dimensions, data.peerVsSectorLine);
     }

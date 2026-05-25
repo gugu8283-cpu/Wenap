@@ -295,6 +295,30 @@
   background: transparent;
 }
 
+.ma-dim-row--unavailable .ma-dim-name {
+  color: var(--text-secondary);
+}
+
+.ma-dim-bar-fill--na {
+  width: 100% !important;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(107, 114, 128, 0.12),
+    rgba(107, 114, 128, 0.12) 4px,
+    rgba(107, 114, 128, 0.22) 4px,
+    rgba(107, 114, 128, 0.22) 8px
+  ) !important;
+  transition: none !important;
+}
+
+.ma-dim-score--na {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(156, 163, 175, 0.95);
+  cursor: help;
+  border-bottom: 1px dashed rgba(156, 163, 175, 0.5);
+}
+
 .ma-dim-row--lowest {
   background: var(--bg-elevated);
   margin: 0 -16px;
