@@ -33,33 +33,24 @@ function SupplyRow({ row, i, onAnalyzeCode, locked = false }) {
       }}
       style={{ opacity: canRun ? 1 : locked ? 1 : 0.85 }}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
-        <span className="ma-badge">{badgeLabel(row)}</span>
-        <span style={{ fontSize: 14 }}>{row.name}</span>
-      </div>
-      <div className={rel.placeholder ? 'ma-supply-rel ma-supply-rel--placeholder' : 'ma-supply-rel'}>
-        {rel.text}
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        <div
-          style={{
-            width: 60,
-            height: 6,
-            borderRadius: 3,
-            background: 'var(--color-border)',
-          }}
-        >
-          <div
-            style={{
-              width: `${Math.min(100, row.score)}%`,
-              height: '100%',
-              borderRadius: 3,
-              background: 'var(--color-primary)',
-            }}
-          />
+      <div className="ma-supply-head">
+        <div className="ma-supply-id">
+          <span className="ma-badge">{badgeLabel(row)}</span>
+          <span className="ma-supply-name">{row.name}</span>
         </div>
-        <span style={{ fontSize: 13, fontWeight: 500 }}>{row.score}</span>
+        <div className="ma-supply-score">
+          <div className="ma-supply-score-bar" aria-hidden>
+            <div
+              className="ma-supply-score-fill"
+              style={{ width: `${Math.min(100, row.score)}%` }}
+            />
+          </div>
+          <span className="ma-supply-score-num">{row.score}</span>
+        </div>
       </div>
+      <p className={rel.placeholder ? 'ma-supply-rel ma-supply-rel--placeholder' : 'ma-supply-rel'}>
+        {rel.text}
+      </p>
     </div>
   )
 }
