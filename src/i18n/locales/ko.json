@@ -234,6 +234,7 @@
     "credMid": "중",
     "credLow": "낮음",
     "dateUnknown": "날짜 불명",
+    "sourceFallback": "출처",
     "triggerAt": "트리거 ${{price}}",
     "window": "기간 {{window}}",
     "share": "공유",

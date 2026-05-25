@@ -234,6 +234,7 @@
     "credMid": "Mittel",
     "credLow": "Niedrig",
     "dateUnknown": "Datum unbekannt",
+    "sourceFallback": "Quelle",
     "triggerAt": "Trigger ${{price}}",
     "window": "Fenster {{window}}",
     "share": "Teilen",

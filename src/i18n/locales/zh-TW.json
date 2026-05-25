@@ -234,6 +234,7 @@
     "credMid": "中",
     "credLow": "低",
     "dateUnknown": "日期未知",
+    "sourceFallback": "來源",
     "triggerAt": "觸發價 ${{price}}",
     "window": "窗口 {{window}}",
     "share": "分享",
