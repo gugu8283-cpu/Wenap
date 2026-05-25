@@ -1,6 +1,21 @@
 import { useTranslation } from 'react-i18next'
+import ExpandableText from './ExpandableText.jsx'
 import './MobileAnalysisReport.css'
 import ProLockPrompt from './ProLockPrompt.jsx'
+
+function BbItem({ item, side, locked = false }) {
+  return (
+    <li className={`ma-bb-item${locked ? ' ma-bb-item--locked' : ''}`} aria-hidden={locked || undefined}>
+      <span className="ma-bb-bullet">·</span>
+      <div className="ma-bb-item-body">
+        <ExpandableText text={item.reason} className="ma-bb-reason" collapsedLines={0} />
+        {item.weight ? (
+          <span className={`ma-bb-weight ma-bb-weight--${side}`}>{item.weight}</span>
+        ) : null}
+      </div>
+    </li>
+  )
+}
 
 function Side({ label, items, lockedItems, side, previewMode }) {
   if (!items?.length && !lockedItems?.length) return null
@@ -9,24 +24,9 @@ function Side({ label, items, lockedItems, side, previewMode }) {
       <p className="ma-bb-side-label">{label}</p>
       <ul className="ma-bb-list">
         {items.map((item, i) => (
-          <li key={`v-${i}`} className="ma-bb-item">
-            <span className="ma-bb-bullet">·</span>
-            <span className="ma-bb-reason">{item.reason}</span>
-            {item.weight ? (
-              <span className={`ma-bb-weight ma-bb-weight--${side}`}>{item.weight}</span>
-            ) : null}
-          </li>
+          <BbItem key={`v-${i}`} item={item} side={side} />
         ))}
-        {previewMode &&
-          lockedItems.map((item, i) => (
-            <li key={`l-${i}`} className="ma-bb-item ma-bb-item--locked" aria-hidden>
-              <span className="ma-bb-bullet">·</span>
-              <span className="ma-bb-reason">{item.reason}</span>
-              {item.weight ? (
-                <span className={`ma-bb-weight ma-bb-weight--${side}`}>{item.weight}</span>
-              ) : null}
-            </li>
-          ))}
+        {previewMode && lockedItems.map((item, i) => <BbItem key={`l-${i}`} item={item} side={side} locked />)}
       </ul>
     </div>
   )

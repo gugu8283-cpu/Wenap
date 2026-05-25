@@ -723,8 +723,8 @@ function tierPromptExtensions(tier) {
 
 【Pro+ 附加字段】在 Pro 字段之外再输出：
   "bullBearDebate": {
-    "bull": [ { "reason": "≤36字", "weight": "如60%" }, ...共3条 ],
-    "bear": [ { "reason": "≤36字", "weight": "如40%" }, ...共3条 ]
+    "bull": [ { "reason": "完整句子≤120字，勿在词中间截断", "weight": "如60%" }, ...共3条 ],
+    "bear": [ { "reason": "完整句子≤120字，勿在词中间截断", "weight": "如40%" }, ...共3条 ]
   }
   scenarios 每项（bull/base/bear）追加 "triggerPrice": 数字或 null、"timeWindow": "如2026 Q3"
   supplyChain 每项追加 "analysis": "与主标的联动逻辑≤50字"
@@ -1022,9 +1022,9 @@ function normalizeBullBearDebateField(data) {
     (Array.isArray(arr) ? arr : [])
       .slice(0, 3)
       .map((x) => {
-        if (typeof x === 'string') return { reason: x.trim().slice(0, 72), weight: '' };
+        if (typeof x === 'string') return { reason: x.trim().slice(0, 360), weight: '' };
         return {
-          reason: String(x?.reason || x?.text || '').trim().slice(0, 72),
+          reason: String(x?.reason || x?.text || '').trim().slice(0, 360),
           weight: String(x?.weight || x?.p || '').trim().slice(0, 12),
         };
       })

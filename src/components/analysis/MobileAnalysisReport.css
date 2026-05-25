@@ -969,17 +969,34 @@
   gap: 6px;
   font-size: 14px;
   line-height: 1.45;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+}
+
+.ma-bb-item-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
 }
 
 .ma-bb-bullet {
   flex-shrink: 0;
   color: var(--color-text-muted);
+  margin-top: 2px;
 }
 
 .ma-bb-reason {
-  flex: 1;
-  min-width: 0;
+  width: 100%;
+  word-break: break-word;
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+}
+
+.ma-bb-item-body .ma-expandable-text {
+  width: 100%;
 }
 
 .ma-bb-weight--bull {
