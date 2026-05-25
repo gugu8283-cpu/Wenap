@@ -242,18 +242,17 @@ export default function App() {
     return () => clearInterval(timer)
   }, [loading, loadingLines])
 
-  // Progress bar: simulate progress from 0 to ~90% over avg 42s
+  // Progress bar: creeps toward 98% while waiting — no fixed time cap (completes at 100% when done)
   useEffect(() => {
     if (!loading) {
-      setLoadingProgress(loading ? 100 : 0)
+      setLoadingProgress(0)
       return
     }
     loadingStartRef.current = Date.now()
     setLoadingProgress(2)
-    const AVG_MS = 42000
     const tick = setInterval(() => {
       const elapsed = Date.now() - (loadingStartRef.current || Date.now())
-      const pct = Math.min(90, (elapsed / AVG_MS) * 90)
+      const pct = Math.min(98, 2 + Math.log1p(elapsed / 15000) * 22)
       setLoadingProgress(Math.round(pct))
     }, 800)
     return () => clearInterval(tick)
@@ -414,6 +413,7 @@ export default function App() {
           return
         }
 
+        setLoadingProgress(100)
         refreshQuota()
         refreshResearchProfile()
         refreshUser()

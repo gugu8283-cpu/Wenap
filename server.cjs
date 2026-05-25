@@ -912,13 +912,14 @@ JSON 字段与要求：
 【输出完整性】所有字段须完整句子，不得以逗号或不完整语句结尾。${tierPromptExtensions(tier)}`;
 }
 
-async function openRouterChat(apiKey, { model, userContent, stream, useWeb, maxOutputTokens }) {
+async function openRouterChat(apiKey, { model, userContent, stream, useWeb, maxOutputTokens, timeoutMs }) {
   return openRouterChatWithFallback(apiKey, {
     model,
     userContent,
     stream,
     useWeb,
     maxOutputTokens,
+    timeoutMs,
   });
 }
 
@@ -2185,6 +2186,7 @@ Each weakness should be 1 concise sentence in ${lang}.`;
     stream: false,
     useWeb: false,
     maxOutputTokens: 300,
+    timeoutMs: 90_000,
   });
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('No JSON in secondPassCritique response');
@@ -2364,6 +2366,7 @@ async function runAnalyzePipeline(
       stream: false,
       useWeb: true,
       maxOutputTokens: openRouterMaxOutputTokensMain(),
+      timeoutMs: 0,
     });
     usageLog.main = mainResult.usage;
     let data;
@@ -2382,6 +2385,7 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
         stream: false,
         useWeb: false,
         maxOutputTokens: openRouterMaxOutputTokensMain(),
+        timeoutMs: 0,
       });
       if (retry.usage) {
         usageLog.main = retry.usage;
