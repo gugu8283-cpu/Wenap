@@ -1883,7 +1883,6 @@ function clampVerboseChineseFields(data) {
     for (const k of ['bull', 'base', 'bear']) {
       const z = data.scenarios[k];
       if (!z || typeof z !== 'object') continue;
-      z.trigger = clipToCompleteThought(String(z.trigger || '').trim(), 44);
       z.range = clipToCompleteThought(String(z.range || '').trim(), 40);
     }
   }
@@ -2062,10 +2061,10 @@ function stripDataForViz(
     coreConclusion:
       data.coreConclusion && typeof data.coreConclusion === 'object'
         ? {
-            headline: String(data.coreConclusion.headline || '').trim().slice(0, 80),
-            ifBull: String(data.coreConclusion.ifBull || data.coreConclusion.bullCase || '').trim().slice(0, 120),
-            ifBear: String(data.coreConclusion.ifBear || data.coreConclusion.bearCase || '').trim().slice(0, 120),
-            action: String(data.coreConclusion.action || '').trim().slice(0, 120),
+            headline: String(data.coreConclusion.headline || '').trim().slice(0, 320),
+            ifBull: String(data.coreConclusion.ifBull || data.coreConclusion.bullCase || '').trim().slice(0, 480),
+            ifBear: String(data.coreConclusion.ifBear || data.coreConclusion.bearCase || '').trim().slice(0, 480),
+            action: String(data.coreConclusion.action || '').trim().slice(0, 480),
           }
         : null,
     riskBlindSpot: String(data.riskBlindSpot || '').trim().slice(0, 120),

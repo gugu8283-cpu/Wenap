@@ -11,6 +11,7 @@ import {
   Legend,
 } from 'chart.js'
 import { Radar } from 'react-chartjs-2'
+import ExpandableText from './ExpandableText.jsx'
 import './MobileAnalysisReport.css'
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend)
@@ -233,7 +234,12 @@ export default function RadarSection({ dimensions }) {
             </div>
             {hasReason ? (
               <div className={`ma-dim-reason-wrap${open ? ' ma-dim-reason-wrap--open' : ''}`}>
-                <p className="ma-dim-reason">{d.reason}</p>
+                <ExpandableText
+                  text={d.reason}
+                  className="ma-dim-reason"
+                  collapsedLines={6}
+                  minChars={180}
+                />
               </div>
             ) : null}
           </div>

@@ -367,15 +367,17 @@
     opacity 0.15s ease;
 }
 .ma-dim-reason-wrap--open {
-  max-height: 120px;
+  max-height: none;
   opacity: 1;
+  overflow: visible;
 }
 .ma-dim-reason {
   font-size: 12px;
   color: var(--color-text-muted);
   margin: 6px 0 0 80px;
   padding-right: 36px;
-  line-height: 1.35;
+  line-height: 1.45;
+  word-break: break-word;
 }
 
 .ma-scenario-row {
@@ -409,10 +411,8 @@
   font-size: 12px;
   color: var(--color-text-muted);
   margin-top: 4px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  line-height: 1.5;
+  word-break: break-word;
 }
 
 .ma-axis-svg {
@@ -1020,10 +1020,36 @@
   color: var(--color-text-muted);
 }
 
-.ma-source-link {
+.ma-source-title {
+  color: var(--color-text);
+  font-size: 14px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.ma-source-inline-open {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--color-primary);
   text-decoration: none;
-  font-size: 14px;
+}
+
+.ma-source-inline-open:hover,
+.ma-source-inline-open:focus-visible {
+  text-decoration: underline;
+}
+
+.ma-dim-reason-wrap .ma-expandable-text {
+  margin: 6px 0 0 80px;
+  padding-right: 36px;
+  width: auto;
+}
+
+.ma-dim-reason-wrap .ma-dim-reason {
+  margin: 0;
+  padding: 0;
 }
 
 .ma-source-meta {
@@ -1056,6 +1082,38 @@
   line-height: 1.35;
   margin: 0 0 12px;
   color: var(--color-text);
+  word-break: break-word;
+}
+
+.ma-expandable-text {
+  width: 100%;
+}
+
+.ma-text-toggle {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.ma-text-toggle:hover,
+.ma-text-toggle:focus-visible {
+  color: #93c5fd;
+}
+
+.ma-supply-rel {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+  word-break: break-word;
+  min-width: 0;
 }
 
 .ma-core-conclusion-list {
@@ -1071,6 +1129,18 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  align-items: flex-start;
+}
+
+.ma-core-conclusion-row .ma-expandable-text {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.ma-core-conclusion-v {
+  flex: 1 1 12rem;
+  min-width: 0;
+  word-break: break-word;
 }
 
 .ma-core-conclusion-k {

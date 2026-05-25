@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import ExpandableText from './ExpandableText.jsx'
 import './MobileAnalysisReport.css'
 
 export default function CritiqueSection({
@@ -27,13 +28,13 @@ export default function CritiqueSection({
         {visible.map((w, i) => (
           <li key={i} className="ma-critique-item">
             <span className="ma-critique-num">{i + 1}</span>
-            <span className="ma-critique-text">{w}</span>
+            <ExpandableText text={w} className="ma-critique-text" collapsedLines={4} minChars={160} />
           </li>
         ))}
         {hidden.map((w, i) => (
           <li key={`blur-${i}`} className="ma-critique-item ma-critique-item--blur" aria-hidden>
             <span className="ma-critique-num">{visible.length + i + 1}</span>
-            <span className="ma-critique-text">{w}</span>
+            <ExpandableText text={w} className="ma-critique-text" collapsedLines={4} minChars={160} />
           </li>
         ))}
       </ul>

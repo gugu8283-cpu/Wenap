@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import ExpandableText from './ExpandableText.jsx'
 import './MobileAnalysisReport.css'
 
 function LockedBlock({ title, teaser, onUpgrade, t }) {
@@ -73,22 +74,36 @@ export default function ProFieldsSection({
         <div className="ma-pro-field">
           <p className="ma-pro-field-title">{t('report.pro.actionTitle')}</p>
           {al.suggestion ? (
-            <p className="ma-pro-field-line">
-              {t('report.pro.suggestion')}: {al.suggestion}
-            </p>
+            <ExpandableText
+              text={`${t('report.pro.suggestion')}: ${al.suggestion}`}
+              className="ma-pro-field-line"
+              collapsedLines={4}
+              minChars={120}
+            />
           ) : null}
           {al.stopLoss ? (
-            <p className="ma-pro-field-line">
-              {t('report.pro.stopLoss')}: {al.stopLoss}
-            </p>
+            <ExpandableText
+              text={`${t('report.pro.stopLoss')}: ${al.stopLoss}`}
+              className="ma-pro-field-line"
+              collapsedLines={4}
+              minChars={120}
+            />
           ) : null}
           {al.catalyst ? (
-            <p className="ma-pro-field-line">
-              {t('report.pro.catalyst')}: {al.catalyst}
-            </p>
+            <ExpandableText
+              text={`${t('report.pro.catalyst')}: ${al.catalyst}`}
+              className="ma-pro-field-line"
+              collapsedLines={4}
+              minChars={120}
+            />
           ) : null}
           {!al.suggestion && !al.stopLoss && report.actionLine ? (
-            <p className="ma-pro-field-line">{report.actionLine}</p>
+            <ExpandableText
+              text={report.actionLine}
+              className="ma-pro-field-line"
+              collapsedLines={4}
+              minChars={120}
+            />
           ) : null}
         </div>
       ) : null}
@@ -107,13 +122,23 @@ export default function ProFieldsSection({
       {report.leaderInsiderSummary ? (
         <div className="ma-pro-field">
           <p className="ma-pro-field-title">{t('report.pro.insiderTitle')}</p>
-          <p className="ma-pro-field-line">{report.leaderInsiderSummary}</p>
+          <ExpandableText
+            text={report.leaderInsiderSummary}
+            className="ma-pro-field-line"
+            collapsedLines={4}
+            minChars={120}
+          />
         </div>
       ) : null}
       {report.peerVsSectorLine ? (
         <div className="ma-pro-field">
           <p className="ma-pro-field-title">{t('report.pro.peerTitle')}</p>
-          <p className="ma-pro-field-line">{report.peerVsSectorLine}</p>
+          <ExpandableText
+            text={report.peerVsSectorLine}
+            className="ma-pro-field-line"
+            collapsedLines={4}
+            minChars={120}
+          />
         </div>
       ) : null}
     </div>

@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import ExpandableText from './ExpandableText.jsx'
 import './MobileAnalysisReport.css'
 import { normalizeSourcesList } from '../../utils/parseSources.js'
 
@@ -51,12 +52,6 @@ function formatSourceDate(raw, t) {
   return t('report.dateUnknown')
 }
 
-function truncateTitle(title, max = 30) {
-  const t = String(title || '').trim()
-  if (t.length <= max) return t
-  return `${t.slice(0, max)}...`
-}
-
 export default function SourcesAccordion({ sources, sourceCount, timeSaved }) {
   const { t } = useTranslation()
   const list = useMemo(() => normalizeSourcesList(sources), [sources])
@@ -74,34 +69,46 @@ export default function SourcesAccordion({ sources, sourceCount, timeSaved }) {
           isStaleSourceDate(s.date, s.title) ||
           /⚠️|可能过时|may be stale|无日期|undated/i.test(s.title || '')
         const fullTitle = s.title || s.url || '来源'
-        const shortTitle = truncateTitle(fullTitle)
         return (
           <div key={i} className="ma-source-row">
             <CredBadge level={s.credibility} t={t} />
             <div className="ma-source-main">
+              <ExpandableText
+                text={fullTitle}
+                className="ma-source-title"
+                collapsedLines={2}
+                minChars={72}
+              />
               {s.url ? (
                 <a
                   href={s.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="ma-source-link"
-                  title={fullTitle}
+                  className="ma-source-inline-open"
                 >
-                  {shortTitle}
+                  {t('report.openSource')}
                 </a>
-              ) : (
-                <span className="ma-source-link" title={fullTitle}>
-                  {shortTitle}
-                </span>
-              )}
+              ) : null}
               <div className={`ma-source-meta${stale ? ' ma-source-meta--stale' : ''}`}>
                 {s.source} · {dateLine}
                 {stale ? ` · ${t('report.sourceStale')}` : ''}
               </div>
             </div>
-            <span className="ma-source-arrow" aria-hidden>
-              ↗
-            </span>
+            {s.url ? (
+              <a
+                href={s.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ma-source-arrow"
+                aria-label={t('report.openSource')}
+              >
+                ↗
+              </a>
+            ) : (
+              <span className="ma-source-arrow" aria-hidden>
+                ↗
+              </span>
+            )}
           </div>
         )
       })}

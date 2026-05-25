@@ -4,6 +4,7 @@ import './MobileAnalysisReport.css'
 import { useInView } from '../../hooks/useInView.js'
 import ProSectionLock from './ProSectionLock.jsx'
 import ProLockPrompt from './ProLockPrompt.jsx'
+import ExpandableText from './ExpandableText.jsx'
 
 const W = 320
 
@@ -113,7 +114,11 @@ export default function ScenarioSection({ scenarios, currentPrice, locked = fals
                 s.rangeLabel || '—'
               )}
             </div>
-            <div className="ma-scen-trig">{s.trigger}</div>
+            <ExpandableText
+              text={s.trigger}
+              className="ma-scen-trig"
+              collapsedLines={0}
+            />
             {!locked && (s.triggerPrice || s.timeWindow) ? (
               <div className="ma-scen-detail">
                 {Number.isFinite(s.triggerPrice)
