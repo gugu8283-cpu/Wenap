@@ -765,6 +765,8 @@ function riskFocusPromptBlock(riskFocus, loc) {
     : `\n【User risk focus】Prioritize: ${label}. Strengthen in relevant dimension notes, riskBlindSpot, and outlook; include counter-evidence.`;
 }
 
+const { buildMainJsonPromptIntl } = require('./lib/mainAnalyzePrompt.cjs');
+
 function buildMainJsonPrompt({
   ticker,
   assetType,
@@ -777,6 +779,19 @@ function buildMainJsonPrompt({
   riskFocus = '',
 }) {
   const loc = normalizeLocale(locale);
+  if (!loc.startsWith('zh')) {
+    return buildMainJsonPromptIntl({
+      ticker,
+      assetType,
+      horizon,
+      alphaContextBlock,
+      listingCurrency,
+      exchangeHint,
+      tier,
+      locale: loc,
+      riskFocus,
+    });
+  }
   const h = horizonLabel(horizon, loc);
   const a = assetLabel(assetType, loc);
   const asOf = new Date().toLocaleDateString(loc.startsWith('zh') ? 'zh-CN' : 'en-US', {
@@ -897,7 +912,7 @@ const { extractJsonObject } = require('./lib/parseModelJson.cjs');
 
 const DETAIL_MARKDOWN_MAX_CHARS = 380;
 
-function priceVsScenarioNote(priceNum, rangeStr, listingCurrency = 'USD') {
+function priceVsScenarioNote(priceNum, rangeStr, listingCurrency = 'USD', locale = 'zh-CN') {
   const s = String(rangeStr || '').trim();
   const nums = s.match(/\d[\d,]*(?:\.\d+)?/g);
   if (!nums || nums.length < 2) return '';
@@ -907,6 +922,7 @@ function priceVsScenarioNote(priceNum, rangeStr, listingCurrency = 'USD') {
   const lo = Math.min(a, b);
   const hi = Math.max(a, b);
   const curLabel = formatListingPrice(priceNum, listingCurrency);
+  const zh = normalizeLocale(locale).startsWith('zh');
   if (priceNum < lo) {
     const gap = lo - priceNum;
     const dStr = formatListingDelta(gap, listingCurrency);
@@ -914,8 +930,12 @@ function priceVsScenarioNote(priceNum, rangeStr, listingCurrency = 'USD') {
       listingCurrency === 'JPY' || listingCurrency === 'KRW'
         ? gap <= 0.5 || gap / Math.max(lo, 1e-6) < 0.002
         : gap <= 0.02 || gap / Math.max(lo, 1e-6) < 0.003;
-    if (tiny) return `← 当前价${curLabel}，接近本区间下沿（低约 ${dStr}）`;
-    return `← 当前价${curLabel}，低于本区间下沿约 ${dStr}`;
+    if (zh) {
+      if (tiny) return `← 当前价${curLabel}，接近本区间下沿（低约 ${dStr}）`;
+      return `← 当前价${curLabel}，低于本区间下沿约 ${dStr}`;
+    }
+    if (tiny) return `← Spot ${curLabel}, near range floor (~${dStr} below)`;
+    return `← Spot ${curLabel}, ~${dStr} below range floor`;
   }
   if (priceNum > hi) {
     const gap = priceNum - hi;
@@ -924,18 +944,22 @@ function priceVsScenarioNote(priceNum, rangeStr, listingCurrency = 'USD') {
       listingCurrency === 'JPY' || listingCurrency === 'KRW'
         ? gap <= 0.5 || gap / Math.max(hi, 1e-6) < 0.002
         : gap <= 0.02 || gap / Math.max(hi, 1e-6) < 0.003;
-    if (tiny) return `← 当前价${curLabel}，接近本区间上沿（高约 ${dStr}）`;
-    return `← 当前价${curLabel}，高于本区间上沿约 ${dStr}`;
+    if (zh) {
+      if (tiny) return `← 当前价${curLabel}，接近本区间上沿（高约 ${dStr}）`;
+      return `← 当前价${curLabel}，高于本区间上沿约 ${dStr}`;
+    }
+    if (tiny) return `← Spot ${curLabel}, near range ceiling (~${dStr} above)`;
+    return `← Spot ${curLabel}, ~${dStr} above range ceiling`;
   }
-  return `← 当前价${curLabel}，位于本区间内`;
+  return zh ? `← 当前价${curLabel}，位于本区间内` : `← Spot ${curLabel}, inside this range`;
 }
 
-function computeScenarioPriceNotes(priceNum, scenarios, listingCurrency = 'USD') {
+function computeScenarioPriceNotes(priceNum, scenarios, listingCurrency = 'USD', locale = 'zh-CN') {
   const out = { bull: '', base: '', bear: '' };
   if (!Number.isFinite(priceNum) || priceNum <= 0 || !scenarios || typeof scenarios !== 'object') return out;
   for (const k of ['bull', 'base', 'bear']) {
     const r = scenarios[k]?.range;
-    out[k] = priceVsScenarioNote(priceNum, String(r || ''), listingCurrency);
+    out[k] = priceVsScenarioNote(priceNum, String(r || ''), listingCurrency, locale);
   }
   return out;
 }
@@ -1089,12 +1113,19 @@ function normalizeReportExtensions(data, alphaOverview, latestPrice, listingCurr
       const sg = pct >= 0 ? '+' : '';
       const tpS = formatListingPrice(tpNum, listingCurrency);
       const curS = formatListingPrice(latestPrice, listingCurrency);
-      apl = `分析师平均目标价 ${tpS} | 当前价 ${curS} | 空间 ${sg}${pct.toFixed(1)}%`;
+      apl = loc.startsWith('zh')
+        ? `分析师平均目标价 ${tpS} | 当前价 ${curS} | 空间 ${sg}${pct.toFixed(1)}%`
+        : `Analyst avg target ${tpS} | Spot ${curS} | Upside ${sg}${pct.toFixed(1)}%`;
     }
   }
   data.analystPriceLine = apl;
   const priceForNotes = Number.isFinite(cur) && cur > 0 ? cur : latestPrice;
-  data.scenarioPriceNotes = computeScenarioPriceNotes(priceForNotes, data.scenarios, listingCurrency);
+  data.scenarioPriceNotes = computeScenarioPriceNotes(
+    priceForNotes,
+    data.scenarios,
+    listingCurrency,
+    loc,
+  );
   sanitizeKeyLevels(data, priceForNotes, alphaOverview);
   recomputeRiskReward(data, priceForNotes, alphaOverview);
 }
@@ -1122,17 +1153,23 @@ function markdownCatalystBlock(data) {
 }
 
 /** 免费版正文不写明细，避免与顶部会员卡片「又藏又露」打架 */
-function markdownCatalystForTier(data, tier) {
+function markdownCatalystForTier(data, tier, locale = 'zh-CN') {
+  const loc = normalizeLocale(locale);
+  const zh = loc.startsWith('zh');
   const ke = Array.isArray(data.keyEvents) ? data.keyEvents : [];
   const arr = ke.length ? ke : Array.isArray(data.catalystTimeline) ? data.catalystTimeline : [];
   if (!arr.length) return '';
   if (tier === 'free') {
-    return `\n**关键时间节点**\n\n已整理 **${arr.length}** 条节点（财报窗口、产品节奏等）。完整列表请升级 **Pro** 查看。\n`;
+    return zh
+      ? `\n**关键时间节点**\n\n已整理 **${arr.length}** 条节点（财报窗口、产品节奏等）。完整列表请升级 **Pro** 查看。\n`
+      : `\n**Key dates**\n\n**${arr.length}** catalysts tracked (earnings, product, policy). Upgrade to **Pro** for the full list.\n`;
   }
   if (ke.length) {
-    let s = '\n**关键时间节点**\n\n';
+    const title = zh ? '关键时间节点' : 'Key dates';
+    let s = `\n**${title}**\n\n`;
     ke.forEach((x, i) => {
-      s += `${i + 1}. **${x.date || '待公告'}** — ${x.event || '—'}\n`;
+      const d = x.date || (zh ? '待公告' : 'TBD');
+      s += `${i + 1}. **${d}** — ${x.event || '—'}\n`;
     });
     return s;
   }
@@ -1192,7 +1229,7 @@ async function fetchPolicyRegulationDimension(apiKey, ticker, hLabel, ctx = {}, 
       ? `\n\n【再次尝试】上一轮 score=0；换检索词（出口管制、实体清单、反垄断、行业监管、AI 立法、SEC/FTC 执法）再试。仍无可核验监管信息才 score=0 且 note 仅「数据不足」。`
       : '';
     const prompt =
-      loc === 'en'
+      !loc.startsWith('zh')
         ? `${outputLanguageInstruction(loc)}
 You are a regulatory policy analyst. Ticker: ${ticker}; horizon: ${hLabel}.
 ${hint ? `${hint}\n` : ''}
@@ -1822,7 +1859,7 @@ function jsonToMarkdownFourParts(data, tier = 'free', locale = 'zh-CN') {
   if (apl) s1 += `\n**${L.price}:** ${apl}\n`;
   if (summ) s1 += `\n${summ}\n`;
   if (ts) s1 += `\n**${L.tech}:**\n${ts}\n`;
-  s1 += markdownCatalystForTier(data, tier);
+  s1 += markdownCatalystForTier(data, tier, loc);
 
   let s2 = `**${L.dims}:**\n\n`;
   (data.dimensions || []).forEach((d, i) => {
@@ -1856,9 +1893,13 @@ function jsonToMarkdownFourParts(data, tier = 'free', locale = 'zh-CN') {
 
   let s4 = `**${L.chain}:**\n`;
   (data.supplyChain || []).forEach((c) => {
-    let reason = stripHttpUrls(String(c.reason || '')).trim();
+    let reason = stripHttpUrls(String(c.reason || c.relation || '')).trim();
     reason = reason.replace(/[。.；;、，,\s]+$/u, '');
-    s4 += `- **${c.ticker || '—'}** ${c.name || ''}（关联：${reason}；评分 ${c.score}/100）\n`;
+    if (loc === 'en') {
+      s4 += `- **${c.ticker || '—'}** ${c.name || ''} (link: ${reason}; score ${c.score}/100)\n`;
+    } else {
+      s4 += `- **${c.ticker || '—'}** ${c.name || ''}（关联：${reason}；评分 ${c.score}/100）\n`;
+    }
   });
   s4 += `\n**${L.scenarios}:**\n`;
   const sc = data.scenarios;
@@ -1880,7 +1921,11 @@ function jsonToMarkdownFourParts(data, tier = 'free', locale = 'zh-CN') {
       if (x && typeof x === 'object') {
         const ann = String(notes[key] || '').trim();
         const tail = ann ? ` ${ann}` : '';
-        s4 += `- **${label}**（概率 ${x.p ?? '—'}%）：区间 ${x.range || '—'}；触发：${x.trigger || '—'}${tail}\n`;
+        if (loc === 'en') {
+          s4 += `- **${label}** (${x.p ?? '—'}%): range ${x.range || '—'}; trigger: ${x.trigger || '—'}${tail}\n`;
+        } else {
+          s4 += `- **${label}**（概率 ${x.p ?? '—'}%）：区间 ${x.range || '—'}；触发：${x.trigger || '—'}${tail}\n`;
+        }
       }
     });
   } else {
@@ -1896,7 +1941,10 @@ function jsonToMarkdownFourParts(data, tier = 'free', locale = 'zh-CN') {
   const srcN = Array.isArray(data.sources) ? data.sources.length : 0;
   s4 += `\n${researchFooterLineLocale(loc, srcN)}\n`;
   if (tier === 'free') {
-    s4 += '\n**会员提示**：Pro 解锁操作建议、时间节点、内部人与同行对标；Pro+ 解锁多空对撞与情景细化。\n';
+    s4 +=
+      loc === 'en'
+        ? '\n**Upgrade**: Pro unlocks action plan, key dates, insider & peer context; Pro+ adds bull/bear debate and richer scenarios.\n'
+        : '\n**会员提示**：Pro 解锁操作建议、时间节点、内部人与同行对标；Pro+ 解锁多空对撞与情景细化。\n';
   }
 
   return `<<<WENAP_S1>>>\n${s1.trim()}\n<<<WENAP_S2>>>\n${s2.trim()}\n<<<WENAP_S3>>>\n${s3.trim()}\n<<<WENAP_S4>>>\n${s4.trim()}\n`;
