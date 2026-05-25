@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { apiFetch } from '../../lib/api.js'
 import LegalFooter from '../../components/LegalFooter.jsx'
@@ -8,6 +8,8 @@ import './AuthPages.css'
 
 export default function ForgotPasswordPage() {
   const { t } = useTranslation()
+  const location = useLocation()
+  const returnTo = `${location.pathname}${location.search}`
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
@@ -70,7 +72,7 @@ export default function ForgotPasswordPage() {
         <p className="auth-bottom">
           <Link to="/login">{t('auth.forgotBack')}</Link>
         </p>
-        <LegalFooter className="auth-legal-footer" />
+        <LegalFooter className="auth-legal-footer" returnTo={returnTo} />
       </div>
     </div>
   )

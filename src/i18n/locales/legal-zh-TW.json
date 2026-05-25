@@ -12,6 +12,13 @@
   "registerMustAgree": "請先勾選同意服務條款與隱私權政策",
   "lastUpdated": "最後更新：{{date}}",
   "backHome": "返回首頁",
+  "backLogin": "返回登入",
+  "backRegister": "返回註冊",
+  "backVerify": "返回信箱驗證",
+  "backAcceptLegal": "返回同意頁面",
+  "backForgot": "返回找回密碼",
+  "backPricing": "返回定價",
+  "backPrevious": "返回上一頁",
   "privacy": {
     "title": "隱私權政策",
     "updated": "2026年5月21日",

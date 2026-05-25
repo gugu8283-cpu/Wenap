@@ -30,6 +30,13 @@
   "registerMustAgree": "利用規約とプライバシーポリシーに同意してください",
   "lastUpdated": "最終更新：{{date}}",
   "backHome": "ホームへ",
+  "backLogin": "ログインに戻る",
+  "backRegister": "登録に戻る",
+  "backVerify": "メール確認に戻る",
+  "backAcceptLegal": "同意画面に戻る",
+  "backForgot": "パスワード再設定に戻る",
+  "backPricing": "料金プランに戻る",
+  "backPrevious": "前のページに戻る",
   "privacy": {
     "title": "プライバシーポリシー",
     "updated": "2026年5月21日",

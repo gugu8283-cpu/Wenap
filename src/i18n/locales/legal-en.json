@@ -30,6 +30,13 @@
   "registerMustAgree": "Please accept the Terms and Privacy Policy to continue.",
   "lastUpdated": "Last updated: {{date}}",
   "backHome": "Back to home",
+  "backLogin": "Back to sign in",
+  "backRegister": "Back to sign up",
+  "backVerify": "Back to email verification",
+  "backAcceptLegal": "Back to legal consent",
+  "backForgot": "Back to password reset",
+  "backPricing": "Back to pricing",
+  "backPrevious": "Go back",
   "privacy": {
     "title": "Privacy Policy",
     "updated": "May 21, 2026",

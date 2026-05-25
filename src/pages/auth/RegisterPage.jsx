@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '../../components/LanguageSwitcher.jsx'
 import { apiFetch } from '../../lib/api.js'
@@ -23,7 +23,9 @@ const STRENGTH_COLORS = ['#2a2a2a', '#e24b4a', '#f5a623', '#00d4aa', '#00d4aa']
 export default function RegisterPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams] = useSearchParams()
+  const returnTo = `${location.pathname}${location.search}`
   const referralCode = searchParams.get('ref') || ''
   const prefilledSymbol = searchParams.get('symbol') || ''
   const [email, setEmail] = useState('')
@@ -162,6 +164,7 @@ export default function RegisterPage() {
           onChangeTerms={setAgreeTerms}
           onChangePrivacy={setAgreePrivacy}
           onChangeDisclaimer={setAgreeDisclaimer}
+          returnTo={returnTo}
         />
 
         <button type="submit" className="auth-btn" disabled={loading || mismatch || !consentsOk}>
@@ -175,7 +178,7 @@ export default function RegisterPage() {
           )}
         </button>
       </form>
-      <LegalFooter className="auth-legal-footer" />
+      <LegalFooter className="auth-legal-footer" returnTo={returnTo} />
     </div>
   )
 }

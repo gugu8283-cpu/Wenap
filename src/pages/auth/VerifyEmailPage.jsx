@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { apiFetch, setToken } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
@@ -10,7 +10,9 @@ import './AuthPages.css'
 export default function VerifyEmailPage() {
   const { t, i18n } = useTranslation()
   const [params] = useSearchParams()
+  const location = useLocation()
   const navigate = useNavigate()
+  const returnTo = `${location.pathname}${location.search}`
   const { refreshUser } = useAuth()
   const email = params.get('email') || ''
   const token = params.get('token') || ''
@@ -136,7 +138,7 @@ export default function VerifyEmailPage() {
         <p className="auth-bottom" style={{ marginTop: 32 }}>
           <Link to="/login">{t('auth.backToLogin')}</Link>
         </p>
-        <LegalFooter className="auth-legal-footer" />
+        <LegalFooter className="auth-legal-footer" returnTo={returnTo} />
       </div>
     </div>
   )

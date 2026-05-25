@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { useTranslation } from 'react-i18next'
 
@@ -19,6 +19,8 @@ export default function LoginPage() {
   const { t } = useTranslation()
 
   const navigate = useNavigate()
+  const location = useLocation()
+  const returnTo = `${location.pathname}${location.search}`
 
   const { login } = useAuth()
 
@@ -222,7 +224,7 @@ export default function LoginPage() {
 
       </p>
 
-      <LegalFooter className="auth-legal-footer" />
+      <LegalFooter className="auth-legal-footer" returnTo={returnTo} />
 
     </div>
 

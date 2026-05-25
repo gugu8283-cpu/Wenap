@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { apiFetch } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
@@ -11,6 +11,8 @@ import './AuthPages.css'
 export default function AcceptLegalPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const location = useLocation()
+  const returnTo = `${location.pathname}${location.search}`
   const { user, loading: authLoading, refreshUser } = useAuth()
   const [agreeTerms, setAgreeTerms] = useState(false)
   const [agreePrivacy, setAgreePrivacy] = useState(false)
@@ -77,12 +79,13 @@ export default function AcceptLegalPage() {
           onChangeTerms={setAgreeTerms}
           onChangePrivacy={setAgreePrivacy}
           onChangeDisclaimer={setAgreeDisclaimer}
+          returnTo={returnTo}
         />
         <button type="submit" className="auth-btn" disabled={loading || !allOk}>
           {loading ? t('legal.acceptSubmitting') : t('legal.acceptSubmit')}
         </button>
       </form>
-      <LegalFooter className="auth-legal-footer" />
+      <LegalFooter className="auth-legal-footer" returnTo={returnTo} />
     </div>
   )
 }

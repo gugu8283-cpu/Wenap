@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { legalDocLink } from '../utils/legalReturn.js'
 
 /**
  * Explicit per-document consent checkboxes (electronic signature style).
@@ -14,6 +15,7 @@ export default function LegalConsentFields({
   showSubscription = false,
   agreeSubscription = false,
   onChangeSubscription,
+  returnTo = '',
 }) {
   const { t } = useTranslation()
 
@@ -25,7 +27,7 @@ export default function LegalConsentFields({
         <input type="checkbox" checked={agreeTerms} onChange={(e) => onChangeTerms(e.target.checked)} />
         <span>
           {t('legal.consentTermsPrefix')}{' '}
-          <Link to="/terms" target="_blank" rel="noopener noreferrer">
+          <Link to={legalDocLink('/terms', returnTo)}>
             {t('legal.nav.terms')}
           </Link>
           {t('legal.consentTermsSuffix')}
@@ -36,7 +38,7 @@ export default function LegalConsentFields({
         <input type="checkbox" checked={agreePrivacy} onChange={(e) => onChangePrivacy(e.target.checked)} />
         <span>
           {t('legal.consentPrivacyPrefix')}{' '}
-          <Link to="/privacy" target="_blank" rel="noopener noreferrer">
+          <Link to={legalDocLink('/privacy', returnTo)}>
             {t('legal.nav.privacy')}
           </Link>
           {t('legal.consentPrivacySuffix')}
@@ -51,7 +53,7 @@ export default function LegalConsentFields({
         />
         <span>
           {t('legal.consentDisclaimerPrefix')}{' '}
-          <Link to="/disclaimer" target="_blank" rel="noopener noreferrer">
+          <Link to={legalDocLink('/disclaimer', returnTo)}>
             {t('legal.nav.disclaimer')}
           </Link>
           {t('legal.consentDisclaimerSuffix')}
@@ -67,7 +69,7 @@ export default function LegalConsentFields({
           />
           <span>
             {t('legal.consentSubscriptionPrefix')}{' '}
-            <Link to="/terms" target="_blank" rel="noopener noreferrer">
+            <Link to={legalDocLink('/terms', returnTo)}>
               {t('legal.nav.terms')}
             </Link>
             {t('legal.consentSubscriptionSuffix')}

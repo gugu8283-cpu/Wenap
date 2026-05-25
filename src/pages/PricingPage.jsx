@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { apiFetch } from '../lib/api.js'
 import { useAuth } from '../context/AuthContext.jsx'
 import LegalFooter from '../components/LegalFooter.jsx'
@@ -44,6 +44,8 @@ const PLANS = [
 export default function PricingPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const location = useLocation()
+  const returnTo = `${location.pathname}${location.search}`
   const [searchParams] = useSearchParams()
   const { user } = useAuth()
   const [loadingTier, setLoadingTier] = useState(null)
@@ -201,7 +203,7 @@ export default function PricingPage() {
       </div>
 
       <p className="pricing-legal-note">{t('pricing.legalNote')}</p>
-      <LegalFooter showDisclaimerLine className="pricing-legal-footer" />
+      <LegalFooter showDisclaimerLine className="pricing-legal-footer" returnTo={returnTo} />
     </div>
   )
 }

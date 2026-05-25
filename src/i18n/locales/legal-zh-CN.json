@@ -30,6 +30,13 @@
   "registerMustAgree": "请先勾选同意服务条款与隐私政策",
   "lastUpdated": "最后更新：{{date}}",
   "backHome": "返回首页",
+  "backLogin": "返回登录",
+  "backRegister": "返回注册",
+  "backVerify": "返回邮箱验证",
+  "backAcceptLegal": "返回同意页面",
+  "backForgot": "返回找回密码",
+  "backPricing": "返回定价",
+  "backPrevious": "返回上一页",
   "privacy": {
     "title": "隐私政策",
     "updated": "2026年5月21日",
