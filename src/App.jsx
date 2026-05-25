@@ -306,6 +306,7 @@ export default function App() {
             locale: resolveAppLanguage(i18n.resolvedLanguage || i18n.language),
             riskFocus: riskFocus || undefined,
             confirmIncompleteData: overrides.confirmIncompleteData === true,
+            forceRefresh: overrides.forceRefresh === true,
           }),
           signal: ac.signal,
         })
@@ -685,7 +686,7 @@ export default function App() {
           type="button"
           className="btn-primary"
           disabled={loading}
-          onClick={() => runAnalyze()}
+          onClick={(e) => runAnalyze({ forceRefresh: e.shiftKey })}
         >
           {loading ? t('app.analyzing') : t('app.analyzeBtn')}
         </button>

@@ -787,6 +787,13 @@ const {
   QUEUE_USER_MSG,
   QUEUE_TIMEOUT_MSG,
 } = require('./lib/analysisQueue.cjs');
+const { timeAnchorPromptBlock, anchorReportTimes } = require('./lib/reportTimeAnchor.cjs');
+const { reconcileHeadlineScore } = require('./lib/scoreFromDimensions.cjs');
+const {
+  cacheKey: analysisCacheKey,
+  getCachedAnalysis,
+  setCachedAnalysis,
+} = require('./lib/analysisSnapshotCache.cjs');
 
 function buildMainJsonPrompt({
   ticker,
@@ -798,6 +805,7 @@ function buildMainJsonPrompt({
   tier = 'free',
   locale = 'zh-CN',
   riskFocus = '',
+  dataAsOfAnchor = '',
 }) {
   const loc = normalizeLocale(locale);
   if (!loc.startsWith('zh')) {
@@ -811,15 +819,19 @@ function buildMainJsonPrompt({
       tier,
       locale: loc,
       riskFocus,
+      dataAsOfAnchor: String(dataAsOfAnchor || '').trim(),
     });
   }
   const h = horizonLabel(horizon, loc);
   const a = assetLabel(assetType, loc);
-  const asOf = new Date().toLocaleDateString(loc.startsWith('zh') ? 'zh-CN' : 'en-US', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
+  const anchor = String(dataAsOfAnchor || '').trim();
+  const asOf =
+    anchor ||
+    new Date().toLocaleDateString(loc.startsWith('zh') ? 'zh-CN' : 'en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
   const stockSnip = assetType === 'stock' ? stockComplianceSnippet(ticker, asOf) : '';
   const policyDimBlock = assetType === 'stock' ? policyRegulationBlock(loc) : '';
   const hw = horizonWeightHint(horizon);
@@ -850,6 +862,10 @@ ${assetType === 'stock' ? stockPricePromptBlock(ticker, loc) : ''}
 ${searchIntegrityBlock(loc)}
 ${sourceFreshnessBlock(loc)}
 ${accuracyTrustPromptBlock(loc)}
+${timeAnchorPromptBlock(loc)}
+
+【评分一致性】总分 score 须等于六维有效得分的四舍五入平均值（忽略 score=0/数据不足的维度），偏差不超过 3 分；signal 与 score 一致：BUY≥58，HOLD 42-57，SELL≤41（除非 riskBlindSpot 明确相反）。
+
 只输出一个合法 JSON（禁止 Markdown 围栏与 JSON 外字符）。
 
 JSON 字段与要求：
@@ -2205,6 +2221,29 @@ async function streamChunkedMarkdown(res, markdown) {
   }
 }
 
+async function replayCachedAnalysis(res, cached, { symbol, locale }) {
+  const loc = normalizeLocale(locale);
+  const zh = loc.startsWith('zh');
+  const notice = zh
+    ? `与 1 小时内上次 ${symbol} 分析结果一致（缓存）。按住 Shift 再点「分析」可强制重新生成。`
+    : `Same ${symbol} report as within the last hour (cached). Shift+click Analyze to run a fresh analysis.`;
+  const snap =
+    cached.vizSnapshot && typeof cached.vizSnapshot === 'object'
+      ? { ...cached.vizSnapshot, trustWarnings: [notice, ...(cached.vizSnapshot.trustWarnings || [])] }
+      : cached.vizSnapshot;
+  if (!writeSse(res, { type: 'viz', snapshot: snap })) return;
+  await streamChunkedMarkdown(res, cached.markdown || '');
+  writeSse(res, {
+    type: 'done',
+    cached: true,
+    cacheAgeMinutes: Math.round((cached.cacheAgeMs || 0) / 60000),
+    usage: { mainTokens: 0, leaderTokens: 0, leaderSkipped: true, leaderWeb: false },
+  });
+  console.log(
+    `[Wenap] ${symbol} 分析缓存命中（${Math.round((cached.cacheAgeMs || 0) / 60000)} 分钟前），跳过模型调用`,
+  );
+}
+
 async function runAnalyzePipeline(
   res,
   apiKey,
@@ -2218,6 +2257,7 @@ async function runAnalyzePipeline(
     locale = 'zh-CN',
     riskFocus = '',
     confirmIncompleteData = false,
+    forceRefresh = false,
   },
 ) {
   const mainModel = mainModelForTier(tier);
@@ -2285,6 +2325,26 @@ async function runAnalyzePipeline(
         `[Wenap] 代码 ${symbol}：OVERVIEW 似为基金/ETF，已按 ETF 维度分析（原请求 assetType=stock）。`,
       );
     }
+    const tradingDay =
+      alphaGlobalQuote && typeof alphaGlobalQuote === 'object'
+        ? String(alphaGlobalQuote['07. latest trading day'] || '').trim()
+        : '';
+    const locNorm = normalizeLocale(locale);
+    const cacheK = analysisCacheKey({
+      symbol,
+      assetType: effectiveAssetType,
+      horizon,
+      locale: locNorm,
+      tier,
+    });
+    if (!forceRefresh) {
+      const cached = getCachedAnalysis(cacheK);
+      if (cached?.vizSnapshot) {
+        await replayCachedAnalysis(res, cached, { symbol, locale: locNorm });
+        return;
+      }
+    }
+
     const mainPrompt = buildMainJsonPrompt({
       ticker: symbol,
       assetType: effectiveAssetType,
@@ -2293,8 +2353,9 @@ async function runAnalyzePipeline(
       listingCurrency,
       exchangeHint,
       tier,
-      locale: normalizeLocale(locale),
+      locale: locNorm,
       riskFocus,
+      dataAsOfAnchor: tradingDay,
     });
     if (bailIfClientGone('main-prompt')) return;
     const mainResult = await openRouterChat(apiKey, {
@@ -2362,15 +2423,23 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
     ensureSupplyChainAndScenarios(data, symbol);
     enrichSourcesForOutput(data, locale);
     enforceReportAccuracy(data, {
-      locale: normalizeLocale(locale),
+      locale: locNorm,
       globalQuote: alphaGlobalQuote,
     });
+    const timeWarnings = anchorReportTimes(data, { tradingDay, locale: locNorm });
+    if (timeWarnings.length) {
+      if (!Array.isArray(data.trustWarnings)) data.trustWarnings = [];
+      for (const w of timeWarnings) {
+        if (!data.trustWarnings.includes(w)) data.trustWarnings.push(w);
+      }
+    }
     polishDomainBracketCites(data, locale);
     localizeReportCitations(data, locale);
     applyAlphaIdentity(data, alphaOverview, symbol, locale);
     data.dimensions = alignDimensionSlots(data.dimensions, effectiveAssetType, locale);
     data.dimensions = applyPolicyDimensionBackdropFloor(data.dimensions, locale);
     data.dimensions = markUnavailableDimensionScores(data.dimensions, locale);
+    reconcileHeadlineScore(data);
     logPolicyRegulationDimension(
       symbol,
       'after-align-viz',
@@ -2420,6 +2489,13 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
       assetType: effectiveAssetType,
     });
     if (!writeSse(res, { type: 'viz', snapshot: vizSnapshot })) return;
+    setCachedAnalysis(cacheK, {
+      vizSnapshot,
+      markdown: md,
+      score: data.score,
+      signal: data.signal,
+      model: mainModel,
+    });
     if (bailIfClientGone('before-stream')) return;
     await streamChunkedMarkdown(res, md);
     const recId = `${Date.now()}-${symbol}`;
@@ -2875,6 +2951,7 @@ app.post('/analyze', requireAuth, async (req, res) => {
 
   const confirmIncompleteData =
     req.body?.confirmIncompleteData === true || req.body?.confirmIncompleteData === 'true';
+  const forceRefresh = req.body?.forceRefresh === true || req.body?.forceRefresh === 'true';
 
   const slot = await acquireAnalysisSlot();
   if (slot.queued && !slot.timedOut) {
@@ -2901,6 +2978,7 @@ app.post('/analyze', requireAuth, async (req, res) => {
       riskFocus: String(riskFocus || '').trim(),
       authContext: { userId: req.authUser.id, fingerprint: '', ip },
       confirmIncompleteData,
+      forceRefresh,
     });
   } finally {
     releaseAnalysisSlot();
