@@ -158,7 +158,8 @@ const MODEL_FLASH =
 /** Pro 主分析模型（与 Free 同 Flash Lite，解锁次数与 Pro 字段） */
 const MODEL_PRO = String(process.env.OPENROUTER_PRO_MODEL || '').trim() || 'google/gemini-2.5-flash-lite';
 /** Pro+ 主分析模型 */
-const MODEL_PRO_PLUS = String(process.env.OPENROUTER_PRO_PLUS_MODEL || '').trim() || 'anthropic/claude-haiku-4-5';
+const MODEL_PRO_PLUS =
+  String(process.env.OPENROUTER_PRO_PLUS_MODEL || '').trim() || 'openai/gpt-5.4-mini';
 /** Pro+ 每日硬上限（防刷爆 API），默认 80/天 UTC；可用 WENAP_PRO_PLUS_DAILY_CAP 覆盖 */
 const PRO_PLUS_DAILY_CAP = parseInt(String(process.env.WENAP_PRO_PLUS_DAILY_CAP || '80'), 10) || 80;
 
@@ -2160,7 +2161,7 @@ function stripDataForViz(
 }
 
 /**
- * Pro+ second-pass critique: run Haiku as a "devil's advocate" to identify 3 weaknesses
+ * Pro+ second-pass critique: run Pro+ model as a "devil's advocate" to identify 3 weaknesses
  * in the main analysis. Returns { weaknesses: string[] }
  */
 async function runSecondPassCritique(apiKey, data, symbol, locale, model) {
@@ -2544,7 +2545,7 @@ function serverInfoPayload() {
         policyFallback: 'same as main when dim insufficient',
         monthlyUnlimited: true,
         dailyCap: PRO_PLUS_DAILY_CAP,
-        note: 'Claude Haiku 4.5 — critique pass + Pro+ fields',
+        note: 'GPT-5.4 Mini — critique pass + Pro+ fields',
       },
     },
     models: {

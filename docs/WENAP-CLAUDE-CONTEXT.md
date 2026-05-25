@@ -41,7 +41,7 @@
 |------|----------|-------|-----------------|----------------|----------|
 | Free | `free` | $0 | `google/gemini-2.5-flash-lite` | 5/month | Basic report |
 | Pro | `pro` | $9.99/mo | same as free | Unlimited | Action line, key events, insider summary, peer block, more sources |
-| Pro+ | `pro_plus` | $19.99/mo | `anthropic/claude-haiku-4-5` | 80/day UTC cap (`WENAP_PRO_PLUS_DAILY_CAP`) | Bull/Bear debate, Critic, PDF export, `/compare` |
+| Pro+ | `pro_plus` | $19.99/mo | `openai/gpt-5.4-mini` | 80/day UTC cap (`WENAP_PRO_PLUS_DAILY_CAP`) | Bull/Bear debate, Critic, PDF export, `/compare` |
 
 **Enforcement:**
 

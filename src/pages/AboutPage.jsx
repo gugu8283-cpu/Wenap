@@ -50,7 +50,7 @@ export default function AboutPage() {
               </tr>
               <tr>
                 <td><strong>Pro+</strong></td>
-                <td>Claude Haiku 4.5</td>
+                <td>GPT-5.4 Mini</td>
                 <td>8</td>
                 <td>+ Bull/Bear debate, Critic's corner, PDF export, Compare</td>
               </tr>

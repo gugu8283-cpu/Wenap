@@ -42,7 +42,7 @@ Copy `.env.example` to `.env` and fill in:
 | **AI Models** | | |
 | `OPENROUTER_MAIN_MODEL` | Optional | Free tier model (default: google/gemini-2.5-flash-lite) |
 | `OPENROUTER_PRO_MODEL` | Optional | Pro tier model (default: google/gemini-2.5-flash-lite) |
-| `OPENROUTER_PRO_PLUS_MODEL` | Optional | Pro+ tier model (default: anthropic/claude-haiku-4-5) |
+| `OPENROUTER_PRO_PLUS_MODEL` | Optional | Pro+ tier model (default: openai/gpt-5.4-mini) |
 | **App** | | |
 | `APP_PUBLIC_URL` | Production | Public URL (e.g. https://wenap.app) |
 | `PORT` | Optional | Server port (default: 3002) |
@@ -138,7 +138,7 @@ The weekly auto-analysis feeds the `/sample/:ticker` public reports and predicti
 |---|---|---|---|
 | Free | Gemini 2.5 Flash Lite | 5 | 5 |
 | Pro | Gemini 2.5 Flash Lite | 8 | Unlimited |
-| Pro+ | Claude Haiku 4.5 | 8 | **80/day** cap (UTC) |
+| Pro+ | GPT-5.4 Mini | 8 | **80/day** cap (UTC) |
 
 Override models via environment variables. Pro+ daily cap: `WENAP_PRO_PLUS_DAILY_CAP` (default **80**, UTC day). Raise to `200`+ only if you accept higher API cost.
 

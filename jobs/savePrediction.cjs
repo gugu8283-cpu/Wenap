@@ -25,6 +25,7 @@ function estimateCostUsd(inputTokens, outputTokens, model) {
   const inp = Number(inputTokens) || 0;
   const out = Number(outputTokens) || 0;
   const m = String(model || '');
+  if (m.includes('gpt-5.4-mini')) return (inp / 1e6) * 0.75 + (out / 1e6) * 4.5;
   if (m.includes('haiku')) return (inp / 1e6) * 0.25 + (out / 1e6) * 1.25;
   if (m.includes('sonnet')) return (inp / 1e6) * 3 + (out / 1e6) * 15;
   return (inp / 1e6) * 0.1 + (out / 1e6) * 0.4;

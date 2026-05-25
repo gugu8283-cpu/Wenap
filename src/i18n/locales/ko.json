@@ -53,7 +53,7 @@
     "watchlistFull": "관심 목록이 가득 찼습니다 ({{cap}}개). Pro로 20개, Pro+로 100개로 확장하세요.",
     "upgradeTitle": "이번 달 무료 분석 횟수를 모두 사용했습니다",
     "upgradePro": "Pro · {{price}} · 무제한 + Gemini Flash Lite + 전체 기록",
-    "upgradeProPlus": "Pro+ · {{price}} · Claude Haiku 4.5 + 관심 100 + 비평가 뷰",
+    "upgradeProPlus": "Pro+ · {{price}} · GPT-5.4 Mini + 관심 100 + 비평가 뷰",
     "upgradeBtn": "지금 업그레이드",
     "metaTime": "분석 {{time}} · {{ticker}} · {{asset}} · {{horizon}}",
     "disclaimer": "공개 정보 정리용이며 투자 조언이 아닙니다. 최종 결정과 책임은 본인에게 있습니다.",
