@@ -24,6 +24,9 @@ export async function consumeAnalyzeStream(response) {
       }
       if (data.type === 'meta') meta = data
       if (data.type === 'viz' && data.snapshot) vizSnapshot = data.snapshot
+      if (data.type === 'data_warning') {
+        errMsg = data.message || 'Limited market data for this ticker.'
+      }
       if (data.type === 'error') errMsg = data.message || 'Analysis error'
     }
   }

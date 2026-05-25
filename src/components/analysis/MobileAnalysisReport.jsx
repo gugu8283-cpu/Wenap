@@ -39,7 +39,8 @@ export default function MobileAnalysisReport({
   onCompareToast,
   onRequestUpgrade,
 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const isJa = String(i18n.resolvedLanguage || i18n.language || '').toLowerCase().startsWith('ja')
   const report = useMemo(
     () =>
       snapshotToMobileReport(snapshot, {
@@ -157,6 +158,7 @@ export default function MobileAnalysisReport({
             freshnessScore={report.freshnessScore}
             quoteAsOf={report.quoteAsOf}
           />
+          {isJa ? <p className="ma-trust-foot">{t('legal.jaFsaReport')}</p> : null}
         </>
       ) : (
         <HeroSkeleton />

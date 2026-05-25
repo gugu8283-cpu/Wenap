@@ -537,12 +537,16 @@ function checkUserCanAnalyze(user, fingerprint, ip) {
 }
 
 function recordFreeAnalysisUsage(userId, fingerprint, ip) {
-  incrementUserFreeUsage(userId);
-  if (DEVICE_FINGERPRINT_ENABLED) {
-    incrementDeviceFreeUsage(fingerprint);
-    bindUserDevice(userId, fingerprint);
-  }
-  incrementIpAnalysis(ip);
+  const db = getDb();
+  const run = db.transaction(() => {
+    incrementUserFreeUsage(userId);
+    if (DEVICE_FINGERPRINT_ENABLED) {
+      incrementDeviceFreeUsage(fingerprint);
+      bindUserDevice(userId, fingerprint);
+    }
+    incrementIpAnalysis(ip);
+  });
+  run();
 }
 
 async function createTestUser({ email, password, tier, emailVerified = true }) {

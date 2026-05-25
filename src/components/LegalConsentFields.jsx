@@ -17,7 +17,8 @@ export default function LegalConsentFields({
   onChangeSubscription,
   returnTo = '',
 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const isJa = String(i18n.resolvedLanguage || i18n.language || '').toLowerCase().startsWith('ja')
 
   return (
     <div className="legal-consent-fields">
@@ -78,6 +79,7 @@ export default function LegalConsentFields({
       ) : null}
 
       <p className="legal-consent-note">{t('legal.consentAuditNote')}</p>
+      {isJa ? <p className="legal-consent-note">{t('legal.jaFsaRegistration')}</p> : null}
     </div>
   )
 }

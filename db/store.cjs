@@ -22,6 +22,7 @@ function initDb() {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   db = new Database(DB_PATH);
   db.pragma('journal_mode = WAL');
+  db.pragma('busy_timeout = 5000');
   const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
   db.exec(schema);
   migrateDb();
@@ -451,19 +452,25 @@ function upsertUserByExternalKey(externalKey, tier = 'free') {
   return id;
 }
 
+function runInTransaction(fn) {
+  initDb();
+  return db.transaction(fn)();
+}
+
 function recordAnalysisSuccess({ userKey, tier, model, symbol, data, latestPriceUsd, usage, durationMs }) {
   try {
-    initDb();
-    const userId = upsertUserByExternalKey(userKey, tier);
-    return savePrediction(db, {
-      userId,
-      tier,
-      model,
-      symbol,
-      data,
-      latestPriceUsd,
-      usage,
-      durationMs,
+    return runInTransaction(() => {
+      const userId = upsertUserByExternalKey(userKey, tier);
+      return savePrediction(db, {
+        userId,
+        tier,
+        model,
+        symbol,
+        data,
+        latestPriceUsd,
+        usage,
+        durationMs,
+      });
     });
   } catch (e) {
     console.warn('[Wenap] recordAnalysisSuccess:', e.message);
@@ -473,16 +480,17 @@ function recordAnalysisSuccess({ userKey, tier, model, symbol, data, latestPrice
 
 function recordAnalysisFailure({ userKey, tier, model, symbol, errorMessage, durationMs }) {
   try {
-    initDb();
-    const userId = upsertUserByExternalKey(userKey, tier);
-    return insertAnalysisLog(db, {
-      userId,
-      ticker: symbol,
-      tier,
-      model,
-      durationMs,
-      status: 'failed',
-      errorMessage,
+    return runInTransaction(() => {
+      const userId = upsertUserByExternalKey(userKey, tier);
+      return insertAnalysisLog(db, {
+        userId,
+        ticker: symbol,
+        tier,
+        model,
+        durationMs,
+        status: 'failed',
+        errorMessage,
+      });
     });
   } catch (e) {
     console.warn('[Wenap] recordAnalysisFailure:', e.message);

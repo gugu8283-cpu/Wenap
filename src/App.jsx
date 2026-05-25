@@ -149,6 +149,7 @@ export default function App() {
   const [meta, setMeta] = useState(null)
   const [streamText, setStreamText] = useState('')
   const [loadLineIndex, setLoadLineIndex] = useState(0)
+  const [queueHint, setQueueHint] = useState('')
   const [watchlist, setWatchlist] = useState([])
   const [watchlistCap, setWatchlistCap] = useState(3)
   const [watchlistQuotes, setWatchlistQuotes] = useState({})
@@ -277,6 +278,7 @@ export default function App() {
       abortRef.current = ac
 
       setError('')
+      setQueueHint('')
       setShowUpgradeCta(false)
       setShowUpgradeModal(false)
       setMeta(null)
@@ -303,6 +305,7 @@ export default function App() {
             horizon: hor,
             locale: resolveAppLanguage(i18n.resolvedLanguage || i18n.language),
             riskFocus: riskFocus || undefined,
+            confirmIncompleteData: overrides.confirmIncompleteData === true,
           }),
           signal: ac.signal,
         })
@@ -341,6 +344,8 @@ export default function App() {
 
         const dec = new TextDecoder()
         let sseBuf = ''
+        let needsDataConfirm = false
+        let dataWarningMessage = ''
 
         while (true) {
           const { done, value } = await reader.read()
@@ -360,6 +365,11 @@ export default function App() {
                 continue
               }
               if (data.type === 'meta') setMeta(data)
+              if (data.type === 'queue' && data.message) setQueueHint(data.message)
+              if (data.type === 'data_warning') {
+                needsDataConfirm = true
+                dataWarningMessage = data.message || ''
+              }
               if (data.type === 'viz' && data.snapshot) setVizSnapshot(data.snapshot)
               if (data.type === 'token' && data.text) {
                 setStreamText((prev) => prev + data.text)
@@ -376,6 +386,11 @@ export default function App() {
             try {
               const data = JSON.parse(L.slice(5).trim())
               if (data.type === 'meta') setMeta(data)
+              if (data.type === 'queue' && data.message) setQueueHint(data.message)
+              if (data.type === 'data_warning') {
+                needsDataConfirm = true
+                dataWarningMessage = data.message || ''
+              }
               if (data.type === 'viz' && data.snapshot) setVizSnapshot(data.snapshot)
               if (data.type === 'token' && data.text) {
                 setStreamText((prev) => prev + data.text)
@@ -385,6 +400,17 @@ export default function App() {
               /* ignore */
             }
           }
+        }
+
+        if (needsDataConfirm && dataWarningMessage) {
+          setLoading(false)
+          const proceed = window.confirm(dataWarningMessage)
+          if (proceed) {
+            await runAnalyze({ ...overrides, confirmIncompleteData: true })
+          } else {
+            setError('')
+          }
+          return
         }
 
         refreshQuota()
@@ -400,6 +426,7 @@ export default function App() {
         setError(msg + hint)
       } finally {
         setLoading(false)
+        setQueueHint('')
       }
     },
     [
@@ -734,7 +761,7 @@ export default function App() {
       {loading && (
         <div className="card loading-card" aria-live="polite">
           <div className="spinner" aria-hidden />
-          <p className="loading-line">{loadingLines[loadLineIndex]}</p>
+          <p className="loading-line">{queueHint || loadingLines[loadLineIndex]}</p>
           <p className="loading-hint">{t('app.loadingHint')}</p>
           <div className="loading-progress-bar">
             <div className="loading-progress-fill" style={{ width: `${loadingProgress}%` }} />

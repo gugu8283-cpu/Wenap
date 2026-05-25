@@ -773,6 +773,20 @@ const {
   defaultCiteLabel,
   localizeReportCitations,
 } = require('./lib/citationLocale.cjs');
+const {
+  openRouterChatWithFallback,
+  OpenRouterUnavailableError,
+} = require('./lib/openRouterClient.cjs');
+const {
+  assessAlphaVantageCompleteness,
+  LIMITED_DATA_NOTICE,
+} = require('./lib/alphaDataCompleteness.cjs');
+const {
+  acquireAnalysisSlot,
+  releaseAnalysisSlot,
+  QUEUE_USER_MSG,
+  QUEUE_TIMEOUT_MSG,
+} = require('./lib/analysisQueue.cjs');
 
 function buildMainJsonPrompt({
   ticker,
@@ -883,36 +897,13 @@ JSON 字段与要求：
 }
 
 async function openRouterChat(apiKey, { model, userContent, stream, useWeb, maxOutputTokens }) {
-  const body = {
+  return openRouterChatWithFallback(apiKey, {
     model,
-    messages: [{ role: 'user', content: userContent }],
-    stream: Boolean(stream),
-  };
-  if (useWeb) body.plugins = [{ id: 'web' }];
-  const cap =
-    maxOutputTokens != null && Number.isFinite(maxOutputTokens) && maxOutputTokens >= 256
-      ? Math.floor(maxOutputTokens)
-      : null;
-  if (cap) body.max_tokens = cap;
-  const res = await fetch(OPENROUTER_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': 'http://localhost:5173',
-      'X-Title': 'Wenap',
-    },
-    body: JSON.stringify(body),
+    userContent,
+    stream,
+    useWeb,
+    maxOutputTokens,
   });
-  if (!res.ok) {
-    const t = await res.text().catch(() => '');
-    throw new Error(`OpenRouter ${res.status}: ${t.slice(0, 800)}`);
-  }
-  if (stream) return res;
-  const data = await res.json();
-  const content = data.choices?.[0]?.message?.content ?? '';
-  const usage = data.usage && typeof data.usage === 'object' ? data.usage : null;
-  return { content, usage };
 }
 
 const { extractJsonObject } = require('./lib/parseModelJson.cjs');
@@ -2172,22 +2163,13 @@ Rules: cite whether an issue is about outdated news, missing counter-evidence, o
 Respond ONLY with JSON: {"weaknesses": ["weakness 1", "weakness 2", "weakness 3"]}
 Each weakness should be 1 concise sentence in ${lang}.`;
 
-  const resp = await fetch(OPENROUTER_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model,
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 300,
-      temperature: 0.4,
-    }),
+  const { content: text } = await openRouterChatWithFallback(apiKey, {
+    model,
+    userContent: prompt,
+    stream: false,
+    useWeb: false,
+    maxOutputTokens: 300,
   });
-  if (!resp.ok) throw new Error(`secondPassCritique HTTP ${resp.status}`);
-  const j = await resp.json();
-  const text = j.choices?.[0]?.message?.content || '';
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('No JSON in secondPassCritique response');
   const parsed = JSON.parse(match[0]);
@@ -2235,12 +2217,14 @@ async function runAnalyzePipeline(
     authContext = null,
     locale = 'zh-CN',
     riskFocus = '',
+    confirmIncompleteData = false,
   },
 ) {
   const mainModel = mainModelForTier(tier);
   const pipelineStarted = Date.now();
   const stopKeepalive = startSseKeepalive(res);
   const usageLog = { main: null, leader: null, leaderSkipped: false };
+  let dataLimitedNotice = '';
   const bailIfClientGone = (stage) => {
     if (!sseClientGone(res)) return false;
     console.warn(`[Wenap] ${symbol}：客户端已断开（${stage}），跳过后续步骤`);
@@ -2268,6 +2252,32 @@ async function runAnalyzePipeline(
     }
     const looksLikeFund = assetType === 'stock' && overviewSuggestsEtfLike(alphaOverview);
     const effectiveAssetType = looksLikeFund ? 'etf' : assetType;
+    if (avKey && (alphaOverview || alphaGlobalQuote)) {
+      const completeness = assessAlphaVantageCompleteness(
+        { overview: alphaOverview, globalQuote: alphaGlobalQuote },
+        { assetType: effectiveAssetType, ticker: symbol, locale: normalizeLocale(locale) },
+      );
+      if (completeness.abort) {
+        writeSse(res, {
+          type: 'error',
+          code: completeness.code,
+          message: completeness.message,
+        });
+        return;
+      }
+      if (!completeness.ok && !confirmIncompleteData) {
+        writeSse(res, {
+          type: 'data_warning',
+          code: completeness.code,
+          message: completeness.message,
+          missing: completeness.missing,
+        });
+        return;
+      }
+      if (!completeness.ok && confirmIncompleteData) {
+        dataLimitedNotice = LIMITED_DATA_NOTICE;
+      }
+    }
     const listingCurrency = inferListingCurrency(alphaOverview, symbol);
     const exchangeHint = alphaOverview ? String(alphaOverview.Exchange || '').trim() : '';
     if (looksLikeFund) {
@@ -2383,6 +2393,12 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
     });
     sanitizeRiskRewardField(data);
     if (!String(data.riskReward || '').trim()) fillRiskRewardIfEmpty(data);
+    if (dataLimitedNotice) {
+      if (!Array.isArray(data.trustWarnings)) data.trustWarnings = [];
+      if (!data.trustWarnings.includes(dataLimitedNotice)) {
+        data.trustWarnings.unshift(dataLimitedNotice);
+      }
+    }
     const md = jsonToMarkdownFourParts(data, tier, locale);
     let secondCritique = null;
     if (tier === 'pro_plus') {
@@ -2483,13 +2499,20 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
     if (!sseClientGone(res)) {
       const rawMsg = e?.message || '分析管线失败';
       const friendly =
-        /JSON|position \d+/i.test(rawMsg)
-          ? '模型返回格式异常，请重试一次；若仍失败可换 3 个月期限或稍后再试。'
-          : rawMsg;
+        e instanceof OpenRouterUnavailableError || e?.code === 'OPENROUTER_UNAVAILABLE'
+          ? e.userMessage || e.message
+          : /JSON|position \d+/i.test(rawMsg)
+            ? '模型返回格式异常，请重试一次；若仍失败可换 3 个月期限或稍后再试。'
+            : rawMsg;
       writeSse(res, {
         type: 'error',
         message: friendly,
-        code: /JSON/i.test(rawMsg) ? 'JSON_PARSE' : undefined,
+        code:
+          e instanceof OpenRouterUnavailableError || e?.code === 'OPENROUTER_UNAVAILABLE'
+            ? 'OPENROUTER_UNAVAILABLE'
+            : /JSON/i.test(rawMsg)
+              ? 'JSON_PARSE'
+              : undefined,
       });
     } else {
       console.warn('[Wenap] 分析失败且客户端已断开:', e.message);
@@ -2850,16 +2873,38 @@ app.post('/analyze', requireAuth, async (req, res) => {
     startedAt: new Date().toISOString(),
   });
 
-  await runAnalyzePipeline(res, apiKey, {
-    symbol,
-    assetType: ast,
-    horizon: hor,
-    tier,
-    userKey,
-    locale,
-    riskFocus: String(riskFocus || '').trim(),
-    authContext: { userId: req.authUser.id, fingerprint: '', ip },
-  });
+  const confirmIncompleteData =
+    req.body?.confirmIncompleteData === true || req.body?.confirmIncompleteData === 'true';
+
+  const slot = await acquireAnalysisSlot();
+  if (slot.queued && !slot.timedOut) {
+    writeSse(res, { type: 'queue', message: QUEUE_USER_MSG });
+  }
+  if (slot.timedOut) {
+    writeSse(res, {
+      type: 'error',
+      code: 'QUEUE_TIMEOUT',
+      message: QUEUE_TIMEOUT_MSG,
+    });
+    res.end();
+    return;
+  }
+
+  try {
+    await runAnalyzePipeline(res, apiKey, {
+      symbol,
+      assetType: ast,
+      horizon: hor,
+      tier,
+      userKey,
+      locale,
+      riskFocus: String(riskFocus || '').trim(),
+      authContext: { userId: req.authUser.id, fingerprint: '', ip },
+      confirmIncompleteData,
+    });
+  } finally {
+    releaseAnalysisSlot();
+  }
 });
 
 const { adminPathIpGate } = require('./middleware/adminAuth.cjs');
