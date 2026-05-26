@@ -320,6 +320,17 @@ export default function HeroCard({
         <span>
           {t('report.currentPrice')} {fmtPrice(displayCurrent, quoteLoading)}
         </span>
+        {report.priceAsOfDisplay ? (
+          <span className="ma-hero-price-asof">
+            {t('report.priceAsOfLine', {
+              datetime: report.priceAsOfDisplay,
+              source: report.priceSource || 'Alpha Vantage',
+            })}
+          </span>
+        ) : null}
+        {report.priceStaleNotice ? (
+          <span className="ma-hero-price-stale">{report.priceStaleNotice}</span>
+        ) : null}
         {sparkPoints ? (
           <div className="ma-sparkline-wrap">
             <Sparkline points={sparkPoints} />

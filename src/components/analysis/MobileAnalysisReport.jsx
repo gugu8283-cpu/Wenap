@@ -157,6 +157,10 @@ export default function MobileAnalysisReport({
             warnings={report.trustWarnings}
             freshnessScore={report.freshnessScore}
             quoteAsOf={report.quoteAsOf}
+            priceAsOfDisplay={report.priceAsOfDisplay}
+            priceSource={report.priceSource}
+            priceStaleNotice={report.priceStaleNotice}
+            dataFieldFreshness={report.dataFieldFreshness}
           />
           {isJa ? <p className="ma-trust-foot">{t('legal.jaFsaReport')}</p> : null}
         </>

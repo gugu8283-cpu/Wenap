@@ -398,6 +398,7 @@
     "trustFoot": "Not investment advice. Verify prices and filings yourself before acting.",
     "freshnessScore": "Freshness score {{score}}/100",
     "quoteAsOf": "Quote as of {{date}}",
+    "priceAsOfLine": "Price as of {{datetime}} ({{source}})",
     "accuracyTeaser": "30-day BUY signal win rate {{pct}}% · Full track record",
     "critiquePreviewLock": "{{count}} more critic insights · Upgrade to Pro+",
     "critiquePreviewLockLoss": "{{count}} critic warnings locked · risks others paid to see",
