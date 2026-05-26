@@ -160,6 +160,13 @@ const MODEL_PRO = String(process.env.OPENROUTER_PRO_MODEL || '').trim() || 'goog
 /** Pro+ 主分析模型 */
 const MODEL_PRO_PLUS =
   String(process.env.OPENROUTER_PRO_PLUS_MODEL || '').trim() || 'openai/gpt-5.4-mini';
+/** Pro+ 批评家（不联网；默认 Haiku，主报告质量不受影响） */
+const MODEL_CRITIQUE =
+  String(process.env.OPENROUTER_CRITIQUE_MODEL || '').trim() || 'anthropic/claude-haiku-4-5';
+const CRITIQUE_FALLBACK_MODELS = ['google/gemini-2.5-flash', 'google/gemini-2.5-flash-lite'];
+/** 个股政策法规维补刀（小 JSON；默认 Flash，避免 Pro+ 再打一次 mini） */
+const MODEL_POLICY_FALLBACK =
+  String(process.env.OPENROUTER_POLICY_MODEL || '').trim() || 'google/gemini-2.5-flash';
 /** Pro+ 每日硬上限（防刷爆 API），默认 80/天 UTC；可用 WENAP_PRO_PLUS_DAILY_CAP 覆盖 */
 const PRO_PLUS_DAILY_CAP = parseInt(String(process.env.WENAP_PRO_PLUS_DAILY_CAP || '80'), 10) || 80;
 
@@ -584,14 +591,6 @@ async function fetchAlphaVantageContextBundle(symbol, apiKey) {
   return bundle;
 }
 
-/** 从 Alpha GLOBAL_QUOTE 取最新价（数字）；失败返回 NaN */
-function latestPriceFromGlobalQuote(gq) {
-  if (!gq || typeof gq !== 'object') return NaN;
-  const raw = gq['05. price'];
-  const n = parseFloat(String(raw ?? '').replace(/[^\d.-]/g, ''));
-  return Number.isFinite(n) && n > 0 ? n : NaN;
-}
-
 /**
  * 仅当 Alpha OVERVIEW 的 API 字段**明确**为 ETF/ETN 时纠偏；识别失败一律按普通股。
  * 不依据 Industry/Sector 关键词（易误伤 PKG 等个股）。
@@ -735,8 +734,19 @@ function tierPromptExtensions(tier) {
   return ext;
 }
 
-const { searchIntegrityBlock, sourceFreshnessBlock, accuracyTrustPromptBlock } = require('./lib/promptSearchRules.cjs');
+const {
+  searchIntegrityBlock,
+  sourceFreshnessBlock,
+  accuracyTrustPromptBlock,
+  dataFreshnessPromptBlock,
+} = require('./lib/promptSearchRules.cjs');
 const { enforceReportAccuracy } = require('./lib/reportAccuracy.cjs');
+const {
+  buildAlphaMarketSnapshot,
+  appendSnapshotLinesToAlphaText,
+  latestPriceFromGlobalQuote,
+  currentPricePromptBlock,
+} = require('./lib/alphaMarketSnapshot.cjs');
 const { parsePricesFromLine } = require('./lib/parsePrices.cjs');
 const {
   resolveTickerInput,
@@ -808,6 +818,8 @@ function buildMainJsonPrompt({
   locale = 'zh-CN',
   riskFocus = '',
   dataAsOfAnchor = '',
+  currentPrice = NaN,
+  pricePromptBlock = '',
 }) {
   const loc = normalizeLocale(locale);
   if (!loc.startsWith('zh')) {
@@ -822,6 +834,8 @@ function buildMainJsonPrompt({
       locale: loc,
       riskFocus,
       dataAsOfAnchor: String(dataAsOfAnchor || '').trim(),
+      currentPrice,
+      pricePromptBlock,
     });
   }
   const h = horizonLabel(horizon, loc);
@@ -839,6 +853,11 @@ function buildMainJsonPrompt({
   const hw = horizonWeightHint(horizon);
   const av = alphaContextBlock ? `${alphaContextBlock}\n\n` : '';
   const curBlock = scenarioCurrencyPromptBlock(listingCurrency || 'USD', exchangeHint || '');
+  const priceBlock =
+    pricePromptBlock ||
+    (Number.isFinite(currentPrice) && currentPrice > 0
+      ? currentPricePromptBlock(currentPrice, listingCurrency || 'USD', loc)
+      : '');
 
   const langBlock = outputLanguageInstruction(loc);
 
@@ -849,7 +868,9 @@ function buildMainJsonPrompt({
 ${hw}
 ${curBlock}
 
-${av}${stockSnip}
+${av}${priceBlock}
+${dataFreshnessPromptBlock(loc)}
+${stockSnip}
 
 ${dimensionBoundaryPromptBlock(assetType, loc)}
 
@@ -1083,7 +1104,7 @@ function applyAlphaIdentity(data, alphaOverview, symbol, locale = 'zh-CN') {
   data.identityCheck = (exch && sym ? `${name} (${exch}:${sym})` : sym ? `${name} (${sym})` : name).slice(0, 200);
 }
 
-function normalizeReportExtensions(data, alphaOverview, latestPrice, listingCurrency = 'USD', ctx = {}) {
+function normalizeReportExtensions(data, alphaOverview, lockedSpotPrice, listingCurrency = 'USD', ctx = {}) {
   if (!data || typeof data !== 'object') return;
   applyAlphaIdentity(data, alphaOverview, ctx.symbol, ctx.locale);
   normalizeActionLineField(data);
@@ -1096,12 +1117,13 @@ function normalizeReportExtensions(data, alphaOverview, latestPrice, listingCurr
   data.leaderInsiderSummary = String(data.leaderInsiderSummary || '').trim();
   data.peerVsSectorLine = String(data.peerVsSectorLine || '').trim();
   let apl = String(data.analystPriceLine || '').trim();
-  const cur = reconcileCurrentPrice({
-    quotePrice: latestPrice,
-    analystPriceLine: apl,
-    overview: alphaOverview,
-    assetType: ctx.assetType,
-  });
+  const spot =
+    Number.isFinite(ctx.currentPrice) && ctx.currentPrice > 0
+      ? ctx.currentPrice
+      : Number.isFinite(lockedSpotPrice) && lockedSpotPrice > 0
+        ? lockedSpotPrice
+        : NaN;
+  const cur = spot;
   let targetFromLine = resolveTargetPrice({
     targetFromLine: parsePricesFromLine(apl, cur).target,
     current: cur,
@@ -1125,18 +1147,18 @@ function normalizeReportExtensions(data, alphaOverview, latestPrice, listingCurr
     }
   } else if (!apl && alphaOverview) {
     const tpNum = parseFloat(String(alphaOverview.AnalystTargetPrice || '').replace(/[^\d.-]/g, ''));
-    if (Number.isFinite(tpNum) && tpNum > 0 && Number.isFinite(latestPrice) && latestPrice > 0) {
-      const pct = ((tpNum - latestPrice) / latestPrice) * 100;
+    if (Number.isFinite(tpNum) && tpNum > 0 && Number.isFinite(spot) && spot > 0) {
+      const pct = ((tpNum - spot) / spot) * 100;
       const sg = pct >= 0 ? '+' : '';
       const tpS = formatListingPrice(tpNum, listingCurrency);
-      const curS = formatListingPrice(latestPrice, listingCurrency);
+      const curS = formatListingPrice(spot, listingCurrency);
       apl = loc.startsWith('zh')
         ? `分析师平均目标价 ${tpS} | 当前价 ${curS} | 空间 ${sg}${pct.toFixed(1)}%`
         : `Analyst avg target ${tpS} | Spot ${curS} | Upside ${sg}${pct.toFixed(1)}%`;
     }
   }
   data.analystPriceLine = apl;
-  const priceForNotes = Number.isFinite(cur) && cur > 0 ? cur : latestPrice;
+  const priceForNotes = Number.isFinite(cur) && cur > 0 ? cur : spot;
   data.scenarioPriceNotes = computeScenarioPriceNotes(
     priceForNotes,
     data.scenarios,
@@ -1985,7 +2007,9 @@ function stripDataForViz(
   data,
   {
     tier = 'free',
+    currentPrice = NaN,
     latestPrice = NaN,
+    marketSnapshot = null,
     locale = 'zh-CN',
     listingCurrency = 'USD',
     model = '',
@@ -1993,12 +2017,13 @@ function stripDataForViz(
   } = {},
 ) {
   const loc = normalizeLocale(locale);
-  const curForSnap = reconcileCurrentPrice({
-    quotePrice: latestPrice,
-    analystPriceLine: data.analystPriceLine,
-    overview: null,
-    assetType,
-  });
+  const locked =
+    Number.isFinite(currentPrice) && currentPrice > 0
+      ? currentPrice
+      : Number.isFinite(latestPrice) && latestPrice > 0
+        ? latestPrice
+        : NaN;
+  const curForSnap = locked;
   const detailFull = trimSuspensionSuffix(String(data.detailAnalysis || '').trim());
   const detailPreview = detailFull;
   const detailNeedsFold = false;
@@ -2030,15 +2055,18 @@ function stripDataForViz(
       : [],
     dataAsOf: data.dataAsOf,
     quoteAsOf: data.quoteAsOf || data.dataAsOf,
+    priceAsOfDisplay: String(data.priceAsOfDisplay || marketSnapshot?.priceAsOfDisplay || '').trim(),
+    priceSource: String(data.priceSource || marketSnapshot?.sourceLabel || 'Alpha Vantage').trim(),
+    priceStaleNotice: String(data.priceStaleNotice || marketSnapshot?.priceStaleNotice || '').trim(),
+    dataFieldFreshness: Array.isArray(data.dataFieldFreshness)
+      ? data.dataFieldFreshness.slice(0, 8)
+      : Array.isArray(marketSnapshot?.fieldFreshnessWarnings)
+        ? marketSnapshot.fieldFreshnessWarnings.slice(0, 8)
+        : [],
     freshnessScore: Number.isFinite(Number(data.freshnessScore)) ? data.freshnessScore : null,
-    trustWarnings: Array.isArray(data.trustWarnings) ? data.trustWarnings.slice(0, 6) : [],
+    trustWarnings: Array.isArray(data.trustWarnings) ? data.trustWarnings.slice(0, 8) : [],
     reportTier: tier,
-    latestPriceUsd:
-      Number.isFinite(curForSnap) && curForSnap > 0
-        ? curForSnap
-        : Number.isFinite(latestPrice) && latestPrice > 0
-          ? latestPrice
-          : null,
+    latestPriceUsd: Number.isFinite(curForSnap) && curForSnap > 0 ? curForSnap : null,
     actionLine: String(data.actionLine || '').trim(),
     actionLineObj:
       data.actionLineObj && typeof data.actionLineObj === 'object'
@@ -2159,7 +2187,7 @@ function stripDataForViz(
  * Pro+ second-pass critique: run Pro+ model as a "devil's advocate" to identify 3 weaknesses
  * in the main analysis. Returns { weaknesses: string[] }
  */
-async function runSecondPassCritique(apiKey, data, symbol, locale, model) {
+async function runSecondPassCritique(apiKey, data, symbol, locale) {
   const summary = String(data.summary || '').slice(0, 500);
   const signal = String(data.signal || '');
   const riskReward = String(data.riskReward || '');
@@ -2182,19 +2210,23 @@ Rules: cite whether an issue is about outdated news, missing counter-evidence, o
 Respond ONLY with JSON: {"weaknesses": ["weakness 1", "weakness 2", "weakness 3"]}
 Each weakness should be 1 concise sentence in ${lang}.`;
 
-  const { content: text } = await openRouterChatWithFallback(apiKey, {
-    model,
+  const critiqueModel = MODEL_CRITIQUE;
+  const { content: text, usage, modelUsed } = await openRouterChatWithFallback(apiKey, {
+    model: critiqueModel,
     userContent: prompt,
     stream: false,
     useWeb: false,
-    maxOutputTokens: 300,
+    maxOutputTokens: 320,
     timeoutMs: 90_000,
+    fallbackModels: CRITIQUE_FALLBACK_MODELS,
   });
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('No JSON in secondPassCritique response');
   const parsed = JSON.parse(match[0]);
   return {
     weaknesses: Array.isArray(parsed.weaknesses) ? parsed.weaknesses.filter(Boolean).slice(0, 3) : [],
+    _usage: usage,
+    _modelUsed: modelUsed || critiqueModel,
   };
 }
 
@@ -2267,7 +2299,7 @@ async function runAnalyzePipeline(
   const mainModel = mainModelForTier(tier);
   const pipelineStarted = Date.now();
   const stopKeepalive = startSseKeepalive(res);
-  const usageLog = { main: null, leader: null, leaderSkipped: false };
+  const usageLog = { main: null, leader: null, leaderSkipped: false, critique: null, critiqueModel: '' };
   let dataLimitedNotice = '';
   const bailIfClientGone = (stage) => {
     if (!sseClientGone(res)) return false;
@@ -2281,24 +2313,43 @@ async function runAnalyzePipeline(
     let alphaBlock = '';
     let alphaOverview = null;
     let alphaGlobalQuote = null;
-    let latestPrice = NaN;
+    let marketSnapshot = null;
+    const currentPriceRef = { value: NaN };
     if (avKey) {
       try {
         if (bailIfClientGone('alpha')) return;
         const bundle = await fetchAlphaVantageContextBundle(symbol, avKey);
-        alphaBlock = bundle.text;
         alphaOverview = bundle.overview;
         alphaGlobalQuote = bundle.globalQuote;
-        latestPrice = latestPriceFromGlobalQuote(bundle.globalQuote);
+        const listingCurrencyEarly = inferListingCurrency(alphaOverview, symbol);
+        marketSnapshot = await buildAlphaMarketSnapshot({
+          symbol,
+          apiKey: avKey,
+          globalQuote: alphaGlobalQuote,
+          overview: alphaOverview,
+          alphaVantageJson,
+          locale: normalizeLocale(locale),
+          listingCurrency: listingCurrencyEarly,
+        });
+        currentPriceRef.value = marketSnapshot.currentPrice;
+        alphaBlock = appendSnapshotLinesToAlphaText(bundle.text, marketSnapshot, alphaOverview, alphaGlobalQuote);
+        if (marketSnapshot.warnings?.length) {
+          console.warn(`[Wenap] ${symbol} market snapshot:`, marketSnapshot.warnings.join('; '));
+        }
       } catch (e) {
         console.warn('[Wenap] Alpha Vantage:', e.message);
       }
     }
+    const currentPrice = currentPriceRef.value;
     const looksLikeFund = assetType === 'stock' && overviewSuggestsEtfLike(alphaOverview);
     const effectiveAssetType = looksLikeFund ? 'etf' : assetType;
     if (avKey && (alphaOverview || alphaGlobalQuote)) {
       const completeness = assessAlphaVantageCompleteness(
-        { overview: alphaOverview, globalQuote: alphaGlobalQuote },
+        {
+          overview: alphaOverview,
+          globalQuote: alphaGlobalQuote,
+          currentPrice: marketSnapshot?.currentPrice,
+        },
         { assetType: effectiveAssetType, ticker: symbol, locale: normalizeLocale(locale) },
       );
       if (completeness.abort) {
@@ -2330,9 +2381,10 @@ async function runAnalyzePipeline(
       );
     }
     const tradingDay =
-      alphaGlobalQuote && typeof alphaGlobalQuote === 'object'
+      marketSnapshot?.tradingDay ||
+      (alphaGlobalQuote && typeof alphaGlobalQuote === 'object'
         ? String(alphaGlobalQuote['07. latest trading day'] || '').trim()
-        : '';
+        : '');
     const locNorm = normalizeLocale(locale);
     const cacheK = analysisCacheKey({
       symbol,
@@ -2360,6 +2412,8 @@ async function runAnalyzePipeline(
       locale: locNorm,
       riskFocus,
       dataAsOfAnchor: tradingDay,
+      currentPrice,
+      pricePromptBlock: marketSnapshot?.promptPriceBlock || '',
     });
     if (bailIfClientGone('main-prompt')) return;
     const mainResult = await openRouterChat(apiKey, {
@@ -2411,13 +2465,14 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
               identityCheck: data.identityCheck,
               companyName: alphaOverview?.Name ? String(alphaOverview.Name).trim() : '',
             },
-            mainModel,
+            MODEL_POLICY_FALLBACK,
             locale,
           );
           usageLog.leader = policyRow._usage || null;
+          usageLog.policyModel = MODEL_POLICY_FALLBACK;
           data.dimensions = mergePolicyRegulationIntoDimensions(data.dimensions, policyRow, locale);
           logPolicyRegulationDimension(symbol, 'after-fallback', extractPolicyRegulationDimension(data.dimensions));
-          console.log(`[Wenap] ${symbol}：政策法规维补刀（${mainModel}）`);
+          console.log(`[Wenap] ${symbol}：政策法规维补刀（${MODEL_POLICY_FALLBACK}）`);
         } catch (e) {
           console.warn('[Wenap] 政策法规维补刀失败，保留主模型结果：', e.message);
         }
@@ -2431,7 +2486,19 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
     enforceReportAccuracy(data, {
       locale: locNorm,
       globalQuote: alphaGlobalQuote,
+      marketSnapshot,
     });
+    if (marketSnapshot) {
+      if (!Array.isArray(data.trustWarnings)) data.trustWarnings = [];
+      for (const w of marketSnapshot.warnings || []) {
+        if (w && !data.trustWarnings.includes(w)) data.trustWarnings.push(w);
+      }
+      data.priceAsOfDisplay = marketSnapshot.priceAsOfDisplay;
+      data.priceSource = marketSnapshot.sourceLabel;
+      data.priceStaleNotice = marketSnapshot.priceStaleNotice || '';
+      data.dataFieldFreshness = marketSnapshot.fieldFreshnessWarnings || [];
+      data.avCurrentPrice = marketSnapshot.currentPrice;
+    }
     const timeWarnings = anchorReportTimes(data, { tradingDay, locale: locNorm });
     if (timeWarnings.length) {
       if (!Array.isArray(data.trustWarnings)) data.trustWarnings = [];
@@ -2456,10 +2523,11 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
       mergePeerLineIntoDimensions(data.dimensions, data.peerVsSectorLine);
     }
     repairMisattributedUsdScenarioRanges(data, listingCurrency);
-    normalizeReportExtensions(data, alphaOverview, latestPrice, listingCurrency, {
+    normalizeReportExtensions(data, alphaOverview, currentPrice, listingCurrency, {
       symbol,
       locale,
       assetType: effectiveAssetType,
+      currentPrice,
     });
     sanitizeReportDisplayFields(data, {
       stripHttpUrls,
@@ -2479,9 +2547,13 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
     let secondCritique = null;
     if (tier === 'pro_plus') {
       try {
-        secondCritique = await runSecondPassCritique(apiKey, data, symbol, locale, MODEL_PRO_PLUS);
+        secondCritique = await runSecondPassCritique(apiKey, data, symbol, locale);
+        if (secondCritique?._usage) {
+          usageLog.critique = secondCritique._usage;
+          usageLog.critiqueModel = secondCritique._modelUsed || MODEL_CRITIQUE;
+        }
         if (secondCritique?.weaknesses?.length) {
-          data.secondPassCritique = secondCritique;
+          data.secondPassCritique = { weaknesses: secondCritique.weaknesses };
         }
       } catch (e) {
         console.warn('[Wenap] secondPassCritique failed (non-fatal):', e.message);
@@ -2489,7 +2561,8 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
     }
     const vizSnapshot = stripDataForViz(data, {
       tier,
-      latestPrice,
+      currentPrice,
+      marketSnapshot,
       locale,
       listingCurrency,
       model: mainModel,
@@ -2550,7 +2623,7 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
       model: mainModel,
       symbol,
       data,
-      latestPriceUsd: latestPrice,
+      latestPriceUsd: currentPrice,
       usage: usageLog,
       durationMs: Date.now() - pipelineStarted,
     });
@@ -2561,13 +2634,15 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
       usage: {
         mainTokens: sumTokens(usageLog.main),
         leaderTokens: usageLog.leaderSkipped ? 0 : sumTokens(usageLog.leader),
+        critiqueTokens: sumTokens(usageLog.critique),
         leaderSkipped: usageLog.leaderSkipped,
         leaderWeb: openRouterLeaderUseWeb(),
+        critiqueModel: usageLog.critiqueModel || '',
       },
     });
-    if (usageLog.main || usageLog.leader) {
+    if (usageLog.main || usageLog.leader || usageLog.critique) {
       console.log(
-        `[Wenap] ${symbol} token 用量 main=${sumTokens(usageLog.main)} leader=${usageLog.leaderSkipped ? 'skipped' : sumTokens(usageLog.leader)}`,
+        `[Wenap] ${symbol} token 用量 main=${sumTokens(usageLog.main)} leader=${usageLog.leaderSkipped ? 'skipped' : sumTokens(usageLog.leader)} critique=${sumTokens(usageLog.critique)}${usageLog.critiqueModel ? ` (${usageLog.critiqueModel})` : ''}`,
       );
     }
   } catch (e) {
