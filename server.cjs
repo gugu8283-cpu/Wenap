@@ -203,6 +203,7 @@ const {
   dimensionJsonSpec,
   dimensionBoundaryPromptBlock,
   policyRegulationBlock,
+  sixthDimensionPromptBlock,
   signalDisplayLabel,
   researchFooterLine: researchFooterLineLocale,
 } = require('./lib/outputLocale.cjs');
@@ -768,6 +769,7 @@ function riskFocusPromptBlock(riskFocus, loc) {
 
 const { buildMainJsonPromptIntl } = require('./lib/mainAnalyzePrompt.cjs');
 const { sanitizeReportDisplayFields } = require('./lib/reportDisplayText.cjs');
+const { applySixthDimensionFloor } = require('./lib/sixthDimensionFloor.cjs');
 const {
   guessSourceCite,
   defaultCiteLabel,
@@ -833,7 +835,7 @@ function buildMainJsonPrompt({
       day: '2-digit',
     });
   const stockSnip = assetType === 'stock' ? stockComplianceSnippet(ticker, asOf) : '';
-  const policyDimBlock = assetType === 'stock' ? policyRegulationBlock(loc) : '';
+  const sixthDimBlock = sixthDimensionPromptBlock(assetType, loc);
   const hw = horizonWeightHint(horizon);
   const av = alphaContextBlock ? `${alphaContextBlock}\n\n` : '';
   const curBlock = scenarioCurrencyPromptBlock(listingCurrency || 'USD', exchangeHint || '');
@@ -849,13 +851,13 @@ ${curBlock}
 
 ${av}${stockSnip}
 
-${dimensionBoundaryPromptBlock(loc)}
+${dimensionBoundaryPromptBlock(assetType, loc)}
 
 【实体】identityCheck≤28字：全称+上市地/代码是否与 ${ticker} 一致。
 
 【书写】禁 URL；角标仅 [SEC][交易所][IR][新闻][披露][行情][研报]。**同一事实只出现一次**（summary/六维/detail/outlook 互斥，勿复述）。无数据填空串。
 
-${policyDimBlock}
+${sixthDimBlock}
 ${riskFocusPromptBlock(riskFocus, loc)}
 ${etfSharePricePromptBlock(assetType, ticker, loc)}
 ${assetType === 'stock' ? stockPricePromptBlock(ticker, loc) : ''}
@@ -2442,6 +2444,7 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
     applyAlphaIdentity(data, alphaOverview, symbol, locale);
     data.dimensions = alignDimensionSlots(data.dimensions, effectiveAssetType, locale);
     data.dimensions = applyPolicyDimensionBackdropFloor(data.dimensions, locale);
+    data.dimensions = applySixthDimensionFloor(data.dimensions, effectiveAssetType, locale);
     data.dimensions = markUnavailableDimensionScores(data.dimensions, locale);
     reconcileHeadlineScore(data);
     logPolicyRegulationDimension(
@@ -2860,10 +2863,21 @@ app.get('/history/:id', requireAuth, (req, res) => {
     const raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
     // Re-align dimension names on historical snapshots so stale generic names get fixed
     if (raw.vizSnapshot && Array.isArray(raw.vizSnapshot.dimensions)) {
+      const histAsset = raw.assetType || 'stock';
+      const histLoc = normalizeLocale(req.query?.locale);
       raw.vizSnapshot.dimensions = alignDimensionSlots(
         raw.vizSnapshot.dimensions,
-        raw.assetType || 'stock',
-        normalizeLocale(req.query?.locale),
+        histAsset,
+        histLoc,
+      );
+      raw.vizSnapshot.dimensions = applySixthDimensionFloor(
+        raw.vizSnapshot.dimensions,
+        histAsset,
+        histLoc,
+      );
+      raw.vizSnapshot.dimensions = markUnavailableDimensionScores(
+        raw.vizSnapshot.dimensions,
+        histLoc,
       );
     }
     return res.json(raw);
@@ -3124,7 +3138,14 @@ app.get('/sample/:ticker', (req, res) => {
     // Strip private user info and downgrade to free-tier view for public sample
     const locale = normalizeLocale(req.query?.locale);
     if (raw.vizSnapshot && Array.isArray(raw.vizSnapshot.dimensions)) {
-      raw.vizSnapshot.dimensions = alignDimensionSlots(raw.vizSnapshot.dimensions, raw.assetType || 'stock', locale);
+      const sampleAsset = raw.assetType || 'stock';
+      raw.vizSnapshot.dimensions = alignDimensionSlots(raw.vizSnapshot.dimensions, sampleAsset, locale);
+      raw.vizSnapshot.dimensions = applySixthDimensionFloor(
+        raw.vizSnapshot.dimensions,
+        sampleAsset,
+        locale,
+      );
+      raw.vizSnapshot.dimensions = markUnavailableDimensionScores(raw.vizSnapshot.dimensions, locale);
     }
     // Redact to free tier (no pro/pro+ fields)
     if (raw.vizSnapshot) {
