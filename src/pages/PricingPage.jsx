@@ -13,7 +13,12 @@ const PLANS = [
   {
     id: 'free',
     tier: 'free',
-    features: ['pricing.freeFeature1', 'pricing.freeFeature2', 'pricing.freeFeature3'],
+    features: [
+      'pricing.freeFeature1',
+      'pricing.freeFeature2',
+      'pricing.freeFeature3',
+      'pricing.freeFeature4',
+    ],
     highlight: false,
   },
   {
@@ -24,6 +29,8 @@ const PLANS = [
       'pricing.proFeature2',
       'pricing.proFeature3',
       'pricing.proFeature4',
+      'pricing.proFeature5',
+      'pricing.proFeature6',
     ],
     highlight: false,
   },
@@ -36,6 +43,8 @@ const PLANS = [
       'pricing.proPlusFeature3',
       'pricing.proPlusFeature4',
       'pricing.proPlusFeature5',
+      'pricing.proPlusFeature6',
+      'pricing.proPlusFeature7',
     ],
     highlight: true,
   },

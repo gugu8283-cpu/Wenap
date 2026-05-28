@@ -456,21 +456,25 @@ function incrementUserFreeUsage(userId) {
     .run(userId);
 }
 
-const PRO_PLUS_DAILY_CAP = parseInt(String(process.env.WENAP_PRO_PLUS_DAILY_CAP || '80'), 10) || 80;
+const PRO_PLUS_MONTHLY_CAP =
+  parseInt(String(process.env.WENAP_PRO_PLUS_MONTHLY_CAP || '1000'), 10) || 1000;
 
-function checkProPlusDailyLimit(userId) {
+function checkProPlusMonthlyLimit(userId) {
   const db = getDb();
-  const today = new Date().toISOString().slice(0, 10);
+  const month = new Date().toISOString().slice(0, 7); // YYYY-MM in UTC
   const row = db
     .prepare(
-      `SELECT COUNT(*) as cnt FROM analysis_logs WHERE user_id = ? AND DATE(created_at) = ?`,
+      `SELECT COUNT(*) as cnt
+       FROM analysis_logs
+       WHERE user_id = ?
+         AND strftime('%Y-%m', created_at) = ?`,
     )
-    .get(userId, today);
+    .get(userId, month);
   const cnt = Number(row?.cnt || 0);
-  if (cnt >= PRO_PLUS_DAILY_CAP) {
-    return { allowed: false, used: cnt, cap: PRO_PLUS_DAILY_CAP };
+  if (cnt >= PRO_PLUS_MONTHLY_CAP) {
+    return { allowed: false, used: cnt, cap: PRO_PLUS_MONTHLY_CAP };
   }
-  return { allowed: true, used: cnt, cap: PRO_PLUS_DAILY_CAP };
+  return { allowed: true, used: cnt, cap: PRO_PLUS_MONTHLY_CAP };
 }
 
 function checkUserCanAnalyze(user, fingerprint, ip) {
@@ -481,13 +485,13 @@ function checkUserCanAnalyze(user, fingerprint, ip) {
     return { allowed: true, tier, reason: null };
   }
   if (tier === 'pro_plus') {
-    const dailyCheck = checkProPlusDailyLimit(user.id);
-    if (!dailyCheck.allowed) {
+    const monthlyCheck = checkProPlusMonthlyLimit(user.id);
+    if (!monthlyCheck.allowed) {
       return {
         allowed: false,
         tier,
-        error: 'PRO_PLUS_DAILY_CAP',
-        message: `Pro+ daily limit reached (${dailyCheck.cap} analyses/day). Resets at midnight UTC.`,
+        error: 'PRO_PLUS_MONTHLY_CAP',
+        message: `Pro+ monthly limit reached (${monthlyCheck.cap} analyses/month). Resets on the 1st of each UTC month.`,
       };
     }
     return { allowed: true, tier, reason: null };

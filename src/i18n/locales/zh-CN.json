@@ -182,18 +182,18 @@
     "pricingTitle": "适合每位投资者的套餐",
     "freeFeatures": [
       "每月 5 次分析",
-      "核心六维与情景报告（精简展示）",
-      "自选 3 只 · 历史仅首条可阅"
+      "核心报告：六维雷达 + 情景判断",
+      "自选 3 只"
     ],
     "proFeatures": [
       "不限次数分析",
-      "操作建议 · 事件日历 · 同业对比",
-      "自选 50 只 · 完整历史记录"
+      "操作建议 + 关键事件 + 同业对比",
+      "自选 50 只 + 完整历史"
     ],
     "proPlusFeatures": [
       "更高频深度分析（每日额度）",
-      "批评家视角 · 多空对撞 · 产业链详解",
-      "PDF 导出 · 双标的对比 · 自选 200 只"
+      "批评家复盘 + 多空对撞 + 产业链详解",
+      "PDF 导出 + 双标的对比 + 自选 200 只"
     ],
     "upgradeBtn": "查看套餐"
   },
@@ -312,17 +312,22 @@
     "proPrice": "$9.99/月",
     "proPlusPrice": "$19.99/月",
     "freeFeature1": "每月 5 次分析",
-    "freeFeature2": "Google Gemini Flash Lite 模型",
+    "freeFeature2": "核心六维 + 情景报告",
     "freeFeature3": "3 只自选股",
+    "freeFeature4": "仅可查看最近 1 条历史",
     "proFeature1": "无限次分析",
-    "proFeature2": "Gemini Flash Lite — 无限次分析",
-    "proFeature3": "50 只自选股",
-    "proFeature4": "完整历史记录",
+    "proFeature2": "操作建议 / 止损 / 催化剂",
+    "proFeature3": "关键事件时间轴",
+    "proFeature4": "内部人动态 + 同行对比",
+    "proFeature5": "50 只自选股",
+    "proFeature6": "完整历史记录",
     "proPlusFeature1": "高用量：每天最多 80 次分析（UTC），重度使用也够用，并防止恶意刷接口",
     "proPlusFeature2": "GPT-5.4 Mini — 更深推理",
     "proPlusFeature3": "200 只自选股",
     "proPlusFeature4": "批评家视角 — 第二轮 AI 复盘",
-    "proPlusFeature5": "PDF 导出",
+    "proPlusFeature5": "情景细化：触发价 + 时间窗口",
+    "proPlusFeature6": "PDF 导出 + 双标的对比",
+    "proPlusFeature7": "200 只自选股",
     "currentPlan": "当前套餐",
     "upgradeBtn": "升级到 {{tier}}",
     "upgrading": "跳转到结账…",

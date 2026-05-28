@@ -177,8 +177,9 @@ const CRITIQUE_FALLBACK_MODELS = ['google/gemini-2.5-flash', 'google/gemini-2.5-
 /** 个股政策法规维补刀（小 JSON；默认 Flash，避免 Pro+ 再打一次 mini） */
 const MODEL_POLICY_FALLBACK =
   String(process.env.OPENROUTER_POLICY_MODEL || '').trim() || 'google/gemini-2.5-flash';
-/** Pro+ 每日硬上限（防刷爆 API），默认 80/天 UTC；可用 WENAP_PRO_PLUS_DAILY_CAP 覆盖 */
-const PRO_PLUS_DAILY_CAP = parseInt(String(process.env.WENAP_PRO_PLUS_DAILY_CAP || '80'), 10) || 80;
+/** Pro+ 每月硬上限（防刷爆 API），默认 1000/月 UTC；可用 WENAP_PRO_PLUS_MONTHLY_CAP 覆盖 */
+const PRO_PLUS_MONTHLY_CAP =
+  parseInt(String(process.env.WENAP_PRO_PLUS_MONTHLY_CAP || '1000'), 10) || 1000;
 
 const MODEL_MAP = {
   free: MODEL_FLASH,
@@ -2805,7 +2806,7 @@ function serverInfoPayload() {
         hybridEnabled: proPlusHybridEnabled(),
         policyFallback: MODEL_POLICY_FALLBACK,
         monthlyUnlimited: true,
-        dailyCap: PRO_PLUS_DAILY_CAP,
+        monthlyCap: PRO_PLUS_MONTHLY_CAP,
         note: 'Hybrid: Haiku (dims/bull-bear/critic) + Flash Lite (scenarios/supply/Pro fields); fallback full Haiku',
       },
     },
@@ -3134,7 +3135,7 @@ app.post('/analyze', requireAuth, async (req, res) => {
           : tier === 'pro'
           ? { monthlyUnlimited: true, model: MODEL_PRO }
           : tier === 'pro_plus'
-            ? { monthlyUnlimited: true, model: MODEL_PRO_PLUS, dailyCap: PRO_PLUS_DAILY_CAP }
+            ? { monthlyUnlimited: true, model: MODEL_PRO_PLUS, monthlyCap: PRO_PLUS_MONTHLY_CAP }
             : null,
     startedAt: new Date().toISOString(),
   });
@@ -3387,7 +3388,7 @@ app.listen(PORT, () => {
     ? `Free unlimited (${MODEL_FLASH})`
     : `Free ≤${FREE_MONTHLY_ANALYSIS_CAP}/mo (${MODEL_FLASH})`;
   console.log(
-    `[Wenap] Billing: ${freeBilling} | Pro unlimited (${MODEL_PRO}) | Pro+ (${MODEL_PRO_PLUS}, cap ${PRO_PLUS_DAILY_CAP}/day)`,
+    `[Wenap] Billing: ${freeBilling} | Pro unlimited (${MODEL_PRO}) | Pro+ (${MODEL_PRO_PLUS}, cap ${PRO_PLUS_MONTHLY_CAP}/month)`,
   );
   if (key) {
     if (SPA_MODE) {

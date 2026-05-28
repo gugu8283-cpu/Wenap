@@ -179,18 +179,18 @@
     "pricingTitle": "Pläne für jeden Investor",
     "freeFeatures": [
       "5 Analysen pro Monat",
-      "Kern-Sechs-Dimensionen- & Szenario-Report",
-      "3 Watchlist-Symbole · nur letzter Verlauf"
+      "Kernreport: Sechs-Dimensionen-Radar + Szenarien",
+      "3 Watchlist-Symbole"
     ],
     "proFeatures": [
       "Unbegrenzte Analysen",
-      "Action-View · Events · Peer-Vergleich",
-      "50 Watchlist-Symbole · voller Verlauf"
+      "Handlungsplan + Schlüsselereignisse + Peer-Vergleich",
+      "50 Watchlist-Symbole + voller Verlauf"
     ],
     "proPlusFeatures": [
-      "Höheres Tageskontingent für Tiefe",
-      "Kritiker-Pass · Bull/Bear-Clash · Lieferkette im Detail",
-      "PDF · Side-by-Side-Vergleich · 200 Watchlist"
+      "Höheres Kontingent für Tiefenanalysen",
+      "Kritiker-Review + Bull/Bear + Lieferkettendetails",
+      "PDF-Export + Side-by-Side-Vergleich + 200 Watchlist"
     ],
     "upgradeBtn": "Pläne ansehen",
     "sampleTitle": "Beispiel-Reports",

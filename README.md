@@ -49,7 +49,7 @@ Copy `.env.example` to `.env` and fill in:
 | `CRON_ENABLED` | Optional | Set `false` to disable all cron jobs |
 | `CRON_AUTO_ANALYSIS` | Optional | Set `false` to disable weekly auto-analysis |
 | `WENAP_FREE_UNLIMITED` | Dev only | Set `1` to disable free quota enforcement |
-| `WENAP_PRO_PLUS_DAILY_CAP` | Optional | Pro+ max analyses per **UTC calendar day** (default **80**; blocks runaway abuse, normal users rarely hit it) |
+| `WENAP_PRO_PLUS_MONTHLY_CAP` | Optional | Pro+ max analyses per **UTC calendar month** (default **1000**; blocks runaway abuse) |
 | `WENAP_REFERRAL_REWARDS` | Optional | Set `0` / `false` / `off` to disable referral Pro bonus (no per-user fee; only affects DB tier) |
 
 ---
@@ -138,9 +138,9 @@ The weekly auto-analysis feeds the `/sample/:ticker` public reports and predicti
 |---|---|---|---|
 | Free | Gemini 2.5 Flash Lite | 5 | 5 |
 | Pro | Gemini 2.5 Flash Lite | 8 | Unlimited |
-| Pro+ | GPT-5.4 Mini | 8 | **80/day** cap (UTC) |
+| Pro+ | GPT-5.4 Mini | 8 | **1000/month** cap (UTC) |
 
-Override models via environment variables. Pro+ daily cap: `WENAP_PRO_PLUS_DAILY_CAP` (default **80**, UTC day). Raise to `200`+ only if you accept higher API cost.
+Override models via environment variables. Pro+ monthly cap: `WENAP_PRO_PLUS_MONTHLY_CAP` (default **1000**, UTC month).
 
 ---
 

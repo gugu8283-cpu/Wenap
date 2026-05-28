@@ -182,18 +182,18 @@
     "pricingTitle": "Plans for every investor",
     "freeFeatures": [
       "5 analyses per month",
-      "Core six-dimension & scenario report (essentials)",
-      "3 watchlist symbols · first history entry only"
+      "Core report: six-dimension radar + scenarios",
+      "3 watchlist symbols"
     ],
     "proFeatures": [
       "Unlimited analyses",
-      "Action view · events · peer comparison",
-      "50 watchlist symbols · full history"
+      "Action plan + key events + peer view",
+      "50 watchlist symbols + full history"
     ],
     "proPlusFeatures": [
-      "Higher daily depth allowance",
-      "Critic pass · bull/bear clash · supply-chain detail",
-      "PDF export · side-by-side compare · 200 watchlist"
+      "Deeper daily analysis allowance",
+      "Critic review + bull/bear + supply-chain detail",
+      "PDF export + side-by-side compare + 200 watchlist"
     ],
     "upgradeBtn": "See plans"
   },
@@ -312,17 +312,22 @@
     "proPrice": "$9.99/month",
     "proPlusPrice": "$19.99/month",
     "freeFeature1": "5 analyses per month",
-    "freeFeature2": "Google Gemini Flash Lite model",
+    "freeFeature2": "Core six-dimension + scenario report",
     "freeFeature3": "3 watchlist symbols",
+    "freeFeature4": "Latest history entry only",
     "proFeature1": "Unlimited analyses",
-    "proFeature2": "Gemini Flash Lite — unlimited runs",
-    "proFeature3": "50 watchlist symbols",
-    "proFeature4": "Full history access",
+    "proFeature2": "Action / stop-loss / catalyst",
+    "proFeature3": "Key events timeline",
+    "proFeature4": "Insider + peer comparison",
+    "proFeature5": "50 watchlist symbols",
+    "proFeature6": "Full history access",
     "proPlusFeature1": "High volume: up to 80 analyses per day (UTC) — enough for heavy use; blocks runaway abuse",
     "proPlusFeature2": "GPT-5.4 Mini — deeper reasoning",
     "proPlusFeature3": "200 watchlist symbols",
     "proPlusFeature4": "Critic's corner — second AI review",
-    "proPlusFeature5": "PDF export",
+    "proPlusFeature5": "Detailed scenario trigger price + time window",
+    "proPlusFeature6": "PDF export + side-by-side compare",
+    "proPlusFeature7": "200 watchlist symbols",
     "currentPlan": "Current plan",
     "upgradeBtn": "Upgrade to {{tier}}",
     "upgrading": "Redirecting to checkout…",
