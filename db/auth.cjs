@@ -458,6 +458,23 @@ function incrementUserFreeUsage(userId) {
 
 const PRO_PLUS_MONTHLY_CAP =
   parseInt(String(process.env.WENAP_PRO_PLUS_MONTHLY_CAP || '1000'), 10) || 1000;
+const PRO_MONTHLY_PROFIT_THRESHOLD =
+  parseInt(String(process.env.WENAP_PRO_MONTHLY_PROFIT_THRESHOLD || '500'), 10) || 500;
+const PRO_PLUS_MONTHLY_PROFIT_THRESHOLD =
+  parseInt(String(process.env.WENAP_PRO_PLUS_MONTHLY_PROFIT_THRESHOLD || '250'), 10) || 250;
+const PRO_HOURLY_LIMIT_AFTER_THRESHOLD =
+  parseInt(String(process.env.WENAP_PRO_HOURLY_LIMIT_AFTER_THRESHOLD || '40'), 10) || 40;
+const PRO_PLUS_HOURLY_LIMIT_AFTER_THRESHOLD =
+  parseInt(String(process.env.WENAP_PRO_PLUS_HOURLY_LIMIT_AFTER_THRESHOLD || '25'), 10) || 25;
+const PAID_COOLDOWN_MINUTES =
+  parseInt(String(process.env.WENAP_PAID_COOLDOWN_MINUTES || '20'), 10) || 20;
+
+function toUtcDate(raw) {
+  const s = String(raw || '').trim();
+  if (!s) return null;
+  const d = new Date(s.includes('T') ? s : `${s.replace(' ', 'T')}Z`);
+  return Number.isFinite(d.getTime()) ? d : null;
+}
 
 function checkProPlusMonthlyLimit(userId) {
   const db = getDb();
@@ -477,6 +494,49 @@ function checkProPlusMonthlyLimit(userId) {
   return { allowed: true, used: cnt, cap: PRO_PLUS_MONTHLY_CAP };
 }
 
+function checkPaidThrottle(userId, tier) {
+  const t = normalizeTier(tier);
+  if (t !== 'pro' && t !== 'pro_plus') return { allowed: true };
+  const db = getDb();
+  const month = new Date().toISOString().slice(0, 7);
+  const monthRow = db
+    .prepare(
+      `SELECT COUNT(*) as cnt
+       FROM analysis_logs
+       WHERE user_id = ?
+         AND strftime('%Y-%m', created_at) = ?`,
+    )
+    .get(userId, month);
+  const monthlyUsed = Number(monthRow?.cnt || 0);
+  const threshold = t === 'pro_plus' ? PRO_PLUS_MONTHLY_PROFIT_THRESHOLD : PRO_MONTHLY_PROFIT_THRESHOLD;
+  if (monthlyUsed < threshold) return { allowed: true, monthlyUsed, threshold, throttled: false };
+
+  const hourlyCap = t === 'pro_plus' ? PRO_PLUS_HOURLY_LIMIT_AFTER_THRESHOLD : PRO_HOURLY_LIMIT_AFTER_THRESHOLD;
+  const hourRow = db
+    .prepare(
+      `SELECT COUNT(*) as cnt, MAX(created_at) as latest
+       FROM analysis_logs
+       WHERE user_id = ?
+         AND datetime(created_at) >= datetime('now', '-60 minutes')`,
+    )
+    .get(userId);
+  const hourCount = Number(hourRow?.cnt || 0);
+  if (hourCount < hourlyCap) {
+    return { allowed: true, monthlyUsed, threshold, throttled: true, hourCount, hourlyCap };
+  }
+  const latest = toUtcDate(hourRow?.latest);
+  if (!latest) {
+    return { allowed: false, monthlyUsed, threshold, throttled: true, hourCount, hourlyCap, waitMinutes: PAID_COOLDOWN_MINUTES };
+  }
+  const cooldownUntil = new Date(latest.getTime() + PAID_COOLDOWN_MINUTES * 60 * 1000);
+  const waitMs = cooldownUntil.getTime() - Date.now();
+  const waitMinutes = Math.max(1, Math.ceil(waitMs / 60000));
+  if (waitMs > 0) {
+    return { allowed: false, monthlyUsed, threshold, throttled: true, hourCount, hourlyCap, waitMinutes };
+  }
+  return { allowed: true, monthlyUsed, threshold, throttled: true, hourCount, hourlyCap };
+}
+
 function checkUserCanAnalyze(user, fingerprint, ip) {
   const tier = normalizeTier(user.tier);
   const unlimited =
@@ -494,9 +554,27 @@ function checkUserCanAnalyze(user, fingerprint, ip) {
         message: `Pro+ monthly limit reached (${monthlyCheck.cap} analyses/month). Resets on the 1st of each UTC month.`,
       };
     }
+    const throttle = checkPaidThrottle(user.id, tier);
+    if (!throttle.allowed) {
+      return {
+        allowed: false,
+        tier,
+        error: 'PAID_COOLDOWN',
+        message: `High-frequency usage detected. Please retry in about ${throttle.waitMinutes || PAID_COOLDOWN_MINUTES} minutes.`,
+      };
+    }
     return { allowed: true, tier, reason: null };
   }
   if (tier === 'pro') {
+    const throttle = checkPaidThrottle(user.id, tier);
+    if (!throttle.allowed) {
+      return {
+        allowed: false,
+        tier,
+        error: 'PAID_COOLDOWN',
+        message: `High-frequency usage detected. Please retry in about ${throttle.waitMinutes || PAID_COOLDOWN_MINUTES} minutes.`,
+      };
+    }
     return { allowed: true, tier, reason: null };
   }
   const u = resetMonthlyFreeIfNeeded(user);

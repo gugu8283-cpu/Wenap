@@ -50,6 +50,11 @@ Copy `.env.example` to `.env` and fill in:
 | `CRON_AUTO_ANALYSIS` | Optional | Set `false` to disable weekly auto-analysis |
 | `WENAP_FREE_UNLIMITED` | Dev only | Set `1` to disable free quota enforcement |
 | `WENAP_PRO_PLUS_MONTHLY_CAP` | Optional | Pro+ max analyses per **UTC calendar month** (default **1000**; blocks runaway abuse) |
+| `WENAP_PRO_MONTHLY_PROFIT_THRESHOLD` | Optional | Pro enters throttle zone after this monthly usage (default **500**) |
+| `WENAP_PRO_PLUS_MONTHLY_PROFIT_THRESHOLD` | Optional | Pro+ enters throttle zone after this monthly usage (default **250**) |
+| `WENAP_PRO_HOURLY_LIMIT_AFTER_THRESHOLD` | Optional | Pro hourly cap after threshold (default **40/hour**) |
+| `WENAP_PRO_PLUS_HOURLY_LIMIT_AFTER_THRESHOLD` | Optional | Pro+ hourly cap after threshold (default **25/hour**) |
+| `WENAP_PAID_COOLDOWN_MINUTES` | Optional | Cooldown minutes when paid hourly cap is hit (default **20**) |
 | `WENAP_REFERRAL_REWARDS` | Optional | Set `0` / `false` / `off` to disable referral Pro bonus (no per-user fee; only affects DB tier) |
 
 ---
