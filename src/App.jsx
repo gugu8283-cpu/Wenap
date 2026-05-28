@@ -26,7 +26,6 @@ const HORIZON_IDS = ['1m', '3m', '6m', '1y', '2y']
 const RISK_FOCUS_IDS = ['', 'geo', 'competition', 'macro', 'earnings']
 
 const PRICING = { pro: '$9.99/月', pro_plus: '$19.99/月' }
-const FREE_MONTHLY_CAP = 5
 const SUBSCRIBE_URL = String(import.meta.env.VITE_SUBSCRIBE_URL || '').trim()
 const DEV_UNLOCK =
   import.meta.env.DEV || String(import.meta.env.VITE_DEV_UNLOCK || '').trim() === '1'
@@ -132,12 +131,11 @@ export default function App() {
     },
     [logout, t],
   )
-  const loadingLines = useMemo(
-    () => t('app.loadingLines', { returnObjects: true }),
-    [t, i18n.language],
-  )
-  const segmentTitles = useMemo(() => t('app.segments', { returnObjects: true }), [t, i18n.language])
-  const anonId = useMemo(() => ensureAnonId(), [])
+  const loadingLines = useMemo(() => t('app.loadingLines', { returnObjects: true }), [t])
+  const segmentTitles = useMemo(() => t('app.segments', { returnObjects: true }), [t])
+  useEffect(() => {
+    ensureAnonId()
+  }, [])
   const clientTier = user?.tier || readClientTier()
   const [ticker, setTicker] = useState('')
   const [assetType, setAssetType] = useState('stock')
@@ -191,7 +189,7 @@ export default function App() {
     } catch {
       /* ignore */
     }
-  }, [])
+  }, [refreshWatchlistPrices])
 
   useEffect(() => {
     refreshWatchlist()
@@ -289,7 +287,6 @@ export default function App() {
       const base = API_BASE.replace(/\/$/, '')
       const url = `${base}/analyze`
 
-      const tier = clientTier
       const headers = { 'Content-Type': 'application/json' }
       const token = getToken()
       if (token) headers.Authorization = `Bearer ${token}`
@@ -435,11 +432,12 @@ export default function App() {
       assetType,
       horizon,
       riskFocus,
-      clientTier,
       refreshQuota,
       refreshResearchProfile,
       refreshUser,
+      handleAuthFailure,
       t,
+      i18n.resolvedLanguage,
       i18n.language,
     ],
   )

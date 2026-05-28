@@ -66,7 +66,10 @@ export default function RadarSection({ dimensions }) {
     return undefined
   }, [inView, dims.length])
 
-  const theme = useMemo(() => readChartTheme(), [themeKey])
+  const theme = useMemo(() => {
+    void themeKey
+    return readChartTheme()
+  }, [themeKey])
 
   const lowestIdx = useMemo(() => {
     if (!dims.length) return -1

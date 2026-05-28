@@ -45,8 +45,13 @@ self.addEventListener('fetch', (event) => {
 
 // Push notification handler
 self.addEventListener('push', (event) => {
-  let data = {};
-  try { data = event.data ? event.data.json() : {}; } catch { data = { title: 'Wenap', body: event.data?.text() || '' }; }
+  const data = (() => {
+    try {
+      return event.data ? event.data.json() : {}
+    } catch {
+      return { title: 'Wenap', body: event.data?.text() || '' }
+    }
+  })()
   event.waitUntil(
     self.registration.showNotification(data.title || 'Wenap', {
       body: data.body || '',
@@ -61,10 +66,10 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const url = event.notification.data?.url || '/';
   event.waitUntil(
-    clients.matchAll({ type: 'window' }).then((windowClients) => {
+    self.clients.matchAll({ type: 'window' }).then((windowClients) => {
       const existing = windowClients.find((c) => c.focus);
       if (existing) return existing.focus();
-      return clients.openWindow(url);
+      return self.clients.openWindow(url);
     }),
   );
 });

@@ -4,7 +4,7 @@ import './MobileAnalysisReport.css'
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 
-export default function ProPlusLockedSection({ hints = {}, onUpgrade, ticker }) {
+export default function ProPlusLockedSection({ hints = {}, onUpgrade }) {
   const { t } = useTranslation()
   const [social, setSocial] = useState(null)
 

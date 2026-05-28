@@ -11,13 +11,6 @@ function parseStopPrice(raw) {
   return Number.isFinite(n) && n > 0 ? n : NaN
 }
 
-function parseRiskRewardRatio(rrStr) {
-  const m = String(rrStr || '').match(/1\s*[:：]\s*([\d.]+)/i)
-  if (!m) return NaN
-  const n = parseFloat(m[1])
-  return Number.isFinite(n) && n > 0 ? n : NaN
-}
-
 const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 
 function mapRiskLevel(risk, t) {
@@ -153,13 +146,6 @@ export default function HeroCard({
     if (!Number.isFinite(n)) return '—'
     return `$${n.toFixed(2)}`
   }
-
-  const upsideStr =
-    Number.isFinite(displayUpside) && displayUpside !== 0
-      ? `${displayUpside > 0 ? '+' : ''}${displayUpside}%`
-      : quoteLoading
-        ? '…'
-        : '—'
 
   const stopPrice = parseStopPrice(report.actionLineObj?.stopLoss)
   const rrCalc = useMemo(() => {

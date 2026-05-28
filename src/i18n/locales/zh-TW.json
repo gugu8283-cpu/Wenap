@@ -52,8 +52,8 @@
     "historyLockedItem": "歷史回看僅限 Pro 及以上，升級後解鎖",
     "watchlistFull": "自選已滿（{{cap}} 檔）。升級 Pro 加 50 檔，Pro+ 加 200 檔。",
     "upgradeTitle": "本月 5 次免費分析已用完",
-    "upgradePro": "Pro · {{price}} · 無限次 + Gemini Flash Lite + 全部歷史",
-    "upgradeProPlus": "Pro+ · {{price}} · GPT-5.4 Mini + 200 檔自選 + 批評家視角",
+    "upgradePro": "Pro · {{price}} · 無限次 + 全部歷史",
+    "upgradeProPlus": "Pro+ · {{price}} · 更深度分析 + 200 檔自選 + 批評家視角",
     "upgradeBtn": "立即升級",
     "metaTime": "分析時間：{{time}} · {{ticker}} · {{asset}} · {{horizon}}",
     "disclaimer": "本工具整理公開資訊、列出反方觀點與風險情境，僅供參考；最終決策由你做出。不構成投資建議。請獨立判斷並自擔風險。",
@@ -198,6 +198,7 @@
   },
   "pricing": {
     "title": "簡單透明的定價",
+    "readingTimeHint": "1 分鐘拿結論，3 分鐘看全局，5+ 分鐘做深讀。",
     "mostPopular": "最受歡迎",
     "freeName": "免費",
     "freePrice": "$0/月",

@@ -8,8 +8,6 @@ import './LandingPage.css'
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 
-const DEMO_TICKER = 'NVDA'
-
 function RadarChartIcon() {
   return (
     <svg className="landing-radar-icon" viewBox="0 0 24 24" width="28" height="28" aria-hidden>

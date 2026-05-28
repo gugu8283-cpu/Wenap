@@ -10,7 +10,7 @@ export default function LanguageSwitcher({ className = '', variant = 'default' }
   const langLabels = useMemo(() => {
     const o = t('lang', { returnObjects: true })
     return o && typeof o === 'object' ? o : {}
-  }, [t, i18n.language, i18n.resolvedLanguage])
+  }, [t])
 
   return (
     <label className={`lang-switch ${variantClass} ${className}`.trim()}>

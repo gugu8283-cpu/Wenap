@@ -214,18 +214,24 @@ export function snapshotToMobileReport(snapshot, meta = {}) {
   }))
 
   const sources = (Array.isArray(snapshot.sources) ? snapshot.sources : []).map((s) => {
-    let host = ''
+    const url = String(s.url || '').trim()
     try {
-      host = new URL(String(s.url || '')).hostname.replace(/^www\./, '')
+      const host = new URL(url).hostname.replace(/^www\./, '')
+      return {
+        title: String(s.text || '').trim(),
+        source: host || defaultSourceLabel(meta.locale),
+        date: String(s.time || '').trim(),
+        credibility: credToLevel(s.credibility),
+        url,
+      }
     } catch {
-      host = ''
-    }
-    return {
-      title: String(s.text || '').trim(),
-      source: host || defaultSourceLabel(meta.locale),
-      date: String(s.time || '').trim(),
-      credibility: credToLevel(s.credibility),
-      url: String(s.url || '').trim(),
+      return {
+        title: String(s.text || '').trim(),
+        source: defaultSourceLabel(meta.locale),
+        date: String(s.time || '').trim(),
+        credibility: credToLevel(s.credibility),
+        url,
+      }
     }
   })
 

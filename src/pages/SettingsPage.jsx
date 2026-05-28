@@ -9,7 +9,7 @@ import './SettingsPage.css'
 
 export default function SettingsPage() {
   const { t } = useTranslation()
-  const { user, logout, refreshUser } = useAuth()
+  const { user, logout } = useAuth()
   const [billing, setBilling] = useState(null)
   const [portalLoading, setPortalLoading] = useState(false)
   const [error, setError] = useState('')

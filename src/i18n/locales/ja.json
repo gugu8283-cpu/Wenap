@@ -52,8 +52,8 @@
     "historyLockedItem": "履歴閲覧はPro以上限定です。アップグレードして解除してください",
     "watchlistFull": "ウォッチリストが満杯です（{{cap}}銘柄）。Proで50銘柄、Pro+で200銘柄に拡張できます。",
     "upgradeTitle": "今月の無料分析回数を使い切りました",
-    "upgradePro": "Pro · {{price}} · 無制限 + Gemini Flash Lite + 全履歴",
-    "upgradeProPlus": "Pro+ · {{price}} · GPT-5.4 Mini + ウォッチ200 + 批評家視点",
+    "upgradePro": "Pro · {{price}} · 無制限 + 全履歴",
+    "upgradeProPlus": "Pro+ · {{price}} · 深掘り分析 + ウォッチ200 + 批評家視点",
     "upgradeBtn": "今すぐアップグレード",
     "metaTime": "分析 {{time}} · {{ticker}} · {{asset}} · {{horizon}}",
     "disclaimer": "公開情報の整理であり投資助言ではありません。最終判断はご自身でお願いします。",
@@ -198,6 +198,7 @@
   },
   "pricing": {
     "title": "シンプルな料金",
+    "readingTimeHint": "1分で結論、3分で全体像、5分以上で深掘り。",
     "mostPopular": "人気No.1",
     "freeName": "無料",
     "freePrice": "$0/月",

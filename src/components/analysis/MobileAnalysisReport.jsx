@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import i18n from 'i18next'
 import { snapshotToMobileReport } from '../../utils/snapshotToMobileReport.js'
 import './MobileAnalysisReport.css'
 import HeroCard from './HeroCard.jsx'

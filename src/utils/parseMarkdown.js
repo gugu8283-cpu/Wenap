@@ -26,7 +26,7 @@ export function splitParagraphs(str) {
  * @param {string} str
  * @returns {import('react').ReactNode[] | string}
  */
-export function renderMarkdownParagraphs(str, className = '') {
+export function renderMarkdownParagraphs(str) {
   const paras = splitParagraphs(str)
   if (!paras.length) return ''
   return paras

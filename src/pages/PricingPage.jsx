@@ -126,6 +126,7 @@ export default function PricingPage() {
       <div className="pricing-hero">
         <h1 className="pricing-title">{t('pricing.title')}</h1>
         <p className="pricing-sub">{t('pricing.sub')}</p>
+        <p className="pricing-sub">{t('pricing.readingTimeHint')}</p>
         {social?.usersTotal > 0 ? (
           <p className="pricing-social">{t('convert.upgradeUsers', { count: social.usersTotal })}</p>
         ) : null}

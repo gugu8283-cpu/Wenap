@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useCallback, useEffect, useState } from 'react'
 
 import { useTranslation } from 'react-i18next'
 
@@ -54,7 +54,7 @@ export default function AnalysisLogsPage() {
 
 
 
-  function load() {
+  const load = useCallback(() => {
 
     const q = new URLSearchParams()
 
@@ -72,7 +72,7 @@ export default function AnalysisLogsPage() {
 
     adminFetch(`/admin/analysis-logs?${q}`).then(setData)
 
-  }
+  }, [filters])
 
 
 
@@ -80,9 +80,9 @@ export default function AnalysisLogsPage() {
 
     load()
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
 
-  }, [])
+  }, [load])
 
 
 
