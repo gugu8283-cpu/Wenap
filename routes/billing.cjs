@@ -92,9 +92,30 @@ router.post('/create-checkout-session', requireAuth, async (req, res) => {
 
   try {
     const db = getDb();
-    const existingCustomerId = db
-      .prepare('SELECT stripe_customer_id FROM billing WHERE user_id = ?')
-      .get(user.id)?.stripe_customer_id;
+    const billingRow = db
+      .prepare('SELECT stripe_customer_id, stripe_subscription_id, tier, status FROM billing WHERE user_id = ?')
+      .get(user.id);
+    const existingCustomerId = billingRow?.stripe_customer_id;
+    const activeSub = Boolean(
+      existingCustomerId &&
+      billingRow?.stripe_subscription_id &&
+      String(billingRow?.status || '').toLowerCase() === 'active',
+    );
+
+    // Safety guard: do not create a second subscription for an already-active customer.
+    // Force plan changes through Stripe Customer Portal to avoid potential double charges.
+    if (activeSub) {
+      const portal = await stripe.billingPortal.sessions.create({
+        customer: existingCustomerId,
+        return_url: `${APP_URL}/settings`,
+      });
+      return res.status(409).json({
+        error: 'ACTIVE_SUBSCRIPTION_USE_PORTAL',
+        message: 'Active subscription detected. Use customer portal to change plan safely.',
+        currentTier: billingRow?.tier || null,
+        url: portal.url,
+      });
+    }
 
     const sessionParams = {
       mode: 'subscription',

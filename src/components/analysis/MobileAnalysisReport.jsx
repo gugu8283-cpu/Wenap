@@ -21,6 +21,7 @@ import ProPlusLockedSection from './ProPlusLockedSection.jsx'
 import BullBearSection from './BullBearSection.jsx'
 import ProUpgradeBar from './ProUpgradeBar.jsx'
 import CritiqueSection from './CritiqueSection.jsx'
+import { buildCritiquePayload } from '../../utils/buildCritiquePayload.js'
 import ExportPdfButton from './ExportPdfButton.jsx'
 import Skeleton, { HeroSkeleton, RadarSkeleton, BlockSkeleton } from './Skeleton.jsx'
 
@@ -260,23 +261,35 @@ export default function MobileAnalysisReport({
         <BlockSkeleton h={48} />
       )}
       {(() => {
-        const critique =
-          report.secondPassCritique ||
-          (report.riskBlindSpot ? { blindSpot: report.riskBlindSpot, weaknesses: [] } : null)
+        const critique = buildCritiquePayload(report)
         if (!critique) return null
-        if (isProPlus) return <CritiqueSection critique={critique} />
-        if (isFree || isPro) {
-          const n = report.secondPassCritique?.weaknesses?.length || 0
+        const total =
+          (critique.blindSpot ? 1 : 0) + (critique.weaknesses?.length || 0)
+        if (isProPlus) {
           return (
             <CritiqueSection
               critique={critique}
-              previewMode
-              lockedCount={Math.max(2, n > 1 ? n - 1 : 2)}
-              onUpgrade={handleUpgrade}
+              subtitle={t('report.proPlus.critiqueSub')}
             />
           )
         }
-        return null
+        if (isPro) {
+          return (
+            <CritiqueSection
+              critique={critique}
+              subtitle={t('report.critiqueSubPro')}
+            />
+          )
+        }
+        return (
+          <CritiqueSection
+            critique={critique}
+            subtitle={t('report.critiqueSubPreview')}
+            previewMode
+            lockedCount={Math.max(1, total - 1)}
+            onUpgrade={handleUpgrade}
+          />
+        )
       })()}
       {isProPlus ? (
         <div className="ma-pro-plus-actions">

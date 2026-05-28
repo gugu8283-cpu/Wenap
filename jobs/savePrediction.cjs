@@ -56,6 +56,12 @@ function estimateAnalysisCostUsd(usage, mainModel, policyModel, critiqueModel) {
     out += o;
   };
   add(usage?.main, mainModel);
+  if (usage?.pass2) {
+    const pass2Model =
+      String(usage?.pass2Model || process.env.OPENROUTER_PRO_PLUS_PASS2_MODEL || '').trim() ||
+      'google/gemini-2.5-flash-lite';
+    add(usage.pass2, pass2Model);
+  }
   if (!usage?.leaderSkipped) {
     add(usage?.leader, policyModel || 'google/gemini-2.5-flash');
   }

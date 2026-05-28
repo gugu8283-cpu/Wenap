@@ -314,6 +314,9 @@ export function snapshotToMobileReport(snapshot, meta = {}) {
     coreConclusion,
     keyLevels,
     riskBlindSpot: String(snapshot.riskBlindSpot || '').trim(),
+    criticAngles: Array.isArray(snapshot.criticAngles)
+      ? snapshot.criticAngles.map((s) => String(s || '').trim()).filter(Boolean).slice(0, 2)
+      : [],
     technicalSnapshot: String(snapshot.technicalSnapshot || '').trim(),
     dimensions: dims,
     scenarios: scenariosWithDetail.length ? scenariosWithDetail : scenarios,

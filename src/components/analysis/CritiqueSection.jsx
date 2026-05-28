@@ -4,11 +4,13 @@ import './MobileAnalysisReport.css'
 
 export default function CritiqueSection({
   critique,
+  subtitle = '',
   previewMode = false,
   lockedCount = 0,
   onUpgrade,
 }) {
   const { t } = useTranslation()
+  const sub = String(subtitle || '').trim() || t('report.proPlus.critiqueSub')
   const weaknesses = critique?.weaknesses
   const blindSpot = String(critique?.blindSpot || '').trim()
   const items = []
@@ -23,7 +25,7 @@ export default function CritiqueSection({
   return (
     <div className="ma-card ma-critique-card">
       <h2 className="ma-section-title">{t('report.proPlus.critiqueTitle')}</h2>
-      <p className="ma-critique-sub">{t('report.proPlus.critiqueSub')}</p>
+      <p className="ma-critique-sub">{sub}</p>
       <ul className="ma-critique-list ma-critique-list--compact">
         {visible.map((w, i) => (
           <li key={i} className="ma-critique-item">

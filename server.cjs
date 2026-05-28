@@ -157,9 +157,19 @@ const MODEL_FLASH =
   String(process.env.OPENROUTER_MAIN_MODEL || '').trim() || 'google/gemini-2.5-flash-lite';
 /** Pro 主分析模型（与 Free 同 Flash Lite，解锁次数与 Pro 字段） */
 const MODEL_PRO = String(process.env.OPENROUTER_PRO_MODEL || '').trim() || 'google/gemini-2.5-flash-lite';
-/** Pro+ 主分析模型 */
-const MODEL_PRO_PLUS =
-  String(process.env.OPENROUTER_PRO_PLUS_MODEL || '').trim() || 'openai/gpt-5.4-mini';
+/** Pro+ Pass 1：六维、多空、批评家（Haiku + 联网） */
+const MODEL_PRO_PLUS_PASS1 =
+  String(process.env.OPENROUTER_PRO_PLUS_PASS1_MODEL || '').trim() ||
+  String(process.env.OPENROUTER_PRO_PLUS_MODEL || '').trim() ||
+  'anthropic/claude-haiku-4-5';
+/** Pro+ Pass 2：情景、产业链、Pro 字段等（Flash Lite，不联网） */
+const MODEL_PRO_PLUS_PASS2 =
+  String(process.env.OPENROUTER_PRO_PLUS_PASS2_MODEL || '').trim() || 'google/gemini-2.5-flash-lite';
+/** Pro+ 混合失败时整份报告回退模型 */
+const MODEL_PRO_PLUS_FALLBACK =
+  String(process.env.OPENROUTER_PRO_PLUS_FALLBACK_MODEL || '').trim() || MODEL_PRO_PLUS_PASS1;
+/** Pro+ 对外展示 / 日志主模型标签 */
+const MODEL_PRO_PLUS = MODEL_PRO_PLUS_PASS1;
 /** Pro+ 批评家（不联网；默认 Haiku，主报告质量不受影响） */
 const MODEL_CRITIQUE =
   String(process.env.OPENROUTER_CRITIQUE_MODEL || '').trim() || 'anthropic/claude-haiku-4-5';
@@ -183,9 +193,14 @@ const FREE_MONTHLY_ANALYSIS_CAP = 5;
 const FREE_ANALYSIS_UNLIMITED =
   process.env.WENAP_FREE_UNLIMITED === '1' || process.env.WENAP_FREE_UNLIMITED === 'true';
 const PRICING_USD = { pro: 9.99, pro_plus: 19.99, currency: 'USD' };
-const QUOTA_FILE = path.join(__dirname, 'data', 'quotas.json');
-const WATCHLIST_FILE = path.join(__dirname, 'data', 'watchlist.json');
-const HISTORY_DIR = path.join(__dirname, 'data', 'history');
+/**
+ * Persist runtime files (history/watchlist/quota) to a configurable data dir.
+ * On Render, point DATA_DIR to a mounted persistent disk path (e.g. /var/data/wenap).
+ */
+const DATA_DIR = String(process.env.DATA_DIR || '').trim() || path.join(__dirname, 'data');
+const QUOTA_FILE = path.join(DATA_DIR, 'quotas.json');
+const WATCHLIST_FILE = path.join(DATA_DIR, 'watchlist.json');
+const HISTORY_DIR = path.join(DATA_DIR, 'history');
 const HISTORY_INDEX = path.join(HISTORY_DIR, 'index.json');
 
 const store = require('./db/store.cjs');
@@ -781,6 +796,16 @@ const { buildMainJsonPromptIntl } = require('./lib/mainAnalyzePrompt.cjs');
 const { sanitizeReportDisplayFields } = require('./lib/reportDisplayText.cjs');
 const { applySixthDimensionFloor } = require('./lib/sixthDimensionFloor.cjs');
 const {
+  proPlusHybridEnabled,
+  runProPlusHybridAnalysis,
+} = require('./lib/proPlusHybridAnalyze.cjs');
+
+function normalizeCriticAngles(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((s) => String(s || '').trim()).filter(Boolean).slice(0, 2);
+}
+
+const {
   guessSourceCite,
   defaultCiteLabel,
   localizeReportCitations,
@@ -907,6 +932,10 @@ JSON 字段与要求：
     "action": "建议：买入/持有/观望 + 止损价（含$）"
   },
   "riskBlindSpot": "≤48字：1条主分析可能低估的具体风险（附来源日期角标）",
+  "criticAngles": [
+    "≤32字：怀疑视角第1条（过时信息/反面证据/政策落差；附来源日期角标）",
+    "≤32字：怀疑视角第2条（与 riskBlindSpot 不同；勿写通用免责声明）"
+  ],
   "keyLevels": [ { "price": 0, "label": "如120日均线阻力位；最多4条，price为数字" } ],
   "analystPriceLine": "单行：目标价/现价/空间%（现价须与行情API一致，ETF禁止用现货金价）；无则空",
   "dimensions": [ ${dimensionJsonSpec(assetType, loc)} ],
@@ -2044,6 +2073,7 @@ function stripDataForViz(
           }
         : null,
     riskBlindSpot: String(data.riskBlindSpot || '').trim(),
+    criticAngles: normalizeCriticAngles(data.criticAngles),
     keyLevels: Array.isArray(data.keyLevels)
       ? data.keyLevels
           .slice(0, 4)
@@ -2296,10 +2326,20 @@ async function runAnalyzePipeline(
     forceRefresh = false,
   },
 ) {
-  const mainModel = mainModelForTier(tier);
+  let mainModel = mainModelForTier(tier);
   const pipelineStarted = Date.now();
   const stopKeepalive = startSseKeepalive(res);
-  const usageLog = { main: null, leader: null, leaderSkipped: false, critique: null, critiqueModel: '' };
+  const usageLog = {
+    main: null,
+    pass2: null,
+    pass1Model: '',
+    pass2Model: '',
+    hybrid: false,
+    leader: null,
+    leaderSkipped: false,
+    critique: null,
+    critiqueModel: '',
+  };
   let dataLimitedNotice = '';
   const bailIfClientGone = (stage) => {
     if (!sseClientGone(res)) return false;
@@ -2401,52 +2441,92 @@ async function runAnalyzePipeline(
       }
     }
 
-    const mainPrompt = buildMainJsonPrompt({
+    const promptCtx = {
       ticker: symbol,
       assetType: effectiveAssetType,
       horizon,
       alphaContextBlock: alphaBlock,
       listingCurrency,
       exchangeHint,
-      tier,
       locale: locNorm,
       riskFocus,
       dataAsOfAnchor: tradingDay,
       currentPrice,
       pricePromptBlock: marketSnapshot?.promptPriceBlock || '',
-    });
-    if (bailIfClientGone('main-prompt')) return;
-    const mainResult = await openRouterChat(apiKey, {
-      model: mainModel,
-      userContent: mainPrompt,
-      stream: false,
-      useWeb: true,
-      maxOutputTokens: openRouterMaxOutputTokensMain(),
-      timeoutMs: 0,
-    });
-    usageLog.main = mainResult.usage;
+    };
+
     let data;
-    try {
-      data = extractJsonObject(mainResult.content);
-    } catch (parseErr) {
-      console.warn(`[Wenap] ${symbol} JSON 解析失败，重试一次:`, parseErr.message);
-      if (bailIfClientGone('json-retry')) return;
-      const fixPrompt = `Fix the following broken JSON. Return ONLY one valid JSON object, same schema, no markdown.
-Rules: escape " inside strings; no trailing commas; complete all brackets.
-Broken output:
-${String(mainResult.content || '').slice(0, 12000)}`;
-      const retry = await openRouterChat(apiKey, {
-        model: mainModel,
-        userContent: fixPrompt,
+    let hybridUsed = false;
+
+    if (tier === 'pro_plus' && proPlusHybridEnabled()) {
+      try {
+        if (bailIfClientGone('hybrid-pass1')) return;
+        const hybrid = await runProPlusHybridAnalysis(openRouterChat, apiKey, promptCtx, {
+          pass1: MODEL_PRO_PLUS_PASS1,
+          pass2: MODEL_PRO_PLUS_PASS2,
+          pass1MaxTokens: 2800,
+          pass2MaxTokens: openRouterMaxOutputTokensMain(),
+        });
+        data = hybrid.data;
+        usageLog.main = hybrid.usage.pass1;
+        usageLog.pass2 = hybrid.usage.pass2;
+        usageLog.pass1Model = hybrid.usage.pass1Model;
+        usageLog.pass2Model = hybrid.usage.pass2Model;
+        usageLog.hybrid = true;
+        mainModel = hybrid.modelLabel;
+        hybridUsed = true;
+        console.log(
+          `[Wenap] ${symbol} Pro+ hybrid OK: ${hybrid.pass1Model} + ${hybrid.pass2Model}`,
+        );
+      } catch (hybridErr) {
+        console.warn(
+          `[Wenap] ${symbol} Pro+ hybrid failed → full ${MODEL_PRO_PLUS_FALLBACK} fallback:`,
+          hybridErr.message,
+        );
+      }
+    }
+
+    if (!hybridUsed) {
+      const mainPrompt = buildMainJsonPrompt({ ...promptCtx, tier });
+      if (bailIfClientGone('main-prompt')) return;
+      const singleModel =
+        tier === 'pro_plus' ? MODEL_PRO_PLUS_FALLBACK : mainModel;
+      const mainResult = await openRouterChat(apiKey, {
+        model: singleModel,
+        userContent: mainPrompt,
         stream: false,
-        useWeb: false,
+        useWeb: true,
         maxOutputTokens: openRouterMaxOutputTokensMain(),
         timeoutMs: 0,
       });
-      if (retry.usage) {
-        usageLog.main = retry.usage;
+      usageLog.main = mainResult.usage;
+      if (tier === 'pro_plus') {
+        mainModel = singleModel;
       }
-      data = extractJsonObject(retry.content);
+      try {
+        data = extractJsonObject(mainResult.content);
+        data.criticAngles = normalizeCriticAngles(data.criticAngles);
+      } catch (parseErr) {
+        console.warn(`[Wenap] ${symbol} JSON 解析失败，重试一次:`, parseErr.message);
+        if (bailIfClientGone('json-retry')) return;
+        const fixPrompt = `Fix the following broken JSON. Return ONLY one valid JSON object, same schema, no markdown.
+Rules: escape " inside strings; no trailing commas; complete all brackets.
+Broken output:
+${String(mainResult.content || '').slice(0, 12000)}`;
+        const retry = await openRouterChat(apiKey, {
+          model: singleModel,
+          userContent: fixPrompt,
+          stream: false,
+          useWeb: false,
+          maxOutputTokens: openRouterMaxOutputTokensMain(),
+          timeoutMs: 0,
+        });
+        if (retry.usage) {
+          usageLog.main = retry.usage;
+        }
+        data = extractJsonObject(retry.content);
+        data.criticAngles = normalizeCriticAngles(data.criticAngles);
+      }
     }
     if (assetType === 'stock' && !looksLikeFund) {
       const mainPolicy = extractPolicyRegulationDimension(data.dimensions);
@@ -2546,8 +2626,15 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
     const md = jsonToMarkdownFourParts(data, tier, locale);
     let secondCritique = null;
     if (tier === 'pro_plus') {
+      const hybridCritiqueDone =
+        hybridUsed && data.secondPassCritique?.weaknesses?.length >= 1;
+      if (hybridCritiqueDone) {
+        console.log(`[Wenap] ${symbol}：批评家已在 Pass 1 输出，跳过独立复盘 API`);
+      }
       try {
-        secondCritique = await runSecondPassCritique(apiKey, data, symbol, locale);
+        if (!hybridCritiqueDone) {
+          secondCritique = await runSecondPassCritique(apiKey, data, symbol, locale);
+        }
         if (secondCritique?._usage) {
           usageLog.critique = secondCritique._usage;
           usageLog.critiqueModel = secondCritique._modelUsed || MODEL_CRITIQUE;
@@ -2640,9 +2727,12 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
         critiqueModel: usageLog.critiqueModel || '',
       },
     });
-    if (usageLog.main || usageLog.leader || usageLog.critique) {
+    if (usageLog.main || usageLog.pass2 || usageLog.leader || usageLog.critique) {
+      const pass2Part = usageLog.pass2
+        ? ` pass2=${sumTokens(usageLog.pass2)}${usageLog.pass2Model ? ` (${usageLog.pass2Model})` : ''}`
+        : '';
       console.log(
-        `[Wenap] ${symbol} token 用量 main=${sumTokens(usageLog.main)} leader=${usageLog.leaderSkipped ? 'skipped' : sumTokens(usageLog.leader)} critique=${sumTokens(usageLog.critique)}${usageLog.critiqueModel ? ` (${usageLog.critiqueModel})` : ''}`,
+        `[Wenap] ${symbol} token 用量 main=${sumTokens(usageLog.main)}${pass2Part} leader=${usageLog.leaderSkipped ? 'skipped' : sumTokens(usageLog.leader)} critique=${sumTokens(usageLog.critique)}${usageLog.critiqueModel ? ` (${usageLog.critiqueModel})` : ''}${usageLog.hybrid ? ' [hybrid]' : ''}`,
       );
     }
   } catch (e) {
@@ -2709,17 +2799,24 @@ function serverInfoPayload() {
       },
       pro_plus: {
         mainModel: MODEL_PRO_PLUS,
-        policyFallback: 'same as main when dim insufficient',
+        hybridPass1: MODEL_PRO_PLUS_PASS1,
+        hybridPass2: MODEL_PRO_PLUS_PASS2,
+        hybridFallback: MODEL_PRO_PLUS_FALLBACK,
+        hybridEnabled: proPlusHybridEnabled(),
+        policyFallback: MODEL_POLICY_FALLBACK,
         monthlyUnlimited: true,
         dailyCap: PRO_PLUS_DAILY_CAP,
-        note: 'GPT-5.4 Mini — critique pass + Pro+ fields',
+        note: 'Hybrid: Haiku (dims/bull-bear/critic) + Flash Lite (scenarios/supply/Pro fields); fallback full Haiku',
       },
     },
     models: {
       free: MODEL_FLASH,
       pro: MODEL_PRO,
       proPlusMain: MODEL_PRO_PLUS,
-      policyFallback: 'same as main',
+      proPlusPass1: MODEL_PRO_PLUS_PASS1,
+      proPlusPass2: MODEL_PRO_PLUS_PASS2,
+      proPlusFallback: MODEL_PRO_PLUS_FALLBACK,
+      policyFallback: MODEL_POLICY_FALLBACK,
     },
   };
 }
@@ -3226,6 +3323,9 @@ app.get('/sample/:ticker', (req, res) => {
     if (raw.vizSnapshot) {
       raw.vizSnapshot.bullBearDebate = undefined;
       raw.vizSnapshot.secondPassCritique = undefined;
+      if (Array.isArray(raw.vizSnapshot.criticAngles)) {
+        raw.vizSnapshot.criticAngles = raw.vizSnapshot.criticAngles.slice(0, 1);
+      }
     }
     return res.json({ ...raw, isSample: true, sampleTicker: sym });
   } catch {

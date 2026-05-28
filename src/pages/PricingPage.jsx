@@ -95,6 +95,10 @@ export default function PricingPage() {
         navigate('/accept-legal')
         return
       }
+      if (e.code === 'ACTIVE_SUBSCRIPTION_USE_PORTAL' && e.data?.url) {
+        window.location.href = e.data.url
+        return
+      }
       if (e.code === 'SUBSCRIPTION_CONSENT_REQUIRED') {
         setError(t('legal.subscriptionMustAgree'))
       } else {
