@@ -296,10 +296,24 @@ export function snapshotToMobileReport(snapshot, meta = {}) {
   })
   const keyLevels = parseKeyLevelsFromSnapshot(snapshot)
 
+  const assetType = String(snapshot.assetType || meta.assetType || 'stock').trim()
+  const supplyChainSectionKey =
+    assetType === 'crypto'
+      ? 'report.supplyChainEcosystem'
+      : assetType === 'forex'
+        ? 'report.supplyChainDrivers'
+        : assetType === 'commodities'
+          ? 'report.supplyChainMarket'
+          : 'report.supplyChain'
+
   const report = {
     ticker,
     name,
     exchange,
+    assetType,
+    assetMeta:
+      snapshot.assetMeta && typeof snapshot.assetMeta === 'object' ? snapshot.assetMeta : null,
+    supplyChainSectionKey,
     generatedAt: meta.startedAt || new Date().toISOString(),
     dataAsOf: String(snapshot.dataAsOf || '').trim() || '—',
     quoteAsOf: String(snapshot.quoteAsOf || snapshot.dataAsOf || '').trim() || '—',

@@ -55,7 +55,13 @@ function SupplyRow({ row, i, onAnalyzeCode, locked = false }) {
   )
 }
 
-export default function SupplyChainSection({ rows, onAnalyzeCode, previewMode = false, onUpgrade }) {
+export default function SupplyChainSection({
+  rows,
+  onAnalyzeCode,
+  previewMode = false,
+  onUpgrade,
+  sectionTitleKey = 'report.supplyChain',
+}) {
   const { t } = useTranslation()
   if (!rows?.length) return null
 
@@ -64,7 +70,7 @@ export default function SupplyChainSection({ rows, onAnalyzeCode, previewMode = 
 
   return (
     <div className="ma-card ma-supply-card">
-      <h2 className="ma-section-title">{t('report.supplyChain')}</h2>
+      <h2 className="ma-section-title">{t(sectionTitleKey)}</h2>
       {visible.map((row, i) => (
         <SupplyRow key={`${row.name}-${i}`} row={row} i={i} onAnalyzeCode={onAnalyzeCode} />
       ))}

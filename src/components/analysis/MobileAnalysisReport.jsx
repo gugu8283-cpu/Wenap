@@ -193,6 +193,7 @@ export default function MobileAnalysisReport({
         report.supplyChain?.length ? (
           <SupplyChainSection
             rows={report.supplyChain}
+            sectionTitleKey={report.supplyChainSectionKey || 'report.supplyChain'}
             onAnalyzeCode={onAnalyzeSymbol}
             previewMode={isFree}
             onUpgrade={handleUpgrade}

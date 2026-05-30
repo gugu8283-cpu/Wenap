@@ -21,7 +21,25 @@ import './components/LegalFooter.css'
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 
-const ASSET_TYPE_IDS = ['stock', 'etf', 'reit', 'commodity_etf']
+const ASSET_TYPE_IDS = [
+  'stock',
+  'etf',
+  'reit',
+  'commodity_etf',
+  'crypto',
+  'forex',
+  'commodities',
+]
+
+const TICKER_PLACEHOLDER_KEYS = {
+  stock: 'app.tickerPlaceholder',
+  etf: 'app.tickerPlaceholder',
+  reit: 'app.tickerPlaceholder',
+  commodity_etf: 'app.tickerPlaceholder',
+  crypto: 'app.tickerPlaceholderCrypto',
+  forex: 'app.tickerPlaceholderForex',
+  commodities: 'app.tickerPlaceholderCommodities',
+}
 const HORIZON_IDS = ['1m', '3m', '6m', '1y', '2y']
 const RISK_FOCUS_IDS = ['', 'geo', 'competition', 'macro', 'earnings']
 
@@ -635,7 +653,7 @@ export default function App() {
           <input
             id="ticker"
             className="input"
-            placeholder={t('app.tickerPlaceholder')}
+            placeholder={t(TICKER_PLACEHOLDER_KEYS[assetType] || 'app.tickerPlaceholder')}
             value={ticker}
             onChange={(e) => setTicker(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && runAnalyze()}
@@ -646,6 +664,7 @@ export default function App() {
         </div>
 
         <TickerQuickPicks
+          assetType={assetType}
           onPick={({ ticker: sym, assetType: ast }) => {
             setTicker(sym)
             setAssetType(ast)

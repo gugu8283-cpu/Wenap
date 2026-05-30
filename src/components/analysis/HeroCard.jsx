@@ -144,8 +144,58 @@ export default function HeroCard({
   const fmtPrice = (n, loading = false) => {
     if (loading) return '…'
     if (!Number.isFinite(n)) return '—'
-    return `$${n.toFixed(2)}`
+    if (report.assetType === 'forex') {
+      const q = report.assetMeta?.quote || report.listingCurrency || ''
+      return `${n.toFixed(5)}${q ? ` ${q}` : ''}`
+    }
+    if (n >= 1000) return `$${n.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
+    if (n >= 1) return `$${n.toFixed(2)}`
+    return `$${n.toFixed(4)}`
   }
+
+  const formatCompactUsd = (n) => {
+    if (!Number.isFinite(n)) return '—'
+    if (n >= 1e12) return `$${(n / 1e12).toFixed(2)}T`
+    if (n >= 1e9) return `$${(n / 1e9).toFixed(2)}B`
+    if (n >= 1e6) return `$${(n / 1e6).toFixed(2)}M`
+    return `$${n.toFixed(0)}`
+  }
+
+  const assetMetaLine = useMemo(() => {
+    const m = report.assetMeta
+    if (!m || typeof m !== 'object') return ''
+    if (m.type === 'crypto') {
+      const parts = []
+      if (Number.isFinite(m.marketCap)) {
+        parts.push(t('report.heroCryptoMarketCap', { value: formatCompactUsd(m.marketCap) }))
+      }
+      if (Number.isFinite(m.volume24h)) {
+        parts.push(t('report.heroCryptoVolume', { value: formatCompactUsd(m.volume24h) }))
+      }
+      if (Number.isFinite(m.change24h)) {
+        const sign = m.change24h >= 0 ? '+' : ''
+        parts.push(t('report.heroCryptoChange24h', { pct: `${sign}${m.change24h.toFixed(2)}` }))
+      }
+      return parts.join(' · ')
+    }
+    if (m.type === 'forex' && m.base && m.quote) {
+      return t('report.heroForexPair', { base: m.base, quote: m.quote, rate: Number(m.rate || displayCurrent).toFixed(5) })
+    }
+    if (m.type === 'commodities') {
+      const p = Number.isFinite(displayCurrent) ? displayCurrent : NaN
+      const priceStr = Number.isFinite(p)
+        ? p >= 1000
+          ? `$${p.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
+          : `$${p.toFixed(2)}`
+        : '—'
+      return t('report.heroCommoditySpot', {
+        label: m.label || report.ticker,
+        unit: m.unit || 'USD',
+        price: priceStr,
+      })
+    }
+    return ''
+  }, [report.assetMeta, report.ticker, displayCurrent, t])
 
   const stopPrice = parseStopPrice(report.actionLineObj?.stopLoss)
   const rrCalc = useMemo(() => {
@@ -317,6 +367,7 @@ export default function HeroCard({
         {report.priceStaleNotice ? (
           <span className="ma-hero-price-stale">{report.priceStaleNotice}</span>
         ) : null}
+        {assetMetaLine ? <span className="ma-hero-price-asof">{assetMetaLine}</span> : null}
         {sparkPoints ? (
           <div className="ma-sparkline-wrap">
             <Sparkline points={sparkPoints} />

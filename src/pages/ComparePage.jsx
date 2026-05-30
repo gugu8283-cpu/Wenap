@@ -7,7 +7,15 @@ import { useAuth } from '../context/AuthContext.jsx'
 import { snapshotToMobileReport } from '../utils/snapshotToMobileReport.js'
 import './ComparePage.css'
 
-const ASSET_TYPE_IDS = ['stock', 'etf', 'reit', 'commodity_etf']
+const ASSET_TYPE_IDS = [
+  'stock',
+  'etf',
+  'reit',
+  'commodity_etf',
+  'crypto',
+  'forex',
+  'commodities',
+]
 const HORIZON_IDS = ['1m', '3m', '6m', '1y', '2y']
 
 const SIGNAL_COLORS = {
@@ -216,7 +224,11 @@ export default function ComparePage() {
           maxLength={16}
         />
         <select className="compare-select" value={assetType} onChange={(e) => setAssetType(e.target.value)}>
-          {ASSET_TYPE_IDS.map((a) => <option key={a} value={a}>{a}</option>)}
+          {ASSET_TYPE_IDS.map((a) => (
+            <option key={a} value={a}>
+              {t(`asset.${a}`, { defaultValue: a })}
+            </option>
+          ))}
         </select>
         <select className="compare-select" value={horizon} onChange={(e) => setHorizon(e.target.value)}>
           {HORIZON_IDS.map((h) => <option key={h} value={h}>{h}</option>)}
