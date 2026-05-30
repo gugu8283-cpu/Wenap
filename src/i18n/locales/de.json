@@ -67,7 +67,10 @@
     "stock": "Aktie",
     "etf": "ETF",
     "reit": "REITs",
-    "commodity_etf": "Rohstoff-ETF"
+    "commodity_etf": "Rohstoff-ETF",
+    "crypto": "Krypto",
+    "forex": "Devisen",
+    "commodities": "Rohstoffe"
   },
   "horizon": {
     "1m": "1 Monat",
@@ -214,6 +217,14 @@
     "scenarioOutside": "Kurs liegt außerhalb der Szenario-Bänder; Richtung abwarten.",
     "watchRange": "Abwarten",
     "supplyChain": "Lieferkette",
+    "supplyChainEcosystem": "Ökosystem",
+    "supplyChainDrivers": "Treiber",
+    "supplyChainMarket": "Marktstruktur",
+    "heroCryptoMarketCap": "Marktkap. {{value}}",
+    "heroCryptoVolume": "24h-Vol. {{value}}",
+    "heroCryptoChange24h": "24h {{pct}}%",
+    "heroForexPair": "{{base}}/{{quote}} · {{rate}}",
+    "heroCommoditySpot": "{{label}} Spot {{price}} · {{unit}}",
     "forecast": "Ausblick",
     "signalBuy": "Kaufen",
     "signalSell": "Verkaufen",

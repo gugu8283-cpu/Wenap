@@ -67,7 +67,10 @@
     "stock": "개별주",
     "etf": "ETF",
     "reit": "리츠",
-    "commodity_etf": "원자재 ETF"
+    "commodity_etf": "원자재 ETF",
+    "crypto": "암호화폐",
+    "forex": "외환",
+    "commodities": "원자재"
   },
   "horizon": {
     "1m": "1개월",
@@ -214,6 +217,14 @@
     "scenarioOutside": "현재가가 시나리오 구간 밖입니다. 방향 확인을 기다리세요.",
     "watchRange": "관망 구간",
     "supplyChain": "공급망 연관",
+    "supplyChainEcosystem": "생태계",
+    "supplyChainDrivers": "핵심 동인",
+    "supplyChainMarket": "시장 구조",
+    "heroCryptoMarketCap": "시가총액 {{value}}",
+    "heroCryptoVolume": "24h 거래량 {{value}}",
+    "heroCryptoChange24h": "24h {{pct}}%",
+    "heroForexPair": "{{base}}/{{quote}} · {{rate}}",
+    "heroCommoditySpot": "{{label}} 현물 {{price}} · {{unit}}",
     "forecast": "전망",
     "signalBuy": "매수",
     "signalSell": "매도",

@@ -59,6 +59,8 @@ function migrateAuthSchema(dbIn) {
   if (!userCols.includes('referral_bonus_until')) addCol('ALTER TABLE users ADD COLUMN referral_bonus_until TEXT');
   if (!userCols.includes('register_ip')) addCol('ALTER TABLE users ADD COLUMN register_ip TEXT');
   if (!userCols.includes('country_code')) addCol('ALTER TABLE users ADD COLUMN country_code TEXT');
+  if (!userCols.includes('password_reset_token')) addCol('ALTER TABLE users ADD COLUMN password_reset_token TEXT');
+  if (!userCols.includes('password_reset_expires')) addCol('ALTER TABLE users ADD COLUMN password_reset_expires TEXT');
   try {
     require('../lib/legalConsent.cjs').migrateLegalConsentSchema(db);
   } catch (e) {

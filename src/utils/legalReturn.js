@@ -4,6 +4,7 @@ const ALLOWED_PREFIXES = [
   '/verify-email',
   '/accept-legal',
   '/forgot-password',
+  '/reset-password',
   '/pricing',
 ]
 
@@ -55,6 +56,8 @@ export function legalReturnLabel(returnPath, t) {
     case '/accept-legal':
       return t('legal.backAcceptLegal')
     case '/forgot-password':
+      return t('legal.backForgot')
+    case '/reset-password':
       return t('legal.backForgot')
     case '/pricing':
       return t('legal.backPricing')

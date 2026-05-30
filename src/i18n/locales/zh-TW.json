@@ -67,7 +67,10 @@
     "stock": "個股",
     "etf": "ETF",
     "reit": "REITs",
-    "commodity_etf": "商品ETF"
+    "commodity_etf": "商品ETF",
+    "crypto": "加密貨幣",
+    "forex": "外匯",
+    "commodities": "大宗商品"
   },
   "horizon": {
     "1m": "1個月",
@@ -214,6 +217,14 @@
     "scenarioOutside": "當前價處於情景區間外，需等待明確方向確認",
     "watchRange": "觀望區間",
     "supplyChain": "產業鏈關聯",
+    "supplyChainEcosystem": "生態關聯",
+    "supplyChainDrivers": "關鍵驅動",
+    "supplyChainMarket": "市場結構",
+    "heroCryptoMarketCap": "市值 {{value}}",
+    "heroCryptoVolume": "24h 成交額 {{value}}",
+    "heroCryptoChange24h": "24h {{pct}}%",
+    "heroForexPair": "{{base}}/{{quote}} · 匯率 {{rate}}",
+    "heroCommoditySpot": "{{label}} 現貨 {{price}} · {{unit}}",
     "forecast": "走勢預判",
     "signalBuy": "買入",
     "signalSell": "賣出",

@@ -67,7 +67,10 @@
     "stock": "個別株",
     "etf": "ETF",
     "reit": "REIT",
-    "commodity_etf": "コモディティETF"
+    "commodity_etf": "コモディティETF",
+    "crypto": "暗号資産",
+    "forex": "FX",
+    "commodities": "コモディティ"
   },
   "horizon": {
     "1m": "1か月",
@@ -214,6 +217,14 @@
     "scenarioOutside": "現在価格はシナリオレンジ外です。方向性の確認を待ってください。",
     "watchRange": "様子見",
     "supplyChain": "サプライチェーン",
+    "supplyChainEcosystem": "エコシステム",
+    "supplyChainDrivers": "主要ドライバー",
+    "supplyChainMarket": "市場構造",
+    "heroCryptoMarketCap": "時価総額 {{value}}",
+    "heroCryptoVolume": "24h出来高 {{value}}",
+    "heroCryptoChange24h": "24h {{pct}}%",
+    "heroForexPair": "{{base}}/{{quote}} · {{rate}}",
+    "heroCommoditySpot": "{{label}} スポット {{price}} · {{unit}}",
     "forecast": "見通し",
     "signalBuy": "買い",
     "signalSell": "売り",

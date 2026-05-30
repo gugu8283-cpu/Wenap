@@ -22,6 +22,9 @@
     "assetType": "Asset type",
     "ticker": "Ticker",
     "tickerPlaceholder": "e.g. NVDA, GLD",
+    "tickerPlaceholderCrypto": "e.g. BTC, ETH, SOL",
+    "tickerPlaceholderForex": "e.g. EURUSD, USDJPY, GBPUSD",
+    "tickerPlaceholderCommodities": "e.g. XAU, XAG, WTI",
     "tickerQuick": "Popular tickers",
     "horizon": "Horizon",
     "analyzeBtn": "Generate report",
@@ -70,7 +73,10 @@
     "stock": "Stock",
     "etf": "ETF",
     "reit": "REITs",
-    "commodity_etf": "Commodity ETF"
+    "commodity_etf": "Commodity ETF",
+    "crypto": "Crypto",
+    "forex": "Forex",
+    "commodities": "Commodities"
   },
   "horizon": {
     "1m": "1 month",
@@ -128,7 +134,17 @@
     "forgotBtn": "Send reset link",
     "forgotSending": "Sending…",
     "forgotSent": "Reset link sent — check your inbox",
-    "forgotBack": "Back to sign in"
+    "forgotBack": "Back to sign in",
+    "resetTitle": "Choose a new password",
+    "resetSub": "Enter and confirm your new password",
+    "resetBtn": "Update password",
+    "resetSaving": "Saving…",
+    "resetSuccess": "Password updated",
+    "resetRedirecting": "Redirecting to sign in…",
+    "resetMissingToken": "Invalid reset link. Request a new link below.",
+    "resetInvalidToken": "This reset link is invalid or expired. Request a new one.",
+    "resetFail": "Could not update password. Try again.",
+    "newPassword": "New password"
   },
   "protected": {
     "loading": "Loading…"
@@ -359,6 +375,14 @@
     "scenarioOutside": "Price is outside scenario ranges; wait for a clearer direction.",
     "watchRange": "Watch range",
     "supplyChain": "Supply chain",
+    "supplyChainEcosystem": "Ecosystem",
+    "supplyChainDrivers": "Key drivers",
+    "supplyChainMarket": "Market structure",
+    "heroCryptoMarketCap": "Mkt cap {{value}}",
+    "heroCryptoVolume": "24h vol {{value}}",
+    "heroCryptoChange24h": "24h {{pct}}%",
+    "heroForexPair": "{{base}}/{{quote}} · {{rate}}",
+    "heroCommoditySpot": "{{label}} spot {{price}} · {{unit}}",
     "forecast": "Outlook",
     "signalBuy": "Buy",
     "signalSell": "Sell",

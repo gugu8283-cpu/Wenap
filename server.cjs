@@ -397,12 +397,24 @@ function userKeyFromQuery(req) {
   return `ip:${ip}`;
 }
 
-const ASSET_IDS = new Set(['stock', 'etf', 'reit', 'commodity_etf']);
+const ASSET_IDS = new Set([
+  'stock',
+  'etf',
+  'reit',
+  'commodity_etf',
+  'crypto',
+  'forex',
+  'commodities',
+]);
 const HORIZON_IDS = new Set(['1m', '3m', '6m', '1y', '2y']);
 
 function normalizeWatchAssetType(a) {
-  const s = String(a || '').trim();
+  const s = String(a || '').trim().toLowerCase();
   return ASSET_IDS.has(s) ? s : 'stock';
+}
+
+function normalizeAnalyzeAssetType(a) {
+  return normalizeWatchAssetType(a);
 }
 
 function normalizeWatchHorizon(h) {
@@ -816,6 +828,18 @@ const {
   OpenRouterUnavailableError,
 } = require('./lib/openRouterClient.cjs');
 const {
+  geminiApiConfigured,
+  geminiPolicyEnabled,
+  geminiApiGenerate,
+  resolveGeminiModel,
+} = require('./lib/geminiApiClient.cjs');
+const {
+  vertexGeminiConfigured,
+  vertexPolicyEnabled,
+  vertexGeminiGenerate,
+  resolveVertexModel,
+} = require('./lib/vertexGeminiClient.cjs');
+const {
   assessAlphaVantageCompleteness,
   LIMITED_DATA_NOTICE,
 } = require('./lib/alphaDataCompleteness.cjs');
@@ -832,6 +856,14 @@ const {
   getCachedAnalysis,
   setCachedAnalysis,
 } = require('./lib/analysisSnapshotCache.cjs');
+const {
+  fetchAlternativeAssetMarketData,
+  isAlternativeAssetType,
+} = require('./lib/fetchAssetData.cjs');
+const {
+  alternativeAssetSystemBlock,
+  supplyChainPromptBlock,
+} = require('./lib/assetPromptExtras.cjs');
 
 function buildMainJsonPrompt({
   ticker,
@@ -875,6 +907,8 @@ function buildMainJsonPrompt({
       day: '2-digit',
     });
   const stockSnip = assetType === 'stock' ? stockComplianceSnippet(ticker, asOf) : '';
+  const altAssetBlock = alternativeAssetSystemBlock(assetType, loc);
+  const supplyChainBlock = supplyChainPromptBlock(assetType, ticker, loc);
   const sixthDimBlock = sixthDimensionPromptBlock(assetType, loc);
   const hw = horizonWeightHint(horizon);
   const av = alphaContextBlock ? `${alphaContextBlock}\n\n` : '';
@@ -897,6 +931,7 @@ ${curBlock}
 ${av}${priceBlock}
 ${dataFreshnessPromptBlock(loc)}
 ${stockSnip}
+${altAssetBlock}
 
 ${dimensionBoundaryPromptBlock(assetType, loc)}
 
@@ -958,7 +993,7 @@ JSON 字段与要求：
 
 硬性：supplyChain≥2，每项 **ticker 必填**。sources 必须 JSON 数组，禁 markdown 表格。scenarios p 之和=100。valuationBridge/假设类字段≤50字。
 
-【supplyChain·relation】每项 relation 必须描述该标的与被分析股票的具体上下游关系，10–20字，实质性内容。示例：TSM「AI芯片代工制造，NVDA最大晶圆代工商」；ASML「光刻机独家供应商，芯片制造核心设备」；AMD「GPU市场直接竞争对手」；MSFT「最大AI芯片采购客户之一」；QCOM「移动芯片竞争对手，AI端侧布局」；ASE「AI芯片封装与测试服务商」。严禁占位：「待结合年报与供应链披露补充」「同业或上下游代表」「暂无」「更新中」及任何含「待」「补充」「暂无」的敷衍句。
+${supplyChainBlock}
 
 【目标价与情景一致性】analystPriceLine 中的目标价须落在 scenarios.bull 价格区间内（targetPrice ≥ bull区间下限且 ≤ bull区间上限）。若判断目标价超出原牛势区间，应调整 bull.range 以包含目标价，勿让目标价与牛势区间矛盾。逻辑：熊势区间 < 基准区间 < 当前价附近 < 牛势区间，且牛势区间应覆盖目标价。三个情景区间不得重叠，相邻区间空隙不得超过整轴宽度的 20%。
 
@@ -1143,7 +1178,7 @@ function normalizeReportExtensions(data, alphaOverview, lockedSpotPrice, listing
   normalizeBullBearDebateField(data);
   normalizeScenarioProPlusFields(data);
   normalizeSupplyChainProPlusFields(data);
-  sanitizeSupplyChain(data);
+  sanitizeSupplyChain(data, ctx.assetType || 'stock');
   data.leaderInsiderSummary = String(data.leaderInsiderSummary || '').trim();
   data.peerVsSectorLine = String(data.peerVsSectorLine || '').trim();
   let apl = String(data.analystPriceLine || '').trim();
@@ -1393,14 +1428,45 @@ ${hint ? `${hint}\n` : ''}
 规则：1）单一普通股/行业主体才写；note≤72字，可核验监管要点+角标，优先7日内来源，超14日须标注可能过时。2）ETF/基金：score=0，note「${insuf}」。3）禁编造。4）须对当前监管环境打分；禁止轻易 0 分，有监管背景时最低 10；仅完全无事实时 score=0。${retryBlock}
 
 只输出一个 JSON：{"name":"${policyName}","score":0-100,"note":"…"}`;
-    const policyWeb = openRouterLeaderUseWeb();
-    const { content: raw, usage } = await openRouterChat(apiKey, {
-      model: policyModel,
-      userContent: prompt,
-      stream: false,
-      useWeb: policyWeb,
-      maxOutputTokens: openRouterMaxOutputTokensLeader(),
-    });
+    let raw;
+    let usage;
+    let usedWeb = false;
+    let modelUsed = policyModel;
+    if (geminiPolicyEnabled()) {
+      const geminiModel = resolveGeminiModel(process.env.GEMINI_POLICY_MODEL);
+      const geminiResult = await geminiApiGenerate({
+        userContent: prompt,
+        maxOutputTokens: openRouterMaxOutputTokensLeader(),
+        model: geminiModel,
+      });
+      raw = geminiResult.content;
+      usage = geminiResult.usage;
+      modelUsed = geminiResult.modelUsed;
+      console.log(`[Wenap] policy-reg via Gemini API (${modelUsed})`);
+    } else if (vertexPolicyEnabled()) {
+      const vertexModel = resolveVertexModel(process.env.VERTEX_POLICY_MODEL);
+      const vertexResult = await vertexGeminiGenerate({
+        userContent: prompt,
+        maxOutputTokens: openRouterMaxOutputTokensLeader(),
+        model: vertexModel,
+      });
+      raw = vertexResult.content;
+      usage = vertexResult.usage;
+      modelUsed = vertexResult.modelUsed;
+      console.log(`[Wenap] policy-reg via Vertex (${modelUsed})`);
+    } else {
+      const policyWeb = openRouterLeaderUseWeb();
+      usedWeb = policyWeb;
+      const orResult = await openRouterChat(apiKey, {
+        model: policyModel,
+        userContent: prompt,
+        stream: false,
+        useWeb: policyWeb,
+        maxOutputTokens: openRouterMaxOutputTokensLeader(),
+      });
+      raw = orResult.content;
+      usage = orResult.usage;
+    }
     const obj = extractJsonObject(raw);
     const rawScore = obj.score;
     const parsed = Math.min(100, Math.max(0, Number(rawScore) || 0));
@@ -1412,7 +1478,8 @@ ${hint ? `${hint}\n` : ''}
       score: parsed,
       note: String(obj.note || insuf).trim() || insuf,
       _usage: usage,
-      _usedWeb: policyWeb,
+      _usedWeb: usedWeb,
+      _modelUsed: modelUsed,
       _rawScore: rawScore,
     };
   };
@@ -2146,6 +2213,11 @@ function stripDataForViz(
     reportTier: tier,
     model: String(model || data.model || '').trim(),
     secondPassCritique: data.secondPassCritique || null,
+    assetType: String(assetType || 'stock'),
+    assetMeta:
+      marketSnapshot?.assetMeta && typeof marketSnapshot.assetMeta === 'object'
+        ? marketSnapshot.assetMeta
+        : null,
   };
   const proHints = {
     hasActionLine: Boolean(
@@ -2350,13 +2422,40 @@ async function runAnalyzePipeline(
   try {
     mergeOpenRouterKeyFromDotenvFile();
     if (bailIfClientGone('start')) return;
+    const locNormEarly = normalizeLocale(locale);
     const avKey = getAlphaVantageKey();
     let alphaBlock = '';
     let alphaOverview = null;
     let alphaGlobalQuote = null;
     let marketSnapshot = null;
     const currentPriceRef = { value: NaN };
-    if (avKey) {
+    let listingCurrency = 'USD';
+    let exchangeHint = '';
+    const isAlt = isAlternativeAssetType(assetType);
+
+    if (isAlt) {
+      if (bailIfClientGone('alt-market')) return;
+      const alt = await fetchAlternativeAssetMarketData({
+        symbol,
+        assetType,
+        apiKey: avKey,
+        alphaVantageJson,
+        locale: locNormEarly,
+      });
+      if (!alt.ok) {
+        writeSse(res, {
+          type: 'error',
+          code: alt.code || 'MARKET_DATA_UNAVAILABLE',
+          message: alt.message || 'Market data unavailable',
+        });
+        return;
+      }
+      marketSnapshot = alt.snapshot;
+      currentPriceRef.value = marketSnapshot.currentPrice;
+      alphaBlock = alt.contextText || '';
+      listingCurrency = alt.listingCurrency || marketSnapshot.listingCurrency || 'USD';
+      exchangeHint = alt.exchangeHint || marketSnapshot.exchangeHint || '';
+    } else if (avKey) {
       try {
         if (bailIfClientGone('alpha')) return;
         const bundle = await fetchAlphaVantageContextBundle(symbol, avKey);
@@ -2369,11 +2468,13 @@ async function runAnalyzePipeline(
           globalQuote: alphaGlobalQuote,
           overview: alphaOverview,
           alphaVantageJson,
-          locale: normalizeLocale(locale),
+          locale: locNormEarly,
           listingCurrency: listingCurrencyEarly,
         });
         currentPriceRef.value = marketSnapshot.currentPrice;
         alphaBlock = appendSnapshotLinesToAlphaText(bundle.text, marketSnapshot, alphaOverview, alphaGlobalQuote);
+        listingCurrency = listingCurrencyEarly;
+        exchangeHint = alphaOverview ? String(alphaOverview.Exchange || '').trim() : '';
         if (marketSnapshot.warnings?.length) {
           console.warn(`[Wenap] ${symbol} market snapshot:`, marketSnapshot.warnings.join('; '));
         }
@@ -2382,9 +2483,9 @@ async function runAnalyzePipeline(
       }
     }
     const currentPrice = currentPriceRef.value;
-    const looksLikeFund = assetType === 'stock' && overviewSuggestsEtfLike(alphaOverview);
+    const looksLikeFund = !isAlt && assetType === 'stock' && overviewSuggestsEtfLike(alphaOverview);
     const effectiveAssetType = looksLikeFund ? 'etf' : assetType;
-    if (avKey && (alphaOverview || alphaGlobalQuote)) {
+    if (!isAlt && avKey && (alphaOverview || alphaGlobalQuote)) {
       const completeness = assessAlphaVantageCompleteness(
         {
           overview: alphaOverview,
@@ -2414,8 +2515,10 @@ async function runAnalyzePipeline(
         dataLimitedNotice = LIMITED_DATA_NOTICE;
       }
     }
-    const listingCurrency = inferListingCurrency(alphaOverview, symbol);
-    const exchangeHint = alphaOverview ? String(alphaOverview.Exchange || '').trim() : '';
+    if (!isAlt) {
+      listingCurrency = inferListingCurrency(alphaOverview, symbol);
+      exchangeHint = alphaOverview ? String(alphaOverview.Exchange || '').trim() : exchangeHint;
+    }
     if (looksLikeFund) {
       console.warn(
         `[Wenap] 代码 ${symbol}：OVERVIEW 似为基金/ETF，已按 ETF 维度分析（原请求 assetType=stock）。`,
@@ -2550,10 +2653,10 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
             locale,
           );
           usageLog.leader = policyRow._usage || null;
-          usageLog.policyModel = MODEL_POLICY_FALLBACK;
+          usageLog.policyModel = policyRow._modelUsed || MODEL_POLICY_FALLBACK;
           data.dimensions = mergePolicyRegulationIntoDimensions(data.dimensions, policyRow, locale);
           logPolicyRegulationDimension(symbol, 'after-fallback', extractPolicyRegulationDimension(data.dimensions));
-          console.log(`[Wenap] ${symbol}：政策法规维补刀（${MODEL_POLICY_FALLBACK}）`);
+          console.log(`[Wenap] ${symbol}：政策法规维补刀（${usageLog.policyModel}）`);
         } catch (e) {
           console.warn('[Wenap] 政策法规维补刀失败，保留主模型结果：', e.message);
         }
@@ -2591,7 +2694,9 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
     localizeReportCitations(data, locale);
     applyAlphaIdentity(data, alphaOverview, symbol, locale);
     data.dimensions = alignDimensionSlots(data.dimensions, effectiveAssetType, locale);
-    data.dimensions = applyPolicyDimensionBackdropFloor(data.dimensions, locale);
+    if (effectiveAssetType === 'stock') {
+      data.dimensions = applyPolicyDimensionBackdropFloor(data.dimensions, locale);
+    }
     data.dimensions = applySixthDimensionFloor(data.dimensions, effectiveAssetType, locale);
     data.dimensions = markUnavailableDimensionScores(data.dimensions, locale);
     reconcileHeadlineScore(data);
@@ -2779,6 +2884,10 @@ function serverInfoPayload() {
     adminApiMount: '/admin-api',
     adminSpaPaths: ['/admin', '/admin/*'],
     openRouterKeyConfigured: Boolean(getOpenRouterKey()),
+    geminiApiConfigured: geminiApiConfigured(),
+    geminiPolicyEnabled: geminiPolicyEnabled(),
+    vertexGeminiConfigured: vertexGeminiConfigured(),
+    vertexPolicyEnabled: vertexPolicyEnabled(),
     alphaVantageConfigured: Boolean(getAlphaVantageKey()),
     pricing: PRICING_USD,
     billing: {
@@ -3097,7 +3206,7 @@ app.post('/analyze', requireAuth, async (req, res) => {
   res.setHeader('X-Accel-Buffering', 'no');
   if (typeof res.flushHeaders === 'function') res.flushHeaders();
 
-  const ast = assetType || 'stock';
+  const ast = normalizeAnalyzeAssetType(assetType);
   const hor = horizon || '3m';
   const locale = normalizeLocale(req.body?.locale);
   const mainModel = mainModelForTier(tier);
@@ -3231,7 +3340,7 @@ if (SPA_MODE) {
       const p = req.path || '';
       if (
         /^\/admin(\/.*)?$/.test(p) ||
-        /^\/(accuracy|login|register|verify-email|accept-legal|forgot-password|pricing|settings|sample|compare|about|methodology|privacy|terms|disclaimer)(\/.*)?$/.test(p)
+        /^\/(accuracy|login|register|verify-email|accept-legal|forgot-password|reset-password|pricing|settings|sample|compare|about|methodology|privacy|terms|disclaimer)(\/.*)?$/.test(p)
       ) {
         return res.sendFile(idxFile);
       }
