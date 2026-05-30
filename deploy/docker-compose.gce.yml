@@ -1,0 +1,22 @@
+# GCE 生产：持久盘挂载 /app/data（SQLite + history）
+# 用法见 docs/GCP-全迁方案.md
+services:
+  wenap:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3002:3002"
+    env_file:
+      - ../.env
+    environment:
+      NODE_ENV: production
+      SERVE_DIST: "1"
+      TRUST_PROXY: "1"
+      PORT: "3002"
+      SQLITE_PATH: /app/data/wenap.db
+      DATA_DIR: /app/data
+      CRON_ENABLED: "true"
+    volumes:
+      - /mnt/wenap-data:/app/data
