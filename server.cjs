@@ -824,7 +824,9 @@ const {
   localizeReportCitations,
 } = require('./lib/citationLocale.cjs');
 const {
-  openRouterChatWithFallback,
+  llmChatWithFallback,
+} = require('./lib/llmChat.cjs');
+const {
   OpenRouterUnavailableError,
 } = require('./lib/openRouterClient.cjs');
 const {
@@ -1000,14 +1002,15 @@ ${supplyChainBlock}
 【输出完整性】所有字段须完整句子，不得以逗号或不完整语句结尾。${tierPromptExtensions(tier)}`;
 }
 
-async function openRouterChat(apiKey, { model, userContent, stream, useWeb, maxOutputTokens, timeoutMs }) {
-  return openRouterChatWithFallback(apiKey, {
+async function openRouterChat(apiKey, { model, userContent, stream, useWeb, maxOutputTokens, timeoutMs, fallbackModels }) {
+  return llmChatWithFallback(apiKey, {
     model,
     userContent,
     stream,
     useWeb,
     maxOutputTokens,
     timeoutMs,
+    fallbackModels,
   });
 }
 
@@ -2314,7 +2317,7 @@ Respond ONLY with JSON: {"weaknesses": ["weakness 1", "weakness 2", "weakness 3"
 Each weakness should be 1 concise sentence in ${lang}.`;
 
   const critiqueModel = MODEL_CRITIQUE;
-  const { content: text, usage, modelUsed } = await openRouterChatWithFallback(apiKey, {
+  const { content: text, usage, modelUsed } = await llmChatWithFallback(apiKey, {
     model: critiqueModel,
     userContent: prompt,
     stream: false,
