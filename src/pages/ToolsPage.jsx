@@ -2,16 +2,11 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext.jsx'
+import { inferMacroCountryFromTicker, readMacroCountryPrefs } from '../utils/macroCountry.js'
 import './ToolsPage.css'
 
 function readMacroCountry() {
-  try {
-    const v = localStorage.getItem('wenap_macroCountry')
-    if (v && /^[A-Za-z]{2,3}$/.test(v)) return v.toUpperCase()
-  } catch {
-    /* ignore */
-  }
-  return 'USA'
+  return readMacroCountryPrefs().country || 'USA'
 }
 
 export default function ToolsPage() {
@@ -20,15 +15,18 @@ export default function ToolsPage() {
   const tier = user?.tier || 'free'
   const isPro = tier === 'pro' || tier === 'pro_plus' || tier === 'proplus'
   const isProPlus = tier === 'pro_plus' || tier === 'proplus'
+  const [macroMode, setMacroMode] = useState(() => readMacroCountryPrefs().mode || 'auto')
   const [macroCountry, setMacroCountry] = useState(readMacroCountry())
+  const [macroExampleTicker, setMacroExampleTicker] = useState('7203.T')
 
   useEffect(() => {
     try {
       localStorage.setItem('wenap_macroCountry', macroCountry)
+      localStorage.setItem('wenap_macroCountryMode', macroMode)
     } catch {
       /* ignore */
     }
-  }, [macroCountry])
+  }, [macroCountry, macroMode])
 
   return (
     <div className="tools-page">
@@ -40,11 +38,30 @@ export default function ToolsPage() {
 
       {isPro ? (
         <div className="tools-macro-bar">
+          <label className="tools-macro-mode">
+            <input
+              type="radio"
+              name="macroMode"
+              checked={macroMode === 'auto'}
+              onChange={() => setMacroMode('auto')}
+            />
+            <span>{t('tools.macroModeAuto')}</span>
+          </label>
+          <label className="tools-macro-mode">
+            <input
+              type="radio"
+              name="macroMode"
+              checked={macroMode === 'manual'}
+              onChange={() => setMacroMode('manual')}
+            />
+            <span>{t('tools.macroModeManual')}</span>
+          </label>
           <label className="tools-macro-label">
             {t('tools.macroCountry')}
             <input
               className="tools-macro-input"
               value={macroCountry}
+              disabled={macroMode !== 'manual'}
               onChange={(e) =>
                 setMacroCountry(
                   String(e.target.value || '')
@@ -57,6 +74,22 @@ export default function ToolsPage() {
               maxLength={3}
             />
           </label>
+          {macroMode === 'auto' ? (
+            <div className="tools-macro-auto-box">
+              <label className="tools-macro-label">
+                {t('tools.macroAutoTicker')}
+                <input
+                  className="tools-macro-auto-input"
+                  value={macroExampleTicker}
+                  onChange={(e) => setMacroExampleTicker(e.target.value.toUpperCase())}
+                  maxLength={16}
+                />
+              </label>
+              <div className="tools-macro-hint">
+                {t('tools.macroAutoResult')}: {inferMacroCountryFromTicker(macroExampleTicker || '')}
+              </div>
+            </div>
+          ) : null}
           <div className="tools-macro-hint">{t('tools.macroCountryHint')}</div>
         </div>
       ) : null}

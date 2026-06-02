@@ -6,6 +6,7 @@ import { consumeAnalyzeStream } from '../lib/consumeAnalyzeStream.js'
 import { useAuth } from '../context/AuthContext.jsx'
 import { snapshotToMobileReport } from '../utils/snapshotToMobileReport.js'
 import CompareRadarOverlay from '../components/compare/CompareRadarOverlay.jsx'
+import { resolveMacroCountry } from '../utils/macroCountry.js'
 import './ComparePage.css'
 
 const ASSET_TYPE_IDS = [
@@ -221,16 +222,6 @@ export default function ComparePage() {
 
   const locale = i18n.language || 'en'
 
-  function readMacroCountry() {
-    try {
-      const v = localStorage.getItem('wenap_macroCountry')
-      if (v && /^[A-Za-z]{2,3}$/.test(v)) return v.toUpperCase()
-    } catch {
-      /* ignore */
-    }
-    return 'USA'
-  }
-
   async function runAnalysis(sym, setReport, setLoading, setError) {
     if (!sym) return
     setLoading(true)
@@ -241,7 +232,13 @@ export default function ComparePage() {
       const resp = await fetch(apiUrl('/analyze'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ ticker: sym, assetType, horizon, locale, macroCountry: readMacroCountry() }),
+        body: JSON.stringify({
+          ticker: sym,
+          assetType,
+          horizon,
+          locale,
+          macroCountry: resolveMacroCountry(sym),
+        }),
       })
       const ctype = resp.headers.get('content-type') || ''
       if (!resp.ok) {

@@ -40,6 +40,15 @@
   color: rgba(255, 255, 255, 0.75);
 }
 
+.tools-macro-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 16px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
 .tools-macro-input {
   width: 86px;
   padding: 8px 10px;
@@ -49,6 +58,26 @@
   color: #fff;
   font-weight: 700;
   letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tools-macro-input:disabled {
+  opacity: 0.45;
+}
+
+.tools-macro-auto-box {
+  margin-top: 10px;
+}
+
+.tools-macro-auto-input {
+  width: 120px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.25);
+  color: #fff;
+  font-weight: 600;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 

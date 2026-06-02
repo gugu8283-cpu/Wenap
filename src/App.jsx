@@ -18,6 +18,7 @@ import { resolveTickerInput } from './utils/tickerResolve.js'
 import TickerQuickPicks from './components/TickerQuickPicks.jsx'
 import LegalFooter from './components/LegalFooter.jsx'
 import './components/LegalFooter.css'
+import { resolveMacroCountry } from './utils/macroCountry.js'
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 
@@ -309,13 +310,7 @@ export default function App() {
       const token = getToken()
       if (token) headers.Authorization = `Bearer ${token}`
 
-      let macroCountry = 'USA'
-      try {
-        const v = localStorage.getItem('wenap_macroCountry')
-        if (v && /^[A-Za-z]{2,3}$/.test(v)) macroCountry = v.toUpperCase()
-      } catch {
-        /* ignore */
-      }
+      const macroCountry = resolveMacroCountry(sym)
 
       try {
         const resp = await fetch(url, {
