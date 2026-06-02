@@ -38,18 +38,28 @@ function mergeOpenRouterKeyFromDotenvFile() {
     }
     if (best) process.env.OPENROUTER_API_KEY = best;
     let bestAv = '';
+    let bestMs = '';
     for (let line of raw.split(/\r?\n/)) {
       line = line.replace(/^\uFEFF/, '').trim();
       if (!line || line.startsWith('#')) continue;
       const normalized = line.replace(/\uFF1D/g, '=');
       const ma = normalized.match(/^(?:export\s+)?ALPHA_VANTAGE_API_KEY\s*=\s*(.*)$/i);
-      if (!ma) continue;
-      let v = ma[1].trim();
-      if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'")))
-        v = v.slice(1, -1).trim();
-      if (v) bestAv = v;
+      if (ma) {
+        let v = ma[1].trim();
+        if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'")))
+          v = v.slice(1, -1).trim();
+        if (v) bestAv = v;
+      }
+      const mm = normalized.match(/^(?:export\s+)?MARKETSTACK_API_KEY\s*=\s*(.*)$/i);
+      if (mm) {
+        let v = mm[1].trim();
+        if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'")))
+          v = v.slice(1, -1).trim();
+        if (v) bestMs = v;
+      }
     }
     if (bestAv) process.env.ALPHA_VANTAGE_API_KEY = bestAv;
+    if (bestMs) process.env.MARKETSTACK_API_KEY = bestMs;
   } catch (e) {
     if (!mergeOpenRouterKeyFromDotenvFile._warned) {
       mergeOpenRouterKeyFromDotenvFile._warned = true;
@@ -619,6 +629,55 @@ async function fetchAlphaVantageContextBundle(symbol, apiKey) {
   return bundle;
 }
 
+function buildMarketSnapshotFromContext({
+  globalQuote,
+  listingCurrency = 'USD',
+  locale = 'zh-CN',
+  sourceLabel = 'Market data',
+  sourceType = 'market_data',
+  delayed = false,
+}) {
+  const gq = globalQuote && typeof globalQuote === 'object' ? globalQuote : {};
+  const price = parseFloat(String(gq['05. price'] || '').replace(/,/g, ''));
+  const tradingDay = String(gq['07. latest trading day'] || '').trim();
+  const fetchedAtIso = new Date().toISOString();
+  const hhmm = fetchedAtIso.slice(11, 16);
+  const asOfDisplay = tradingDay ? `${tradingDay} ${hhmm}` : fetchedAtIso.slice(0, 16).replace('T', ' ');
+  const zh = String(locale || '').startsWith('zh');
+  const warnings = [];
+  if (delayed) {
+    warnings.push(
+      zh
+        ? '⚠️ 行情源为 EOD/延迟数据，盘中可能与最新成交价存在差异。'
+        : '⚠️ Quote source is EOD/delayed; intraday spot may differ.',
+    );
+  }
+  return {
+    currentPrice: Number.isFinite(price) && price > 0 ? price : NaN,
+    tradingDay,
+    priceAsOfDisplay: asOfDisplay,
+    priceSource: sourceType,
+    priceAgeDays: tradingDay ? Math.max(0, Math.floor((Date.now() - new Date(`${tradingDay}T00:00:00Z`).getTime()) / 86400000)) : null,
+    priceStaleOver7Days: false,
+    priceStaleNotice: delayed
+      ? zh
+        ? '⚠️ 当前为延迟/收盘口径，盘中波动请交叉核验。'
+        : '⚠️ Delayed/EOD quote; cross-check intraday volatility.'
+      : '',
+    fieldMeta: {},
+    fieldFreshnessWarnings: [],
+    warnings,
+    fetchedAtIso,
+    sourceLabel,
+    promptPriceBlock:
+      Number.isFinite(price) && price > 0
+        ? currentPricePromptBlock(price, listingCurrency || 'USD', locale)
+        : '',
+    promptFreshnessBlock: dataFreshnessPromptBlock(locale),
+    listingCurrency: listingCurrency || 'USD',
+  };
+}
+
 /**
  * 仅当 Alpha OVERVIEW 的 API 字段**明确**为 ETF/ETN 时纠偏；识别失败一律按普通股。
  * 不依据 Industry/Sector 关键词（易误伤 PKG 等个股）。
@@ -775,6 +834,13 @@ const {
   latestPriceFromGlobalQuote,
   currentPricePromptBlock,
 } = require('./lib/alphaMarketSnapshot.cjs');
+const {
+  marketDataProvider,
+  marketstackConfigured,
+  getMarketstackKey,
+  fetchMarketstackContextBundle,
+} = require('./lib/marketstackClient.cjs');
+const { cacheBackendLabel, redisConfigured } = require('./lib/cacheClient.cjs');
 const { parsePricesFromLine } = require('./lib/parsePrices.cjs');
 const {
   resolveTickerInput,
@@ -2427,6 +2493,9 @@ async function runAnalyzePipeline(
     if (bailIfClientGone('start')) return;
     const locNormEarly = normalizeLocale(locale);
     const avKey = getAlphaVantageKey();
+    const msKey = getMarketstackKey();
+    const provider = marketDataProvider();
+    const useMarketstack = provider === 'marketstack' && marketstackConfigured();
     let alphaBlock = '';
     let alphaOverview = null;
     let alphaGlobalQuote = null;
@@ -2458,6 +2527,52 @@ async function runAnalyzePipeline(
       alphaBlock = alt.contextText || '';
       listingCurrency = alt.listingCurrency || marketSnapshot.listingCurrency || 'USD';
       exchangeHint = alt.exchangeHint || marketSnapshot.exchangeHint || '';
+    } else if (useMarketstack) {
+      try {
+        if (bailIfClientGone('marketstack')) return;
+        const bundle = await fetchMarketstackContextBundle(symbol, locNormEarly, msKey);
+        alphaOverview = bundle.overview;
+        alphaGlobalQuote = bundle.globalQuote;
+        const listingCurrencyEarly = inferListingCurrency(alphaOverview, symbol);
+        marketSnapshot = buildMarketSnapshotFromContext({
+          globalQuote: alphaGlobalQuote,
+          listingCurrency: listingCurrencyEarly,
+          locale: locNormEarly,
+          sourceLabel: 'Marketstack (EOD/delayed)',
+          sourceType: 'marketstack_eod',
+          delayed: true,
+        });
+        currentPriceRef.value = marketSnapshot.currentPrice;
+        alphaBlock = String(bundle.text || '').trim();
+        listingCurrency = listingCurrencyEarly;
+        exchangeHint = alphaOverview ? String(alphaOverview.Exchange || '').trim() : '';
+      } catch (e) {
+        console.warn('[Wenap] Marketstack:', e.message);
+        if (avKey) {
+          try {
+            const fb = await fetchAlphaVantageContextBundle(symbol, avKey);
+            alphaOverview = fb.overview;
+            alphaGlobalQuote = fb.globalQuote;
+            const listingCurrencyEarly = inferListingCurrency(alphaOverview, symbol);
+            marketSnapshot = await buildAlphaMarketSnapshot({
+              symbol,
+              apiKey: avKey,
+              globalQuote: alphaGlobalQuote,
+              overview: alphaOverview,
+              alphaVantageJson,
+              locale: locNormEarly,
+              listingCurrency: listingCurrencyEarly,
+            });
+            currentPriceRef.value = marketSnapshot.currentPrice;
+            alphaBlock = appendSnapshotLinesToAlphaText(fb.text, marketSnapshot, alphaOverview, alphaGlobalQuote);
+            listingCurrency = listingCurrencyEarly;
+            exchangeHint = alphaOverview ? String(alphaOverview.Exchange || '').trim() : '';
+            console.warn('[Wenap] Marketstack failed; fallback Alpha Vantage used.');
+          } catch (fbErr) {
+            console.warn('[Wenap] Alpha fallback after Marketstack failed:', fbErr.message);
+          }
+        }
+      }
     } else if (avKey) {
       try {
         if (bailIfClientGone('alpha')) return;
@@ -2488,7 +2603,7 @@ async function runAnalyzePipeline(
     const currentPrice = currentPriceRef.value;
     const looksLikeFund = !isAlt && assetType === 'stock' && overviewSuggestsEtfLike(alphaOverview);
     const effectiveAssetType = looksLikeFund ? 'etf' : assetType;
-    if (!isAlt && avKey && (alphaOverview || alphaGlobalQuote)) {
+    if (!isAlt && (alphaOverview || alphaGlobalQuote)) {
       const completeness = assessAlphaVantageCompleteness(
         {
           overview: alphaOverview,
@@ -2891,6 +3006,10 @@ function serverInfoPayload() {
     geminiPolicyEnabled: geminiPolicyEnabled(),
     vertexGeminiConfigured: vertexGeminiConfigured(),
     vertexPolicyEnabled: vertexPolicyEnabled(),
+    marketDataProvider: marketDataProvider(),
+    marketstackConfigured: marketstackConfigured(),
+    redisConfigured: redisConfigured(),
+    cacheBackend: cacheBackendLabel(),
     alphaVantageConfigured: Boolean(getAlphaVantageKey()),
     pricing: PRICING_USD,
     billing: {
@@ -3514,9 +3633,17 @@ app.listen(PORT, () => {
     );
   }
   const av = getAlphaVantageKey();
+  const ms = getMarketstackKey();
+  const provider = marketDataProvider();
+  console.log(
+    `[Wenap] Market data provider: ${provider} | Marketstack configured: ${ms ? 'yes' : 'no'} | Redis configured: ${redisConfigured() ? 'yes' : 'no'}`,
+  );
+  if (provider === 'marketstack' && ms) {
+    console.log('[Wenap] MARKETSTACK_API_KEY 已载入（EOD/延迟行情）');
+  }
   if (av) {
-    console.log(`[Wenap] ALPHA_VANTAGE_API_KEY 已载入（长度 ${av.length}），分析前将拉取 GLOBAL_QUOTE+OVERVIEW`);
+    console.log(`[Wenap] ALPHA_VANTAGE_API_KEY 已载入（长度 ${av.length}），作为过渡/回退可用`);
   } else {
-    console.log('[Wenap] 未配置 ALPHA_VANTAGE_API_KEY，跳过行情快照（可在 .env 添加）');
+    console.log('[Wenap] 未配置 ALPHA_VANTAGE_API_KEY（如采用 marketstack 主行情可忽略）');
   }
 });

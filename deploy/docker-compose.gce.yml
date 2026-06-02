@@ -18,5 +18,12 @@ services:
       SQLITE_PATH: /app/data/wenap.db
       DATA_DIR: /app/data
       CRON_ENABLED: "true"
+    depends_on:
+      - redis
     volumes:
       - /mnt/wenap-data:/app/data
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]

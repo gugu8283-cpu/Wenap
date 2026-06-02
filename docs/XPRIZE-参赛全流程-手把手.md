@@ -8,6 +8,8 @@
 
 按下面 **第 0 步 → 第 12 步** 顺序做，不要跳。某步未完成，后面可能白做。
 
+> **综合总表（含第 5～6 收尾勾选、Phase A 换源、与竞赛并行顺序）** → [WENAP-实施总览-手把手.md](./WENAP-实施总览-手把手.md)
+
 ---
 
 ## 总览时间表
@@ -319,6 +321,11 @@ docker compose -f /opt/wenap/stockai/deploy/docker-compose.gce.yml logs --tail=1
 8. VM 上确认 `.env` 里 `APP_PUBLIC_URL=https://wenap.app`
 9. **Stripe Dashboard** → Webhooks → 确认 endpoint 仍是 `https://wenap.app/.../stripe/webhook` 且 **成功**
 10. Render 旧服务：**Suspend** 或删除（避免双活）
+
+> 🔎 **2026-06-02 备注（回看点）**  
+> Stripe 出现过「金融投顾类禁止业务」复核提示，已提交异议，当前状态为 **审查中（1–2 个工作日）**；  
+> Webhook endpoint 为 `https://wenap.app/api/billing/webhook`，状态 Active，失败 0；Render 已 suspend。  
+> 后续回看：确认 Stripe 审核结果是否通过，并截图留档到第 11 步证据。
 
 ✅ **完成标志**：wenap.app 指向 GCP；Stripe webhook 绿。
 
