@@ -136,15 +136,15 @@ crypto / forex / commodities **不经过此次替换**，继续 CoinGecko、Exch
 
 **Phase B 完成时**
 
-- [ ] 定价页 Pro 四项与功能一致；`/compare` 3 股雷达可用  
-- [ ] 财报日历、宏观块有 FRED/SEC 来源小字  
-- [ ] 首屏/定价回答「vs ChatGPT」  
+- [x] 定价页 Pro 四项与功能一致；`/compare` 最多 3 股 + 雷达 + CSV（Pro）  
+- [x] 财报日历、宏观块有 FRED/SEC 来源小字（`/pro/earnings/:sym`、`EnrichmentSection`）  
+- [x] 定价页「vs ChatGPT」文案  
 
 **Phase C 完成时**
 
-- [ ] Pro+ 对比表与国会/选股/预警一致；美股范围写清  
-- [ ] 选股/预警免责与限次  
-- [ ] 新手界面不默认堆 Pro+ 复杂块  
+- [x] Pro+：`/pro/insider`、`/pro/congress`、`/pro/screener`、`/pro/alerts`；工具页 `/tools`  
+- [x] 选股月限次 + 大字免责；预警默认关、可配置  
+- [x] Pro+ 进阶块折叠（`ProAdvancedPanel`）  
 
 ---
 

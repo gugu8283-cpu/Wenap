@@ -309,6 +309,14 @@ export default function App() {
       const token = getToken()
       if (token) headers.Authorization = `Bearer ${token}`
 
+      let macroCountry = 'USA'
+      try {
+        const v = localStorage.getItem('wenap_macroCountry')
+        if (v && /^[A-Za-z]{2,3}$/.test(v)) macroCountry = v.toUpperCase()
+      } catch {
+        /* ignore */
+      }
+
       try {
         const resp = await fetch(url, {
           method: 'POST',
@@ -319,6 +327,7 @@ export default function App() {
             horizon: hor,
             locale: resolveAppLanguage(i18n.resolvedLanguage || i18n.language),
             riskFocus: riskFocus || undefined,
+            macroCountry,
             confirmIncompleteData: overrides.confirmIncompleteData === true,
             forceRefresh: overrides.forceRefresh === true,
           }),
@@ -559,9 +568,9 @@ export default function App() {
                 {user.tier && user.tier !== 'free' ? ` · ${user.tier.replace('_', '+')}` : ''}
               </Link>
             ) : null}
-            {(user?.tier === 'pro_plus' || user?.tier === 'proplus') && (
-              <Link to="/compare" className="theme-toggle" style={{ textDecoration: 'none' }}>
-                {t('compare.title', { defaultValue: 'Compare' })}
+            {(user?.tier === 'pro' || user?.tier === 'pro_plus' || user?.tier === 'proplus') && (
+              <Link to="/tools" className="theme-toggle" style={{ textDecoration: 'none' }}>
+                {t('tools.nav', { defaultValue: 'Tools' })}
               </Link>
             )}
             {!user && (

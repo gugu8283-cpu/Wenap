@@ -20,6 +20,8 @@ import PricingPage from './pages/PricingPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
 import SampleReportPage from './pages/SampleReportPage.jsx'
 import ComparePage from './pages/ComparePage.jsx'
+import ToolsPage from './pages/ToolsPage.jsx'
+import ScreenerPage from './pages/ScreenerPage.jsx'
 import AboutPage from './pages/AboutPage.jsx'
 import LegalPage from './pages/legal/LegalPage.jsx'
 
@@ -51,6 +53,8 @@ createRoot(document.getElementById('root')).render(
           <Route path="/accuracy" element={<AccuracyPage />} />
           <Route path="/sample/:ticker" element={<SampleReportPage />} />
           <Route path="/compare" element={<ComparePage />} />
+          <Route path="/tools" element={<ToolsPage />} />
+          <Route path="/screener" element={<ScreenerPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/methodology" element={<AboutPage />} />
           <Route path="/privacy" element={<LegalPage kind="privacy" />} />

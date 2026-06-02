@@ -36,6 +36,14 @@
   margin: 0;
 }
 
+.pricing-vs-chatgpt {
+  margin: 12px auto 0;
+  max-width: 520px;
+  font-size: 0.9rem;
+  color: #a5b4fc;
+  line-height: 1.5;
+}
+
 .pricing-error {
   background: rgba(255, 77, 77, 0.1);
   border: 1px solid rgba(255, 77, 77, 0.3);

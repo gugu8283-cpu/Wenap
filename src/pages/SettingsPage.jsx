@@ -15,11 +15,22 @@ export default function SettingsPage() {
   const [error, setError] = useState('')
   const [referralLink, setReferralLink] = useState('')
   const [referralCopied, setReferralCopied] = useState(false)
+  const [alerts, setAlerts] = useState({ enabled: false, dropPct: 5, volumeSpike: 2 })
+  const [alertsSaving, setAlertsSaving] = useState(false)
+
+  const isProPlus = user?.tier === 'pro_plus' || user?.tier === 'proplus'
 
   useEffect(() => {
     apiFetch('/billing/config').then(setBilling).catch(() => {})
     apiFetch('/auth/referral-link').then((j) => setReferralLink(j.link || '')).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (!isProPlus) return
+    apiFetch('/pro/alerts/settings')
+      .then(setAlerts)
+      .catch(() => {})
+  }, [isProPlus])
 
   async function copyReferral() {
     if (!referralLink) return
@@ -105,6 +116,65 @@ export default function SettingsPage() {
               {t('settings.stripeNotConfigured', { email: 'support@wenap.app' })}
             </p>
           )}
+        </div>
+      )}
+
+      {isProPlus && (
+        <div className="settings-card" id="alerts">
+          <h2 className="settings-section-title">{t('settings.alertsTitle')}</h2>
+          <p className="settings-sub-note">{t('settings.alertsNote')}</p>
+          <label className="settings-alert-row">
+            <input
+              type="checkbox"
+              checked={Boolean(alerts.enabled)}
+              onChange={(e) => setAlerts((a) => ({ ...a, enabled: e.target.checked }))}
+            />
+            <span>{t('settings.alertsEnable')}</span>
+          </label>
+          <div className="settings-row">
+            <span className="settings-label">{t('settings.alertsDrop')}</span>
+            <input
+              type="number"
+              min={1}
+              max={50}
+              value={alerts.dropPct}
+              onChange={(e) => setAlerts((a) => ({ ...a, dropPct: Number(e.target.value) }))}
+              className="settings-num-input"
+            />
+          </div>
+          <div className="settings-row">
+            <span className="settings-label">{t('settings.alertsVolume')}</span>
+            <input
+              type="number"
+              min={1.2}
+              max={10}
+              step={0.1}
+              value={alerts.volumeSpike}
+              onChange={(e) => setAlerts((a) => ({ ...a, volumeSpike: Number(e.target.value) }))}
+              className="settings-num-input"
+            />
+          </div>
+          <button
+            type="button"
+            className="settings-portal-btn"
+            disabled={alertsSaving}
+            onClick={async () => {
+              setAlertsSaving(true)
+              try {
+                const j = await apiFetch('/pro/alerts/settings', {
+                  method: 'PUT',
+                  body: JSON.stringify(alerts),
+                })
+                setAlerts(j)
+              } catch (e) {
+                setError(e?.message || t('settings.alertsSaveError'))
+              } finally {
+                setAlertsSaving(false)
+              }
+            }}
+          >
+            {alertsSaving ? t('common.loading') : t('settings.alertsSave')}
+          </button>
         </div>
       )}
 

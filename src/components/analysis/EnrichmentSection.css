@@ -1,0 +1,58 @@
+.enrichment-section {
+  margin: 12px 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--surface-elevated, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+}
+
+.enrichment-title {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.enrichment-block + .enrichment-block {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+}
+
+.enrichment-block-head {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary, #94a3b8);
+  margin-bottom: 8px;
+}
+
+.enrichment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.enrichment-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  padding: 4px 0;
+}
+
+.enrichment-muted {
+  color: var(--text-secondary, #94a3b8);
+  font-size: 11px;
+}
+
+.enrichment-source {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--text-secondary, #64748b);
+}
+
+.enrichment-tech-line {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}

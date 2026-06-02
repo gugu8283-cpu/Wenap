@@ -30,6 +30,25 @@
   -webkit-text-fill-color: transparent;
 }
 
+.compare-sub {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.compare-controls--triple .compare-input {
+  min-width: 100px;
+  flex: 1 1 120px;
+}
+
+.compare-btn--secondary {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.compare-panels--3 {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
 .compare-controls {
   display: flex;
   gap: 8px;

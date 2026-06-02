@@ -360,6 +360,8 @@ export function snapshotToMobileReport(snapshot, meta = {}) {
     bullBearDebate,
     proPlusFieldHints: snapshot.proPlusFieldHints || {},
     secondPassCritique: snapshot.secondPassCritique || null,
+    macroSnapshot: snapshot.macroSnapshot || null,
+    technicals: snapshot.technicals || null,
   }
   return meta.locale ? localizeMobileReportCitations(report, meta.locale) : report
 }

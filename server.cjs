@@ -161,6 +161,8 @@ if (SPA_MODE) {
 
 const PORT = Number.parseInt(String(process.env.PORT || '3002'), 10) || 3002;
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const DEFAULT_MACRO_COUNTRY =
+  String(process.env.WENAP_MACRO_COUNTRY || '').trim().toUpperCase() || 'USA';
 
 /** Free 主模型：联网 + 低成本（可用 OPENROUTER_MAIN_MODEL 覆盖） */
 const MODEL_FLASH =
@@ -220,10 +222,14 @@ const adminRouter = require('./routes/admin.cjs');
 const authRouter = require('./routes/auth.cjs');
 const billingRouter = require('./routes/billing.cjs');
 const notificationsRouter = require('./routes/notifications.cjs');
+const proFeaturesRouter = require('./routes/proFeatures.cjs');
 const publicAccuracyRouter = require('./routes/publicAccuracy.cjs');
+const { buildMarketEnrichment } = require('./lib/marketEnrichment.cjs');
+const { recordSentiment } = require('./lib/sentimentStore.cjs');
 const { requireAuth } = require('./middleware/requireAuth.cjs');
 const { startVerifyCron } = require('./jobs/verifyPredictions.cjs');
 const { startWeeklyAutoAnalysis } = require('./jobs/weeklyAutoAnalysis.cjs');
+const { startRiskAlertCron } = require('./jobs/riskAlertCron.cjs');
 const {
   normalizeLocale,
   outputLanguageInstruction,
@@ -2180,6 +2186,7 @@ function stripDataForViz(
     listingCurrency = 'USD',
     model = '',
     assetType = 'stock',
+    marketEnrichment = null,
   } = {},
 ) {
   const loc = normalizeLocale(locale);
@@ -2286,6 +2293,28 @@ function stripDataForViz(
     assetMeta:
       marketSnapshot?.assetMeta && typeof marketSnapshot.assetMeta === 'object'
         ? marketSnapshot.assetMeta
+        : null,
+    macroSnapshot:
+      marketEnrichment?.macro && typeof marketEnrichment.macro === 'object'
+        ? {
+            country: String(marketEnrichment.macro.country || 'USA'),
+            series: (marketEnrichment.macro.series || []).slice(0, 6),
+            source: marketEnrichment.macro.source,
+            sourceUrl: marketEnrichment.macro.sourceUrl,
+            license: marketEnrichment.macro.license,
+            licenseUrl: marketEnrichment.macro.licenseUrl,
+            attribution: marketEnrichment.macro.attribution,
+          }
+        : null,
+    technicals:
+      marketEnrichment?.technicals?.ok
+        ? {
+            rsi14: marketEnrichment.technicals.rsi14,
+            sma20: marketEnrichment.technicals.sma20,
+            sma50: marketEnrichment.technicals.sma50,
+            trend: marketEnrichment.technicals.trend,
+            source: 'EOD closes (computed)',
+          }
         : null,
   };
   const proHints = {
@@ -2648,6 +2677,27 @@ async function runAnalyzePipeline(
         ? String(alphaGlobalQuote['07. latest trading day'] || '').trim()
         : '');
     const locNorm = normalizeLocale(locale);
+    let marketEnrichment = null;
+    const macroCountry =
+      String(req.body?.macroCountry || req.body?.country || '').trim() ||
+      String(req.body?.macro_country || '').trim() ||
+      DEFAULT_MACRO_COUNTRY;
+    if (!isAlt && (tier === 'pro' || tier === 'pro_plus')) {
+      try {
+        if (bailIfClientGone('enrichment')) return;
+        marketEnrichment = await buildMarketEnrichment({
+          symbol,
+          locale: locNorm,
+          tier,
+          macroCountry,
+        });
+        if (marketEnrichment?.text) {
+          alphaBlock = `${String(alphaBlock || '').trim()}\n\n${marketEnrichment.text}`.trim();
+        }
+      } catch (enrErr) {
+        console.warn('[Wenap] market enrichment:', enrErr.message);
+      }
+    }
     const cacheK = analysisCacheKey({
       symbol,
       assetType: effectiveAssetType,
@@ -2878,6 +2928,7 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
       listingCurrency,
       model: mainModel,
       assetType: effectiveAssetType,
+      marketEnrichment,
     });
     if (!writeSse(res, { type: 'viz', snapshot: vizSnapshot })) return;
     setCachedAnalysis(cacheK, {
@@ -2906,6 +2957,11 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
       markdown: md,
       vizSnapshot,
     });
+    try {
+      recordSentiment({ symbol, score: data.score, signal: data.signal });
+    } catch {
+      /* non-fatal */
+    }
     if (tier === 'free' && !FREE_ANALYSIS_UNLIMITED) {
       if (authContext?.userId) {
         authDb.recordFreeAnalysisUsage(
@@ -3430,6 +3486,7 @@ if (SPA_MODE) {
 app.use('/auth', authRouter);
 app.use('/billing', billingRouter);
 app.use('/notifications', notificationsRouter);
+app.use('/pro', proFeaturesRouter);
 /** 管理 API 勿挂在 /admin（会与 SPA 路由 /admin 冲突）；前端请求 /api/admin-api/... */
 app.use('/admin-api', adminRouter);
 app.use('/accuracy', (req, res, next) => {
@@ -3441,6 +3498,7 @@ app.use('/accuracy', (req, res, next) => {
 });
 startVerifyCron();
 startWeeklyAutoAnalysis();
+startRiskAlertCron();
 
 if (SPA_MODE) {
   const distPath = path.join(__dirname, 'dist');
@@ -3462,7 +3520,7 @@ if (SPA_MODE) {
       const p = req.path || '';
       if (
         /^\/admin(\/.*)?$/.test(p) ||
-        /^\/(accuracy|login|register|verify-email|accept-legal|forgot-password|reset-password|pricing|settings|sample|compare|about|methodology|privacy|terms|disclaimer)(\/.*)?$/.test(p)
+        /^\/(accuracy|login|register|verify-email|accept-legal|forgot-password|reset-password|pricing|settings|sample|compare|tools|screener|about|methodology|privacy|terms|disclaimer)(\/.*)?$/.test(p)
       ) {
         return res.sendFile(idxFile);
       }

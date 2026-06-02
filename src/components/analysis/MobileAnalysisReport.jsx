@@ -22,6 +22,8 @@ import ProUpgradeBar from './ProUpgradeBar.jsx'
 import CritiqueSection from './CritiqueSection.jsx'
 import { buildCritiquePayload } from '../../utils/buildCritiquePayload.js'
 import ExportPdfButton from './ExportPdfButton.jsx'
+import EnrichmentSection from './EnrichmentSection.jsx'
+import ProAdvancedPanel from './ProAdvancedPanel.jsx'
 import Skeleton, { HeroSkeleton, RadarSkeleton, BlockSkeleton } from './Skeleton.jsx'
 
 const SECTION_COUNT = 10
@@ -179,6 +181,9 @@ export default function MobileAnalysisReport({
         />
       ) : null}
       {vis(3) ? <RadarSection dimensions={report.dimensions} /> : <RadarSkeleton />}
+      {vis(3) && !isFree && (snapshot?.macroSnapshot || snapshot?.technicals) ? (
+        <EnrichmentSection macroSnapshot={snapshot.macroSnapshot} technicals={snapshot.technicals} />
+      ) : null}
       {vis(4) ? (
         <ScenarioSection
           scenarios={report.scenarios}
@@ -226,6 +231,7 @@ export default function MobileAnalysisReport({
           currentPrice={report.currentPrice}
         />
       ) : null}
+      {isProPlus ? <ProAdvancedPanel ticker={report.ticker} tier={tier} /> : null}
       {vis(7) ? (
         <ProFieldsSection
           report={report}
