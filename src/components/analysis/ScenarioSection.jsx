@@ -11,8 +11,8 @@ const SVG_H = 64
 const BAR_Y = 22
 const BAR_H = 20
 const AXIS_LABEL_Y = 58
-const PRICE_LABEL_Y = 10
-const SPOT_LINE_Y1 = 14
+const PRICE_LABEL_Y = 8
+const SPOT_LINE_Y1 = BAR_Y
 const SPOT_LINE_Y2 = 50
 
 function scenClass(type) {
@@ -144,7 +144,7 @@ export default function ScenarioSection({ scenarios, currentPrice, locked = fals
       {axis ? (
         locked ? (
           <ProSectionLock ctaText={t('report.scenarioUnlockPro')} onUnlock={onUpgrade} className="ma-scen-chart-lock">
-            <svg className="ma-axis-svg" viewBox={`0 0 ${W} ${SVG_H}`} preserveAspectRatio="none" aria-hidden>
+            <svg className="ma-axis-svg" viewBox={`0 0 ${W} ${SVG_H}`} preserveAspectRatio="xMidYMid meet" aria-hidden>
               <rect x={0} y={BAR_Y} width={W} height={BAR_H} fill="rgba(255,255,255,0.04)" rx={4} />
               {axis.segs.map((seg) => (
                 <rect
@@ -160,7 +160,7 @@ export default function ScenarioSection({ scenarios, currentPrice, locked = fals
             </svg>
           </ProSectionLock>
         ) : (
-          <svg className="ma-axis-svg" viewBox={`0 0 ${W} ${SVG_H}`} preserveAspectRatio="none" aria-hidden>
+          <svg className="ma-axis-svg" viewBox={`0 0 ${W} ${SVG_H}`} preserveAspectRatio="xMidYMid meet" aria-hidden>
             <rect
               x={0}
               y={BAR_Y}
@@ -199,7 +199,10 @@ export default function ScenarioSection({ scenarios, currentPrice, locked = fals
                   textAnchor="middle"
                   fontSize={12}
                   fill={axis.priceOutside ? 'rgba(255,255,255,0.4)' : '#FFFFFF'}
-                  className="ma-num"
+                  stroke="#111827"
+                  strokeWidth={3}
+                  paintOrder="stroke fill"
+                  className="ma-num ma-axis-price-label"
                 >
                   {axis.priceOutside
                     ? `$${currentPrice.toFixed(0)} · ${t('report.watchRange')}`

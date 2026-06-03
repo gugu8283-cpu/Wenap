@@ -422,6 +422,10 @@
   overflow: visible;
 }
 
+.ma-axis-price-label {
+  font-weight: 600;
+}
+
 .ma-supply-card.ma-card {
   margin-left: -6px;
   margin-right: -6px;
