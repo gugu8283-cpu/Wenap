@@ -339,8 +339,10 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
-// Get referral link for current user
+// Get referral link for current user (hidden unless WENAP_REFERRAL_UI=1)
 router.get('/referral-link', requireAuth, (req, res) => {
+  const { referralUiEnabled } = require('../db/auth.cjs');
+  if (!referralUiEnabled()) return res.status(404).json({ error: 'NOT_FOUND' });
   const userId = req.authUser.id;
   const appUrl = (process.env.APP_PUBLIC_URL || 'http://localhost:5173').replace(/\/$/, '');
   const link = `${appUrl}/register?ref=${encodeURIComponent(userId)}`;

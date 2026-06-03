@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '../../components/LanguageSwitcher.jsx'
@@ -28,6 +28,15 @@ export default function RegisterPage() {
   const returnTo = `${location.pathname}${location.search}`
   const referralCode = searchParams.get('ref') || ''
   const prefilledSymbol = searchParams.get('symbol') || ''
+
+  useEffect(() => {
+    if (!referralCode) return
+    const next = new URL(window.location.href)
+    next.searchParams.delete('ref')
+    const qs = next.searchParams.toString()
+    const path = `${next.pathname}${qs ? `?${qs}` : ''}${next.hash}`
+    window.history.replaceState({}, '', path)
+  }, [referralCode, location.pathname, location.search, location.hash])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')

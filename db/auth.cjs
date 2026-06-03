@@ -147,6 +147,13 @@ function enforceReferralProExpiryIfNeeded(user) {
   return getUserById(user.id);
 }
 
+/** User-facing referral UI/API (settings link). Default off; set WENAP_REFERRAL_UI=1 to expose. */
+function referralUiEnabled() {
+  return ['1', 'true', 'on', 'yes'].includes(
+    String(process.env.WENAP_REFERRAL_UI || '').trim().toLowerCase(),
+  );
+}
+
 function recordPendingReferral({ refereeId, referrerId }) {
   if (!refereeId || !referrerId || refereeId === referrerId) return;
   initDb();
@@ -699,6 +706,7 @@ module.exports = {
   consumePasswordResetToken,
   recordPendingReferral,
   enforceReferralProExpiryIfNeeded,
+  referralUiEnabled,
 };
 
 function setPasswordResetToken(userId, token) {
