@@ -21,53 +21,7 @@ function addDaysYmd(ymd, days) {
   return d.toISOString().slice(0, 10);
 }
 
-function estimateCostUsd(inputTokens, outputTokens, model) {
-  const inp = Number(inputTokens) || 0;
-  const out = Number(outputTokens) || 0;
-  const m = String(model || '');
-  if (m.includes('gpt-5.4-mini')) return (inp / 1e6) * 0.75 + (out / 1e6) * 4.5;
-  if (m.includes('haiku')) return (inp / 1e6) * 0.25 + (out / 1e6) * 1.25;
-  if (m.includes('sonnet')) return (inp / 1e6) * 3 + (out / 1e6) * 15;
-  if (m.includes('flash-lite')) return (inp / 1e6) * 0.075 + (out / 1e6) * 0.3;
-  if (m.includes('flash')) return (inp / 1e6) * 0.15 + (out / 1e6) * 0.6;
-  return (inp / 1e6) * 0.1 + (out / 1e6) * 0.4;
-}
-
-function tokenParts(usageSlice) {
-  if (!usageSlice || typeof usageSlice !== 'object') {
-    return { inp: 0, out: 0 };
-  }
-  const inp = Number(usageSlice.prompt_tokens) || 0;
-  const out = Number(usageSlice.completion_tokens) || 0;
-  if (inp || out) return { inp, out };
-  const total = Number(usageSlice.total_tokens) || 0;
-  return { inp: Math.round(total * 0.7), out: Math.round(total * 0.3) };
-}
-
-function estimateAnalysisCostUsd(usage, mainModel, policyModel, critiqueModel) {
-  let cost = 0;
-  let inp = 0;
-  let out = 0;
-  const add = (slice, modelName) => {
-    const { inp: i, out: o } = tokenParts(slice);
-    if (!i && !o) return;
-    cost += estimateCostUsd(i, o, modelName);
-    inp += i;
-    out += o;
-  };
-  add(usage?.main, mainModel);
-  if (usage?.pass2) {
-    const pass2Model =
-      String(usage?.pass2Model || process.env.OPENROUTER_PRO_PLUS_PASS2_MODEL || '').trim() ||
-      'google/gemini-2.5-flash-lite';
-    add(usage.pass2, pass2Model);
-  }
-  if (!usage?.leaderSkipped) {
-    add(usage?.leader, policyModel || 'google/gemini-2.5-flash');
-  }
-  add(usage?.critique, critiqueModel || 'anthropic/claude-haiku-4-5');
-  return { cost, inp, out };
-}
+const { estimateCostUsd, estimateAnalysisCostUsd } = require('../lib/analysisCost.cjs');
 
 function insertAnalysisLog(db, { userId, ticker, tier, model, usage, durationMs, status, errorMessage }) {
   const policyModel =

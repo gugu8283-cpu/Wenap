@@ -88,9 +88,11 @@ export default function AnalysisLogsPage() {
 
   const agg = data.agg || {}
 
-  const cnt = agg.cnt || 1
+  const cnt = agg.cnt || 0
 
-  const okRate = cnt ? Math.round(((agg.ok || 0) / cnt) * 100) : 0
+  const okCnt = agg.ok || 0
+
+  const okRate = cnt ? Math.round((okCnt / cnt) * 100) : 0
 
 
 
@@ -214,7 +216,9 @@ export default function AnalysisLogsPage() {
 
           <p className="text-xs text-slate-500">{t('admin.logs.avgCost')}</p>
 
-          <p className="text-lg text-white">${(Number(agg.totalCost || 0) / cnt).toFixed(4)}</p>
+          <p className="text-lg text-white">
+            ${okCnt ? (Number(agg.totalCost || 0) / okCnt).toFixed(4) : '0.0000'}
+          </p>
 
         </div>
 

@@ -474,11 +474,18 @@ export default function PredictionsPage() {
 
               <Td>{r.tendency_correct != null ? (r.tendency_correct ? '✓' : '✗') : '-'}</Td>
 
-              <Td>{r.status}</Td>
+              <Td>
+                {r.status}
+                {r.status === 'failed' && r.error_detail ? (
+                  <p className="mt-1 max-w-xs text-xs text-red-300" title={r.error_detail}>
+                    {r.error_detail}
+                  </p>
+                ) : null}
+              </Td>
 
               <Td className="space-x-1 whitespace-nowrap">
 
-                {r.status === 'pending' ? (
+                {r.status === 'pending' || r.status === 'failed' ? (
 
                   <Btn variant="ghost" onClick={() => verifyOne(r.id)}>
 

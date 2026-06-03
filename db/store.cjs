@@ -504,8 +504,12 @@ async function verifyPredictionById(predictionId) {
   if (!row) throw new Error('预测记录不存在');
   if (row.status === 'verified') return { already: true };
 
+  if (row.status === 'failed') {
+    db.prepare('DELETE FROM prediction_results WHERE prediction_id = ?').run(predictionId);
+  }
+
   const verifyDate = new Date(row.verify_at);
-  const actualPrice = await fetchClosePrice(row.ticker, verifyDate);
+  const { price: actualPrice, source: fetchSource } = await fetchClosePrice(row.ticker, verifyDate);
   const priceChangePct = ((actualPrice - row.current_price) / row.current_price) * 100;
   const tendencyCorrect = checkTendency(row.tendency, priceChangePct) ? 1 : 0;
   const scenarioHit = checkScenario(actualPrice, row);
@@ -518,7 +522,7 @@ async function verifyPredictionById(predictionId) {
     `INSERT INTO prediction_results (
       id, prediction_id, verified_at, actual_price, price_change_pct,
       tendency_correct, scenario_hit, target_price_hit, fetch_source
-    ) VALUES (?,?,?,?,?,?,?,?, 'alpha_vantage')`,
+    ) VALUES (?,?,?,?,?,?,?,?, ?)`,
   ).run(
     resultId,
     row.id,
@@ -528,6 +532,7 @@ async function verifyPredictionById(predictionId) {
     tendencyCorrect,
     scenarioHit,
     targetPriceHit,
+    fetchSource || 'alpha_vantage',
   );
   db.prepare(
     `UPDATE predictions SET status = 'verified', verified_at = datetime('now') WHERE id = ?`,
@@ -613,9 +618,12 @@ function listPredictions(filters = {}) {
   const where = clauses.join(' AND ');
   const rows = db
     .prepare(
-      `SELECT p.*, r.actual_price, r.price_change_pct, r.tendency_correct, r.scenario_hit, r.target_price_hit, r.verified_at AS result_verified_at
+      `SELECT p.*, r.actual_price, r.price_change_pct, r.tendency_correct, r.scenario_hit, r.target_price_hit,
+              r.verified_at AS result_verified_at, r.error_detail, r.fetch_source
        FROM predictions p
-       LEFT JOIN prediction_results r ON r.prediction_id = p.id
+       LEFT JOIN prediction_results r ON r.id = (
+         SELECT id FROM prediction_results WHERE prediction_id = p.id ORDER BY verified_at DESC LIMIT 1
+       )
        WHERE ${where}
        ORDER BY p.analyzed_at DESC
        LIMIT ? OFFSET ?`,
@@ -886,7 +894,7 @@ function systemHealth() {
   const avgMs = logs.length
     ? Math.round(logs.reduce((s, l) => s + (Number(l.duration_ms) || 0), 0) / logs.length)
     : 0;
-  const avCallsToday = db
+  const analysesSuccessToday = db
     .prepare(
       `SELECT COUNT(*) AS c FROM analysis_logs WHERE date(created_at)=date('now') AND status='success'`,
     )
@@ -920,9 +928,8 @@ function systemHealth() {
       avgMs,
       lastAt: lastLog?.created_at || null,
     },
-    alphaVantage: {
-      callsToday: avCallsToday,
-      quotaPerDay: 500,
+    analysesToday: {
+      success: analysesSuccessToday,
       lastAt: lastLog?.created_at || null,
     },
     database: { ok: true, path: DB_PATH, slowMs: avgMs },

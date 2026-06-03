@@ -84,9 +84,7 @@ export default function SystemPage() {
 
 
 
-  const avQuota = h.alphaVantage?.quotaPerDay ?? 500
-
-  const avToday = h.alphaVantage?.callsToday ?? 0
+  const analysesToday = h.analysesToday?.success ?? h.alphaVantage?.callsToday ?? 0
 
 
 
@@ -116,15 +114,13 @@ export default function SystemPage() {
 
         <Card
 
-          title={t('admin.system.alpha')}
+          title={t('admin.system.analysesToday')}
 
-          value={t('admin.system.avToday', { n: avToday })}
+          value={t('admin.system.analysesTodayVal', { n: analysesToday })}
 
-          sub={t('admin.system.avSub', {
+          sub={t('admin.system.analysesTodaySub', {
 
-            left: Math.max(0, avQuota - avToday),
-
-            at: fmtDate(h.alphaVantage?.lastAt),
+            at: fmtDate(h.analysesToday?.lastAt || h.alphaVantage?.lastAt),
 
           })}
 
