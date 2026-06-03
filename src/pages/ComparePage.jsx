@@ -249,7 +249,11 @@ export default function ComparePage() {
         throw new Error(`HTTP ${resp.status}`)
       }
       const { vizSnapshot, meta: streamMeta } = await consumeAnalyzeStream(resp)
-      const r = snapshotToMobileReport(vizSnapshot, { ticker: sym, startedAt: streamMeta?.startedAt })
+      const r = snapshotToMobileReport(vizSnapshot, {
+        ticker: sym,
+        startedAt: streamMeta?.startedAt,
+        locale: i18n.language,
+      })
       setReport({
         ...r,
         symbol: sym,

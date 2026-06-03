@@ -21,7 +21,9 @@ export default function SampleReportPage() {
     setLoading(true)
     setError('')
     const locale = i18n.language || 'en'
-    fetch(`${API_BASE}/sample/${encodeURIComponent(sym)}?locale=${locale}`)
+    fetch(`${API_BASE}/sample/${encodeURIComponent(sym)}?locale=${locale}`, {
+      headers: { Accept: 'application/json' },
+    })
       .then((r) => {
         if (!r.ok) throw new Error('NOT_FOUND')
         return r.json()

@@ -244,6 +244,8 @@ const {
   policyRegulationBlock,
   sixthDimensionPromptBlock,
   signalDisplayLabel,
+  riskDisplayLabel,
+  credibilityDisplayLabel,
   researchFooterLine: researchFooterLineLocale,
 } = require('./lib/outputLocale.cjs');
 try {
@@ -858,6 +860,8 @@ const {
   etfSharePricePromptBlock,
   stockPricePromptBlock,
   resolveTargetPrice,
+  syncKeyLevelsWithTarget,
+  reconcileTargetNarrative,
 } = require('./lib/priceSanity.cjs');
 
 const RISK_FOCUS_LABELS = {
@@ -1270,6 +1274,7 @@ function normalizeReportExtensions(data, alphaOverview, lockedSpotPrice, listing
     overview: alphaOverview,
     scenarios: data.scenarios,
     signal: data.signal,
+    keyLevels: data.keyLevels,
   });
   const loc = normalizeLocale(ctx.locale || 'zh-CN');
   if (Number.isFinite(cur) && cur > 0) {
@@ -1299,6 +1304,10 @@ function normalizeReportExtensions(data, alphaOverview, lockedSpotPrice, listing
   }
   data.analystPriceLine = apl;
   const priceForNotes = Number.isFinite(cur) && cur > 0 ? cur : spot;
+  if (Number.isFinite(targetFromLine) && targetFromLine > 0) {
+    syncKeyLevelsWithTarget(data, targetFromLine, priceForNotes, loc);
+    reconcileTargetNarrative(data, targetFromLine, priceForNotes, loc);
+  }
   data.scenarioPriceNotes = computeScenarioPriceNotes(
     priceForNotes,
     data.scenarios,
@@ -2074,7 +2083,7 @@ function jsonToMarkdownFourParts(data, tier = 'free', locale = 'zh-CN') {
   let ts = scrubNotFoundMetaPhrases(stripHttpUrls(String(data.technicalSnapshot || '')));
   if (!ts.replace(/[—\-\s.]/g, '')) ts = '';
 
-  let s1 = `${L.dataAsOf}: ${data.dataAsOf || '—'}\n\n${L.identity}: ${idc || '—'}\n\n**${L.score}: ${data.score}/100**\n**${L.tendency}: ${sig}**\n**${L.risk}: ${data.risk || '—'}**\n`;
+  let s1 = `${L.dataAsOf}: ${data.dataAsOf || '—'}\n\n${L.identity}: ${idc || '—'}\n\n**${L.score}: ${data.score}/100**\n**${L.tendency}: ${sig}**\n**${L.risk}: ${riskDisplayLabel(data.risk, loc)}**\n`;
   if (data.riskReward) {
     const rr = scrubNotFoundMetaPhrases(stripHttpUrls(String(data.riskReward)));
     if (rr) s1 += `**${L.rr}:** ${rr}\n`;
@@ -2100,7 +2109,17 @@ function jsonToMarkdownFourParts(data, tier = 'free', locale = 'zh-CN') {
   const detBody = buildDetailBodyForMarkdown(data);
 
   let s3 = `${detBody}\n\n**${L.sources}**\n\n`;
-  s3 += '| 角标 | 摘要 | 时间 | 可信度 | 链接 |\n';
+  if (loc === 'en') {
+    s3 += '| Cite | Summary | Date | Credibility | Link |\n';
+  } else if (loc === 'ja') {
+    s3 += '| 引用 | 要約 | 日付 | 信頼度 | リンク |\n';
+  } else if (loc === 'de') {
+    s3 += '| Quelle | Zusammenfassung | Datum | Vertrauen | Link |\n';
+  } else if (loc === 'ko') {
+    s3 += '| 출처 | 요약 | 날짜 | 신뢰도 | 링크 |\n';
+  } else {
+    s3 += '| 角标 | 摘要 | 时间 | 可信度 | 链接 |\n';
+  }
   s3 += '| --- | --- | --- | --- | --- |\n';
   (data.sources || []).forEach((src) => {
     if (!src || typeof src !== 'object') return;
@@ -2110,7 +2129,7 @@ function jsonToMarkdownFourParts(data, tier = 'free', locale = 'zh-CN') {
       .replace(/\r?\n/g, ' ')
       .slice(0, 100);
     const ti = String(src.time || '—').replace(/\|/g, '');
-    const cred = String(src.credibility || '中').replace(/\|/g, '');
+    const cred = credibilityDisplayLabel(src.credibility, loc).replace(/\|/g, '');
     const url = String(src.url || '—').replace(/\|/g, '');
     s3 += `| ${cite} | ${text} | ${ti} | ${cred} | ${url} |\n`;
   });
@@ -2495,6 +2514,7 @@ async function runAnalyzePipeline(
     riskFocus = '',
     confirmIncompleteData = false,
     forceRefresh = false,
+    macroCountry = '',
   },
 ) {
   let mainModel = mainModelForTier(tier);
@@ -2575,6 +2595,29 @@ async function runAnalyzePipeline(
         alphaBlock = String(bundle.text || '').trim();
         listingCurrency = listingCurrencyEarly;
         exchangeHint = alphaOverview ? String(alphaOverview.Exchange || '').trim() : '';
+        if (
+          (!Number.isFinite(currentPriceRef.value) || currentPriceRef.value <= 0) &&
+          avKey
+        ) {
+          const fb = await fetchAlphaVantageContextBundle(symbol, avKey);
+          alphaOverview = fb.overview;
+          alphaGlobalQuote = fb.globalQuote;
+          const listingCurrencyEarly = inferListingCurrency(alphaOverview, symbol);
+          marketSnapshot = await buildAlphaMarketSnapshot({
+            symbol,
+            apiKey: avKey,
+            globalQuote: alphaGlobalQuote,
+            overview: alphaOverview,
+            alphaVantageJson,
+            locale: locNormEarly,
+            listingCurrency: listingCurrencyEarly,
+          });
+          currentPriceRef.value = marketSnapshot.currentPrice;
+          alphaBlock = appendSnapshotLinesToAlphaText(fb.text, marketSnapshot, alphaOverview, alphaGlobalQuote);
+          listingCurrency = listingCurrencyEarly;
+          exchangeHint = alphaOverview ? String(alphaOverview.Exchange || '').trim() : '';
+          console.warn('[Wenap] Marketstack empty; fallback Alpha Vantage used.');
+        }
       } catch (e) {
         console.warn('[Wenap] Marketstack:', e.message);
         if (avKey) {
@@ -2678,10 +2721,8 @@ async function runAnalyzePipeline(
         : '');
     const locNorm = normalizeLocale(locale);
     let marketEnrichment = null;
-    const macroCountry =
-      String(req.body?.macroCountry || req.body?.country || '').trim() ||
-      String(req.body?.macro_country || '').trim() ||
-      DEFAULT_MACRO_COUNTRY;
+    const resolvedMacroCountry =
+      String(macroCountry || '').trim() || DEFAULT_MACRO_COUNTRY;
     if (!isAlt && (tier === 'pro' || tier === 'pro_plus')) {
       try {
         if (bailIfClientGone('enrichment')) return;
@@ -2689,7 +2730,7 @@ async function runAnalyzePipeline(
           symbol,
           locale: locNorm,
           tier,
-          macroCountry,
+          macroCountry: resolvedMacroCountry,
         });
         if (marketEnrichment?.text) {
           alphaBlock = `${String(alphaBlock || '').trim()}\n\n${marketEnrichment.text}`.trim();
@@ -3115,6 +3156,76 @@ app.get('/health', (req, res) => {
   res.json({ ok: true, ...serverInfoPayload() });
 });
 
+const FEATURED_SAMPLE_TICKERS = ['NVDA', 'AAPL', 'JPM', 'UNH', 'SPY', 'QQQ', 'VTI', 'O', 'PLD', 'GLD'];
+
+function apiClientWantsJson(req) {
+  const accept = String(req.headers.accept || '');
+  if (/\bapplication\/json\b/i.test(accept)) return true;
+  if (String(req.query?.format || '').toLowerCase() === 'json') return true;
+  if (String(req.headers['x-wenap-api'] || '') === '1') return true;
+  const orig = String(req.originalUrl || req.url || '');
+  return orig.startsWith('/api/');
+}
+
+function sendPublicSampleReport(req, res) {
+  const sym = String(req.params.ticker || '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9.^-]/g, '')
+    .slice(0, 16);
+  if (!FEATURED_SAMPLE_TICKERS.includes(sym)) {
+    return res.status(404).json({ error: 'NOT_FOUND', message: 'Sample only available for featured tickers' });
+  }
+
+  const idx = readHistoryIndex();
+  let targetEntry = null;
+  let targetUserKey = null;
+  for (const [userKey, entries] of Object.entries(idx.byUser || {})) {
+    const match = (Array.isArray(entries) ? entries : []).find((e) => e.symbol === sym);
+    if (match) {
+      if (!targetEntry || match.ts > (targetEntry?.ts || 0)) {
+        targetEntry = match;
+        targetUserKey = userKey;
+      }
+    }
+  }
+
+  if (!targetEntry || !targetUserKey) {
+    return res.status(404).json({ error: 'NOT_FOUND', message: 'No sample report available yet for this ticker' });
+  }
+
+  const filePath = path.join(HISTORY_DIR, userKeyHash(targetUserKey), `${targetEntry.id}.json`);
+  try {
+    const raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const locale = normalizeLocale(req.query?.locale);
+    if (raw.vizSnapshot && Array.isArray(raw.vizSnapshot.dimensions)) {
+      const sampleAsset = raw.assetType || 'stock';
+      raw.vizSnapshot.dimensions = alignDimensionSlots(raw.vizSnapshot.dimensions, sampleAsset, locale);
+      raw.vizSnapshot.dimensions = applySixthDimensionFloor(
+        raw.vizSnapshot.dimensions,
+        sampleAsset,
+        locale,
+      );
+      raw.vizSnapshot.dimensions = markUnavailableDimensionScores(raw.vizSnapshot.dimensions, locale);
+    }
+    if (raw.vizSnapshot) {
+      raw.vizSnapshot.bullBearDebate = undefined;
+      raw.vizSnapshot.secondPassCritique = undefined;
+      if (Array.isArray(raw.vizSnapshot.criticAngles)) {
+        raw.vizSnapshot.criticAngles = raw.vizSnapshot.criticAngles.slice(0, 1);
+      }
+    }
+    return res.json({ ...raw, isSample: true, sampleTicker: sym });
+  } catch {
+    return res.status(404).json({ error: 'NOT_FOUND' });
+  }
+}
+
+/** Public sample JSON — must register before SPA fallback (which serves /sample/* HTML). */
+app.get('/sample/:ticker', (req, res, next) => {
+  if (!apiClientWantsJson(req)) return next();
+  return sendPublicSampleReport(req, res);
+});
+
 /** 仅 API 模式（本地 vite 代理时）保留根路径 JSON */
 if (!SPA_MODE) {
   app.get('/', (req, res) => {
@@ -3347,7 +3458,7 @@ app.get('/history/:id', requireAuth, (req, res) => {
 });
 
 app.post('/analyze', requireAuth, async (req, res) => {
-  const { ticker, assetType, horizon, riskFocus } = req.body || {};
+  const { ticker, assetType, horizon, riskFocus, macroCountry } = req.body || {};
   const symbol = resolveTickerInput(ticker);
   if (!symbol) {
     return res.status(400).json({ error: 'Ticker required' });
@@ -3457,6 +3568,9 @@ app.post('/analyze', requireAuth, async (req, res) => {
       authContext: { userId: req.authUser.id, fingerprint: '', ip },
       confirmIncompleteData,
       forceRefresh,
+      macroCountry:
+        String(macroCountry || req.body?.country || req.body?.macro_country || '').trim() ||
+        DEFAULT_MACRO_COUNTRY,
     });
   } finally {
     releaseAnalysisSlot();
@@ -3560,67 +3674,6 @@ app.get('/market/snapshot', requireAuth, async (req, res) => {
     await new Promise((r) => setTimeout(r, 250));
   }
   res.json({ quotes });
-});
-
-// ── Public sample report endpoint ─────────────────────────────────────────
-// Returns the most recent stored analysis for a tracked ticker (no auth required).
-// Only serves the 10 "featured" tickers to avoid data leakage.
-const FEATURED_TICKERS = ['NVDA', 'AAPL', 'JPM', 'UNH', 'SPY', 'QQQ', 'VTI', 'O', 'PLD', 'GLD'];
-const SAMPLE_SYSTEM_USER_KEY = 'uid:cron'; // cron job uses this key
-
-app.get('/sample/:ticker', (req, res) => {
-  const sym = String(req.params.ticker || '').toUpperCase().replace(/[^A-Z0-9.^-]/g, '').slice(0, 16);
-  if (!FEATURED_TICKERS.includes(sym)) {
-    return res.status(404).json({ error: 'NOT_FOUND', message: 'Sample only available for featured tickers' });
-  }
-
-  // Try to find the most recent history entry for the cron user or any user with this ticker
-  const idx = readHistoryIndex();
-  let targetEntry = null;
-  let targetUserKey = null;
-
-  // First check the cron/system user key
-  for (const [userKey, entries] of Object.entries(idx.byUser || {})) {
-    const match = (Array.isArray(entries) ? entries : []).find((e) => e.symbol === sym);
-    if (match) {
-      if (!targetEntry || match.ts > (targetEntry?.ts || 0)) {
-        targetEntry = match;
-        targetUserKey = userKey;
-      }
-    }
-  }
-
-  if (!targetEntry || !targetUserKey) {
-    return res.status(404).json({ error: 'NOT_FOUND', message: 'No sample report available yet for this ticker' });
-  }
-
-  const filePath = path.join(HISTORY_DIR, userKeyHash(targetUserKey), `${targetEntry.id}.json`);
-  try {
-    const raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-    // Strip private user info and downgrade to free-tier view for public sample
-    const locale = normalizeLocale(req.query?.locale);
-    if (raw.vizSnapshot && Array.isArray(raw.vizSnapshot.dimensions)) {
-      const sampleAsset = raw.assetType || 'stock';
-      raw.vizSnapshot.dimensions = alignDimensionSlots(raw.vizSnapshot.dimensions, sampleAsset, locale);
-      raw.vizSnapshot.dimensions = applySixthDimensionFloor(
-        raw.vizSnapshot.dimensions,
-        sampleAsset,
-        locale,
-      );
-      raw.vizSnapshot.dimensions = markUnavailableDimensionScores(raw.vizSnapshot.dimensions, locale);
-    }
-    // Redact to free tier (no pro/pro+ fields)
-    if (raw.vizSnapshot) {
-      raw.vizSnapshot.bullBearDebate = undefined;
-      raw.vizSnapshot.secondPassCritique = undefined;
-      if (Array.isArray(raw.vizSnapshot.criticAngles)) {
-        raw.vizSnapshot.criticAngles = raw.vizSnapshot.criticAngles.slice(0, 1);
-      }
-    }
-    return res.json({ ...raw, isSample: true, sampleTicker: sym });
-  } catch {
-    return res.status(404).json({ error: 'NOT_FOUND' });
-  }
 });
 
 // ── OG image endpoint (SVG-based, no puppeteer) ───────────────────────────

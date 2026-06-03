@@ -122,7 +122,8 @@ function credToLevel(c) {
   return 'mid'
 }
 
-import { defaultSourceLabel, localizeMobileReportCitations } from './localizeCitations.js'
+import { defaultSourceLabel, localizeMobileReportCitations, normalizeSourceHostLabel } from './localizeCitations.js'
+import { resolveAppLanguage } from '../i18n/index.js'
 
 /**
  * @param {object} snapshot
@@ -132,6 +133,7 @@ import { defaultSourceLabel, localizeMobileReportCitations } from './localizeCit
 export function snapshotToMobileReport(snapshot, meta = {}) {
   if (!snapshot || !Array.isArray(snapshot.dimensions) || !snapshot.dimensions.length) return null
 
+  const uiLocale = resolveAppLanguage(meta.locale || 'en')
   const ticker = String(meta.ticker || '').toUpperCase() || '—'
   const { name, exchange } = parseCompanyExchange(
     snapshot.identityCheck,
@@ -215,11 +217,12 @@ export function snapshotToMobileReport(snapshot, meta = {}) {
 
   const sources = (Array.isArray(snapshot.sources) ? snapshot.sources : []).map((s) => {
     const url = String(s.url || '').trim()
+    const citeLabel = normalizeSourceHostLabel(String(s.cite || '').trim(), uiLocale)
     try {
       const host = new URL(url).hostname.replace(/^www\./, '')
       return {
         title: String(s.text || '').trim(),
-        source: host || defaultSourceLabel(meta.locale),
+        source: citeLabel || host || defaultSourceLabel(uiLocale),
         date: String(s.time || '').trim(),
         credibility: credToLevel(s.credibility),
         url,
@@ -227,7 +230,7 @@ export function snapshotToMobileReport(snapshot, meta = {}) {
     } catch {
       return {
         title: String(s.text || '').trim(),
-        source: defaultSourceLabel(meta.locale),
+        source: citeLabel || defaultSourceLabel(uiLocale),
         date: String(s.time || '').trim(),
         credibility: credToLevel(s.credibility),
         url,
@@ -293,7 +296,7 @@ export function snapshotToMobileReport(snapshot, meta = {}) {
         ? snapshot.actionLineObj
         : {},
     scenarios: scenariosWithDetail.length ? scenariosWithDetail : scenarios,
-  })
+  }, uiLocale)
   const keyLevels = parseKeyLevelsFromSnapshot(snapshot)
 
   const assetType = String(snapshot.assetType || meta.assetType || 'stock').trim()
@@ -363,7 +366,7 @@ export function snapshotToMobileReport(snapshot, meta = {}) {
     macroSnapshot: snapshot.macroSnapshot || null,
     technicals: snapshot.technicals || null,
   }
-  return meta.locale ? localizeMobileReportCitations(report, meta.locale) : report
+  return localizeMobileReportCitations(report, uiLocale)
 }
 
 export { COLORS }

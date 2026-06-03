@@ -58,4 +58,15 @@ const tsmTarget = resolveTargetPrice({
 });
 assert.strictEqual(tsmTarget, 460, 'bogus low target should fall back to bull high');
 
+// NVDA-style: model sets target = spot on BUY → use keyLevels / bull
+const nvdaTarget = resolveTargetPrice({
+  targetFromLine: 224.36,
+  current: 224.36,
+  overview: { '52WeekLow': '180', '52WeekHigh': '236.54' },
+  scenarios: { bull: { range: '$260 - $300' } },
+  signal: 'BUY',
+  keyLevels: [{ price: 285, label: 'Analyst Target' }, { price: 224.36, label: 'Current Price' }],
+});
+assert.strictEqual(nvdaTarget, 285, 'BUY with target=spot should fall back to keyLevels');
+
 console.log('[test-price-sanity] OK');

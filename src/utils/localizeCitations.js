@@ -115,7 +115,7 @@ export function defaultSourceLabel(locale) {
   return citePack(locale).default
 }
 
-function normalizeSourceHostLabel(label, locale) {
+export function normalizeSourceHostLabel(label, locale) {
   const s = String(label || '').trim()
   if (!s || isZhLocale(locale)) return s
   if (ALL_ZH_CITE_TAGS.has(s)) return defaultSourceLabel(locale)
