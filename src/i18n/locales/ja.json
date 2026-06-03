@@ -105,6 +105,15 @@
     "showPw": "表示",
     "hidePw": "非表示",
     "invalidCreds": "メールまたはパスワードが正しくありません",
+    "loginLocked": "ログイン試行が多すぎます。しばらくしてからお試しください。",
+    "accountBanned": "このアカウントは制限されています。",
+    "serverError": "エラーが発生しました。しばらくして再試行してください。",
+    "invalidEmail": "有効なメールアドレスを入力してください。",
+    "disposableEmail": "使い捨てメールは利用できません。",
+    "weakPassword": "パスワードは8文字以上必要です。",
+    "legalConsentRequired": "利用規約、プライバシーポリシー、投資免責事項に同意してください。",
+    "emailExists": "このメールは既に登録されています。",
+    "rateLimited": "リクエストが多すぎます。しばらくして再試行してください。",
     "verifyTitle": "メールアドレスを確認",
     "verifySentTo": "{{email}} に確認リンクを送信しました",
     "verifyYourEmail": "メールアドレス",
@@ -128,6 +137,7 @@
     "forgotBtn": "リセットリンクを送信",
     "forgotSending": "送信中…",
     "forgotSent": "リセットリンクを送信しました。メールをご確認ください",
+    "forgotFail": "リセットリンクを送信できませんでした。しばらくして再試行してください。",
     "forgotBack": "サインインに戻る"
   },
   "protected": {

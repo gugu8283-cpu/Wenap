@@ -23,6 +23,7 @@ const { countryFromRequest } = require('../lib/countryFromRequest.cjs');
 const { sendVerificationEmail, sendPasswordResetEmail, sendWelcomeEmail } = require('../lib/emailSend.cjs');
 const { emailStatus, isProductionRuntime } = require('../lib/emailConfig.cjs');
 const { pickLocale } = require('../lib/emailTemplates.cjs');
+const MSG = require('../lib/apiMessages.cjs');
 const {
   clientMeta: legalClientMeta,
   currentVersions,
@@ -71,19 +72,19 @@ router.post('/register', async (req, res) => {
     const password2 = String(req.body?.passwordConfirm || req.body?.confirmPassword || '');
 
     if (!EMAIL_RE.test(email)) {
-      return res.status(400).json({ error: 'INVALID_EMAIL', message: '请输入有效邮箱' });
+      return res.status(400).json({ error: 'INVALID_EMAIL', message: MSG.INVALID_EMAIL });
     }
     if (isDisposableEmail(email)) {
       return res.status(400).json({
         error: 'DISPOSABLE_EMAIL',
-        message: '不支持一次性邮箱，请使用常用邮箱注册',
+        message: MSG.DISPOSABLE_EMAIL,
       });
     }
     if (!validPassword(password)) {
-      return res.status(400).json({ error: 'WEAK_PASSWORD', message: '密码至少 8 位' });
+      return res.status(400).json({ error: 'WEAK_PASSWORD', message: MSG.WEAK_PASSWORD });
     }
     if (password !== password2) {
-      return res.status(400).json({ error: 'PASSWORD_MISMATCH', message: '密码不一致' });
+      return res.status(400).json({ error: 'PASSWORD_MISMATCH', message: MSG.PASSWORD_MISMATCH });
     }
 
     try {
@@ -92,7 +93,7 @@ router.post('/register', async (req, res) => {
       if (e.code === 'LEGAL_CONSENT_REQUIRED') {
         return res.status(400).json({
           error: 'LEGAL_CONSENT_REQUIRED',
-          message: '请勾选并同意服务条款、隐私政策与投资免责声明',
+          message: MSG.LEGAL_CONSENT_REQUIRED,
           missing: e.missing,
         });
       }
@@ -115,13 +116,13 @@ router.post('/register', async (req, res) => {
     if (isProductionRuntime() && mail.mode === 'console') {
       return res.status(503).json({
         error: 'EMAIL_NOT_CONFIGURED',
-        message: '邮件服务未配置，无法发送验证邮件。请联系站点管理员。',
+        message: MSG.EMAIL_NOT_CONFIGURED,
       });
     }
     if (!mail.sent && mail.mode !== 'console') {
       return res.status(502).json({
         error: 'EMAIL_SEND_FAILED',
-        message: '验证邮件发送失败，请稍后重试或使用「重新发送」。',
+        message: MSG.EMAIL_SEND_FAILED,
         detail: mail.error || null,
       });
     }
@@ -149,16 +150,16 @@ router.post('/register', async (req, res) => {
     });
   } catch (e) {
     if (e.code === 'EMAIL_EXISTS') {
-      return res.status(409).json({ error: 'EMAIL_EXISTS', message: '该邮箱已注册' });
+      return res.status(409).json({ error: 'EMAIL_EXISTS', message: MSG.EMAIL_EXISTS });
     }
     if (e.code === 'IP_REGISTER_LIMIT') {
       return res.status(429).json({
         error: 'IP_REGISTER_LIMIT',
-        message: '请求过于频繁，请稍后再试',
+        message: MSG.IP_REGISTER_LIMIT,
       });
     }
     console.error('[Wenap] register:', e);
-    res.status(500).json({ error: 'SERVER_ERROR', message: '注册失败，请稍后重试' });
+    res.status(500).json({ error: 'SERVER_ERROR', message: MSG.REGISTER_FAILED });
   }
 });
 
@@ -168,7 +169,7 @@ router.post('/login', async (req, res) => {
     if (isLoginLocked(lip)) {
       return res.status(429).json({
         error: 'LOGIN_LOCKED',
-        message: '登录尝试过多，请稍后再试',
+        message: MSG.LOGIN_LOCKED,
       });
     }
 
@@ -182,17 +183,17 @@ router.post('/login', async (req, res) => {
       recordLoginFail(lip);
       return res.status(401).json({
         error: 'INVALID_CREDENTIALS',
-        message: '邮箱或密码不正确',
+        message: MSG.INVALID_CREDENTIALS,
       });
     }
     clearLoginFail(lip);
     if (user.is_banned) {
-      return res.status(403).json({ error: 'BANNED', message: '账号已被限制' });
+      return res.status(403).json({ error: 'BANNED', message: MSG.BANNED });
     }
     if (!user.email_verified) {
       return res.status(403).json({
         error: 'EMAIL_NOT_VERIFIED',
-        message: '请先验证邮箱',
+        message: MSG.EMAIL_NOT_VERIFIED,
         email: user.email,
       });
     }
@@ -201,7 +202,7 @@ router.post('/login', async (req, res) => {
     res.json({ token, user: publicUser(user) });
   } catch (e) {
     console.error('[Wenap] login:', e);
-    res.status(500).json({ error: 'SERVER_ERROR', message: '登录失败' });
+    res.status(500).json({ error: 'SERVER_ERROR', message: MSG.LOGIN_FAILED });
   }
 });
 
@@ -213,7 +214,7 @@ router.get('/verify-email', (req, res) => {
   try {
     const token = String(req.query?.token || '').trim();
     if (!token) {
-      return res.status(400).json({ error: 'MISSING_TOKEN', message: '缺少验证令牌' });
+      return res.status(400).json({ error: 'MISSING_TOKEN', message: MSG.MISSING_TOKEN });
     }
     const user = verifyEmailByToken(token);
     const jwt = signAccessToken(user);
@@ -221,11 +222,10 @@ router.get('/verify-email', (req, res) => {
     sendWelcomeEmail({ to: user.email, locale }).catch((e) =>
       console.warn('[Wenap] welcome email:', e.message),
     );
-    res.json({ ok: true, message: '邮箱验证成功', token: jwt, user: publicUser(user) });
+    res.json({ ok: true, message: MSG.EMAIL_VERIFIED, token: jwt, user: publicUser(user) });
   } catch (e) {
     const code = e.code || 'INVALID_TOKEN';
-    const msg =
-      code === 'TOKEN_EXPIRED' ? '验证链接已过期，请重新发送' : '验证链接无效';
+    const msg = code === 'TOKEN_EXPIRED' ? MSG.TOKEN_EXPIRED : MSG.INVALID_TOKEN;
     res.status(400).json({ error: code, message: msg });
   }
 });
@@ -237,15 +237,15 @@ router.post('/resend-verify', async (req, res) => {
       .toLowerCase();
     const user = getUserByEmail(email);
     if (!user) {
-      return res.json({ ok: true, message: '若邮箱存在，将发送验证邮件' });
+      return res.json({ ok: true, message: MSG.RESEND_OK });
     }
     if (user.email_verified) {
-      return res.json({ ok: true, message: '邮箱已验证' });
+      return res.json({ ok: true, message: MSG.ALREADY_VERIFIED });
     }
     if (!canResendVerifyEmail(user)) {
       return res.status(429).json({
         error: 'RATE_LIMIT',
-        message: '请 60 秒后再试',
+        message: MSG.RESEND_RATE_LIMIT,
       });
     }
     const verifyToken = refreshVerifyToken(user.id);
@@ -254,20 +254,20 @@ router.post('/resend-verify', async (req, res) => {
     if (isProductionRuntime() && mail.mode === 'console') {
       return res.status(503).json({
         error: 'EMAIL_NOT_CONFIGURED',
-        message: '邮件服务未配置，无法发送验证邮件。',
+        message: MSG.EMAIL_NOT_CONFIGURED,
       });
     }
     if (!mail.sent && mail.mode !== 'console') {
       return res.status(502).json({
         error: 'EMAIL_SEND_FAILED',
-        message: '发送失败，请稍后再试',
+        message: MSG.RESEND_FAILED,
         detail: mail.error || null,
       });
     }
-    res.json({ ok: true, message: '验证邮件已发送', emailDelivery: mail.mode });
+    res.json({ ok: true, message: MSG.RESEND_SENT, emailDelivery: mail.mode });
   } catch (e) {
     console.error('[Wenap] resend-verify:', e);
-    res.status(500).json({ error: 'SERVER_ERROR', message: '发送失败' });
+    res.status(500).json({ error: 'SERVER_ERROR', message: MSG.RESEND_FAILED });
   }
 });
 
@@ -286,24 +286,22 @@ router.post('/accept-legal', requireAuth, (req, res) => {
     if (e.code === 'LEGAL_CONSENT_REQUIRED') {
       return res.status(400).json({
         error: 'LEGAL_CONSENT_REQUIRED',
-        message: '请勾选全部同意项',
+        message: MSG.LEGAL_ACCEPT_REQUIRED,
         missing: e.missing,
       });
     }
     console.error('[Wenap] accept-legal:', e);
-    res.status(500).json({ error: 'SERVER_ERROR' });
+    res.status(500).json({ error: 'SERVER_ERROR', message: MSG.REGISTER_FAILED });
   }
 });
 
-// Password reset request
 router.post('/request-reset', async (req, res) => {
   try {
     const email = String(req.body?.email || '').trim().toLowerCase();
     if (!EMAIL_RE.test(email)) {
-      return res.status(400).json({ error: 'INVALID_EMAIL' });
+      return res.status(400).json({ error: 'INVALID_EMAIL', message: MSG.INVALID_EMAIL });
     }
     const user = getUserByEmail(email);
-    // Always respond 200 to prevent email enumeration
     if (!user) {
       return res.json({ ok: true, message: 'If this email exists you will receive a reset link.' });
     }
@@ -313,33 +311,31 @@ router.post('/request-reset', async (req, res) => {
     res.json({ ok: true, message: 'If this email exists you will receive a reset link.' });
   } catch (e) {
     console.error('[Wenap] request-reset:', e);
-    res.status(500).json({ error: 'SERVER_ERROR' });
+    res.status(500).json({ error: 'SERVER_ERROR', message: MSG.RESEND_FAILED });
   }
 });
 
-// Password reset confirm
 router.post('/reset-password', async (req, res) => {
   try {
     const token = String(req.body?.token || '').trim();
     const newPassword = String(req.body?.password || '');
-    if (!token) return res.status(400).json({ error: 'MISSING_TOKEN' });
+    if (!token) return res.status(400).json({ error: 'MISSING_TOKEN', message: MSG.MISSING_TOKEN });
     if (!newPassword || newPassword.length < 8) {
-      return res.status(400).json({ error: 'WEAK_PASSWORD', message: 'Password must be at least 8 characters.' });
+      return res.status(400).json({ error: 'WEAK_PASSWORD', message: MSG.WEAK_PASSWORD });
     }
     const user = getUserByPasswordResetToken(token);
     if (!user) {
-      return res.status(400).json({ error: 'INVALID_OR_EXPIRED_TOKEN', message: 'Reset link is invalid or expired.' });
+      return res.status(400).json({ error: 'INVALID_OR_EXPIRED_TOKEN', message: MSG.INVALID_TOKEN });
     }
     const hash = await bcrypt.hash(newPassword, 12);
     consumePasswordResetToken(user.id, hash);
     res.json({ ok: true, message: 'Password updated. You can now sign in.' });
   } catch (e) {
     console.error('[Wenap] reset-password:', e);
-    res.status(500).json({ error: 'SERVER_ERROR' });
+    res.status(500).json({ error: 'SERVER_ERROR', message: MSG.LOGIN_FAILED });
   }
 });
 
-// Get referral link for current user (hidden unless WENAP_REFERRAL_UI=1)
 router.get('/referral-link', requireAuth, (req, res) => {
   const { referralUiEnabled } = require('../db/auth.cjs');
   if (!referralUiEnabled()) return res.status(404).json({ error: 'NOT_FOUND' });

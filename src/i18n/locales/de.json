@@ -105,6 +105,15 @@
     "showPw": "Anzeigen",
     "hidePw": "Ausblenden",
     "invalidCreds": "E-Mail oder Passwort ungültig",
+    "loginLocked": "Zu viele Anmeldeversuche. Bitte später erneut versuchen.",
+    "accountBanned": "Dieses Konto wurde eingeschränkt.",
+    "serverError": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
+    "invalidEmail": "Bitte eine gültige E-Mail-Adresse eingeben.",
+    "disposableEmail": "Wegwerf-E-Mail-Adressen sind nicht erlaubt.",
+    "weakPassword": "Passwort muss mindestens 8 Zeichen haben.",
+    "legalConsentRequired": "Bitte Nutzungsbedingungen, Datenschutz und Investment-Hinweis akzeptieren.",
+    "emailExists": "Diese E-Mail ist bereits registriert.",
+    "rateLimited": "Zu viele Anfragen. Bitte später erneut versuchen.",
     "verifyTitle": "E-Mail bestätigen",
     "verifySentTo": "Wir haben einen Bestätigungslink an {{email}} gesendet",
     "verifyYourEmail": "Ihre E-Mail-Adresse",
@@ -128,6 +137,7 @@
     "forgotBtn": "Reset-Link senden",
     "forgotSending": "Senden…",
     "forgotSent": "Reset-Link gesendet — überprüfen Sie Ihren Posteingang",
+    "forgotFail": "Reset-Link konnte nicht gesendet werden. Bitte erneut versuchen.",
     "forgotBack": "Zurück zur Anmeldung"
   },
   "protected": {

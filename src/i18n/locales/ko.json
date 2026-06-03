@@ -105,6 +105,15 @@
     "showPw": "표시",
     "hidePw": "숨기기",
     "invalidCreds": "이메일 또는 비밀번호가 올바르지 않습니다",
+    "loginLocked": "로그인 시도가 너무 많습니다. 잠시 후 다시 시도하세요.",
+    "accountBanned": "이 계정은 제한되었습니다.",
+    "serverError": "오류가 발생했습니다. 잠시 후 다시 시도하세요.",
+    "invalidEmail": "유효한 이메일을 입력하세요.",
+    "disposableEmail": "일회용 이메일은 사용할 수 없습니다.",
+    "weakPassword": "비밀번호는 8자 이상이어야 합니다.",
+    "legalConsentRequired": "이용약관, 개인정보 처리방침, 투자 면책 조항에 동의해 주세요.",
+    "emailExists": "이미 등록된 이메일입니다.",
+    "rateLimited": "요청이 너무 많습니다. 잠시 후 다시 시도하세요.",
     "verifyTitle": "이메일 인증",
     "verifySentTo": "{{email}}으로 인증 링크를 보냈습니다",
     "verifyYourEmail": "이메일 주소",
@@ -128,6 +137,7 @@
     "forgotBtn": "재설정 링크 보내기",
     "forgotSending": "전송 중…",
     "forgotSent": "재설정 링크를 전송했습니다. 이메일을 확인하세요",
+    "forgotFail": "재설정 링크를 보낼 수 없습니다. 잠시 후 다시 시도하세요.",
     "forgotBack": "로그인으로 돌아가기"
   },
   "protected": {

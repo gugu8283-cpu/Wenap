@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { apiFetch, setToken } from '../../lib/api.js'
+import { authErrorMessage } from '../../lib/apiErrorMessage.js'
 import { useAuth } from '../../context/AuthContext.jsx'
 import LegalFooter from '../../components/LegalFooter.jsx'
 import '../../components/LegalFooter.css'
@@ -67,13 +68,7 @@ export default function VerifyEmailPage() {
       setSent(true)
       setCooldown(60)
     } catch (err) {
-      if (err.code === 'EMAIL_NOT_CONFIGURED') {
-        setResendError(t('auth.emailNotConfigured'))
-      } else if (err.code === 'RATE_LIMIT') {
-        setResendError(t('auth.verifyRateLimit'))
-      } else {
-        setResendError(err.message || t('auth.verifyResendFail'))
-      }
+      setResendError(authErrorMessage(err, t, 'auth.verifyResendFail'))
     }
   }
 

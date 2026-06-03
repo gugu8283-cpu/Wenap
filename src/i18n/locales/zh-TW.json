@@ -105,6 +105,15 @@
     "showPw": "顯示",
     "hidePw": "隱藏",
     "invalidCreds": "信箱或密碼不正確",
+    "loginLocked": "登入嘗試過多，請稍後再試",
+    "accountBanned": "帳號已被限制",
+    "serverError": "操作失敗，請稍後重試",
+    "invalidEmail": "請輸入有效信箱",
+    "disposableEmail": "不支援一次性信箱，請使用常用信箱註冊",
+    "weakPassword": "密碼至少 8 位",
+    "legalConsentRequired": "請勾選並同意服務條款、隱私政策與投資免責聲明",
+    "emailExists": "此信箱已註冊",
+    "rateLimited": "請求過於頻繁，請稍後再試",
     "verifyTitle": "驗證您的信箱",
     "verifySentTo": "我們已向 {{email}} 發送了驗證連結",
     "verifyYourEmail": "您的信箱",
@@ -128,6 +137,7 @@
     "forgotBtn": "發送重設連結",
     "forgotSending": "發送中…",
     "forgotSent": "重設連結已發送，請查收郵件",
+    "forgotFail": "無法發送重設連結，請稍後再試",
     "forgotBack": "返回登入"
   },
   "protected": {

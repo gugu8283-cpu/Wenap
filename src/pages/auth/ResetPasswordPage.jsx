@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { apiFetch } from '../../lib/api.js'
+import { authErrorMessage } from '../../lib/apiErrorMessage.js'
 import LegalFooter from '../../components/LegalFooter.jsx'
 import '../../components/LegalFooter.css'
 import './AuthPages.css'
@@ -55,13 +56,7 @@ export default function ResetPasswordPage() {
       setDone(true)
       setTimeout(() => navigate('/login', { replace: true }), 2500)
     } catch (err) {
-      if (err.code === 'INVALID_OR_EXPIRED_TOKEN') {
-        setError(t('auth.resetInvalidToken'))
-      } else if (err.code === 'WEAK_PASSWORD') {
-        setError(t('auth.passwordHint'))
-      } else {
-        setError(err.message || t('auth.resetFail'))
-      }
+      setError(authErrorMessage(err, t, 'auth.resetFail'))
     } finally {
       setLoading(false)
     }

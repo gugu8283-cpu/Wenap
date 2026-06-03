@@ -7,6 +7,13 @@ import ProLockPrompt from './ProLockPrompt.jsx'
 import ExpandableText from './ExpandableText.jsx'
 
 const W = 320
+const SVG_H = 64
+const BAR_Y = 22
+const BAR_H = 20
+const AXIS_LABEL_Y = 58
+const PRICE_LABEL_Y = 10
+const SPOT_LINE_Y1 = 14
+const SPOT_LINE_Y2 = 50
 
 function scenClass(type) {
   if (type === 'bull') return 'ma-scen-p--bull'
@@ -137,15 +144,15 @@ export default function ScenarioSection({ scenarios, currentPrice, locked = fals
       {axis ? (
         locked ? (
           <ProSectionLock ctaText={t('report.scenarioUnlockPro')} onUnlock={onUpgrade} className="ma-scen-chart-lock">
-            <svg className="ma-axis-svg" viewBox={`0 0 ${W} 56`} preserveAspectRatio="none" aria-hidden>
-              <rect x={0} y={14} width={W} height={20} fill="rgba(255,255,255,0.04)" rx={4} />
+            <svg className="ma-axis-svg" viewBox={`0 0 ${W} ${SVG_H}`} preserveAspectRatio="none" aria-hidden>
+              <rect x={0} y={BAR_Y} width={W} height={BAR_H} fill="rgba(255,255,255,0.04)" rx={4} />
               {axis.segs.map((seg) => (
                 <rect
                   key={seg.type}
                   x={seg.x1}
-                  y={14}
+                  y={BAR_Y}
                   width={seg.w}
-                  height={20}
+                  height={BAR_H}
                   fill={fillFor(seg.type)}
                   rx={3}
                 />
@@ -153,12 +160,12 @@ export default function ScenarioSection({ scenarios, currentPrice, locked = fals
             </svg>
           </ProSectionLock>
         ) : (
-          <svg className="ma-axis-svg" viewBox={`0 0 ${W} 56`} preserveAspectRatio="none" aria-hidden>
+          <svg className="ma-axis-svg" viewBox={`0 0 ${W} ${SVG_H}`} preserveAspectRatio="none" aria-hidden>
             <rect
               x={0}
-              y={14}
+              y={BAR_Y}
               width={chartAnim ? W : 0}
-              height={20}
+              height={BAR_H}
               fill="rgba(255,255,255,0.04)"
               rx={4}
               style={{ transition: 'width 500ms ease-out' }}
@@ -167,9 +174,9 @@ export default function ScenarioSection({ scenarios, currentPrice, locked = fals
               <rect
                 key={seg.type}
                 x={seg.x1}
-                y={14}
+                y={BAR_Y}
                 width={chartAnim ? seg.w : 0}
-                height={20}
+                height={BAR_H}
                 fill={fillFor(seg.type)}
                 rx={3}
                 style={{ transition: `width 500ms ease-out ${si * 80}ms` }}
@@ -179,15 +186,16 @@ export default function ScenarioSection({ scenarios, currentPrice, locked = fals
               <g>
                 <line
                   x1={axis.scale(currentPrice)}
-                  y1={8}
+                  y1={SPOT_LINE_Y1}
                   x2={axis.scale(currentPrice)}
-                  y2={44}
+                  y2={SPOT_LINE_Y2}
                   stroke="#378ADD"
                   strokeWidth={2}
                 />
                 <text
                   x={axis.scale(currentPrice)}
-                  y={6}
+                  y={PRICE_LABEL_Y}
+                  dominantBaseline="hanging"
                   textAnchor="middle"
                   fontSize={12}
                   fill={axis.priceOutside ? 'rgba(255,255,255,0.4)' : '#FFFFFF'}
@@ -199,10 +207,10 @@ export default function ScenarioSection({ scenarios, currentPrice, locked = fals
                 </text>
               </g>
             ) : null}
-            <text x={0} y={52} fontSize="10" fill="var(--text-secondary)" className="ma-num">
+            <text x={0} y={AXIS_LABEL_Y} fontSize="10" fill="var(--text-secondary)" className="ma-num">
               ${axis.bearMin.toFixed(0)}
             </text>
-            <text x={W} y={52} textAnchor="end" fontSize="10" fill="var(--text-secondary)" className="ma-num">
+            <text x={W} y={AXIS_LABEL_Y} textAnchor="end" fontSize="10" fill="var(--text-secondary)" className="ma-num">
               ${axis.bullMax.toFixed(0)}
             </text>
           </svg>

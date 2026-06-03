@@ -57,6 +57,7 @@ router.get('/config', (req, res) => {
 });
 
 // Create a Checkout Session for the requested tier
+const MSG = require('../lib/apiMessages.cjs');
 const { legalStatusForUser, recordConsents, clientMeta: legalClientMeta } = require('../lib/legalConsent.cjs');
 
 router.post('/create-checkout-session', requireAuth, async (req, res) => {
@@ -66,7 +67,7 @@ router.post('/create-checkout-session', requireAuth, async (req, res) => {
   if (!req.body?.agreeSubscriptionTerms) {
     return res.status(400).json({
       error: 'SUBSCRIPTION_CONSENT_REQUIRED',
-      message: '请确认同意服务条款中的付费与订阅条款后再继续',
+      message: MSG.SUBSCRIPTION_CONSENT_REQUIRED,
     });
   }
 
@@ -75,7 +76,7 @@ router.post('/create-checkout-session', requireAuth, async (req, res) => {
   if (legal.needsReaccept) {
     return res.status(403).json({
       error: 'LEGAL_REACCEPT_REQUIRED',
-      message: '请先更新并同意最新版法律文件',
+      message: MSG.LEGAL_REACCEPT_REQUIRED,
       missing: legal.missing,
     });
   }

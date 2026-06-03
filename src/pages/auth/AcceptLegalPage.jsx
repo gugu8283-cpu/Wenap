@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { apiFetch } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
 import LegalConsentFields, { allRegistrationConsents } from '../../components/LegalConsentFields.jsx'
+import { authErrorMessage } from '../../lib/apiErrorMessage.js'
 import LegalFooter from '../../components/LegalFooter.jsx'
 import '../../components/LegalFooter.css'
 import './AuthPages.css'
@@ -48,7 +49,7 @@ export default function AcceptLegalPage() {
       await refreshUser()
       navigate('/app', { replace: true })
     } catch (err) {
-      setError(err.message || t('legal.acceptFail'))
+      setError(authErrorMessage(err, t, 'legal.acceptFail'))
     } finally {
       setLoading(false)
     }

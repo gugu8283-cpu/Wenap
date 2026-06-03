@@ -3208,6 +3208,7 @@ function sendPublicSampleReport(req, res) {
       raw.vizSnapshot.dimensions = markUnavailableDimensionScores(raw.vizSnapshot.dimensions, locale);
     }
     if (raw.vizSnapshot) {
+      localizeReportCitations(raw.vizSnapshot, locale);
       raw.vizSnapshot.bullBearDebate = undefined;
       raw.vizSnapshot.secondPassCritique = undefined;
       if (Array.isArray(raw.vizSnapshot.criticAngles)) {
@@ -3245,7 +3246,7 @@ app.get('/watchlist', requireAuth, (req, res) => {
 /** 免费额度与套餐摘要（首页展示「还剩几次」、促订阅） */
 app.get('/market/sparkline', async (req, res) => {
   const ticker = String(req.query?.ticker || '').trim().toUpperCase();
-  if (!ticker) return res.status(400).json({ error: '需要 ticker' });
+  if (!ticker) return res.status(400).json({ error: 'TICKER_REQUIRED', message: require('./lib/apiMessages.cjs').TICKER_REQUIRED });
   try {
     const { fetchSparklineCloses } = require('./lib/sparkline.cjs');
     const points = await fetchSparklineCloses(ticker, 7);
@@ -3302,7 +3303,7 @@ app.get('/stats/score-percentile', (req, res) => {
 /** 公开：单标的最新价（供报告现价/涨幅补全） */
 app.get('/market/quote', async (req, res) => {
   const ticker = String(req.query?.ticker || '').trim().toUpperCase();
-  if (!ticker) return res.status(400).json({ error: '需要 ticker' });
+  if (!ticker) return res.status(400).json({ error: 'TICKER_REQUIRED', message: require('./lib/apiMessages.cjs').TICKER_REQUIRED });
   const avKey = getAlphaVantageKey();
   if (!avKey) return res.json({ ticker, price: null, currency: 'USD' });
   try {
@@ -3450,6 +3451,7 @@ app.get('/history/:id', requireAuth, (req, res) => {
         raw.vizSnapshot.dimensions,
         histLoc,
       );
+      localizeReportCitations(raw.vizSnapshot, histLoc);
     }
     return res.json(raw);
   } catch {

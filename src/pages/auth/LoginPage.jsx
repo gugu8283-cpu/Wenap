@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '../../components/LanguageSwitcher.jsx'
 
 import { useAuth } from '../../context/AuthContext.jsx'
+import { authErrorMessage } from '../../lib/apiErrorMessage.js'
 
 import LegalFooter from '../../components/LegalFooter.jsx'
 import '../../components/LegalFooter.css'
@@ -57,16 +58,10 @@ export default function LoginPage() {
     } catch (err) {
 
       if (err.code === 'EMAIL_NOT_VERIFIED') {
-
         setNeedsVerify(true)
-
-        setError(t('auth.verifyNeed'))
-
-      } else {
-
-        setError(err.message || t('auth.invalidCreds'))
-
       }
+
+      setError(authErrorMessage(err, t, 'auth.invalidCreds'))
 
     } finally {
 

@@ -7,6 +7,7 @@ function getDb() {
 }
 
 const BCRYPT_ROUNDS = 12;
+const MSG = require('../lib/apiMessages.cjs');
 const FREE_MONTHLY_CAP = 5;
 const DEVICE_FREE_CAP = 10;
 /** 设为 1 启用设备指纹累计免费次数限制（默认关闭） */
@@ -593,7 +594,7 @@ function checkUserCanAnalyze(user, fingerprint, ip) {
       allowed: false,
       tier,
       error: 'FREE_QUOTA_EXCEEDED',
-      message: `本月免费分析次数已用尽（${FREE_MONTHLY_CAP} 次/月，每月 1 日 UTC 重置）。升级 Pro 继续使用。`,
+      message: MSG.FREE_QUOTA_EXCEEDED(FREE_MONTHLY_CAP),
     };
   }
   if (DEVICE_FINGERPRINT_ENABLED) {
@@ -603,7 +604,7 @@ function checkUserCanAnalyze(user, fingerprint, ip) {
         allowed: false,
         tier,
         error: 'DEVICE_FREE_EXCEEDED',
-        message: '此设备免费次数已用完，请升级',
+        message: MSG.DEVICE_FREE_EXCEEDED,
       };
     }
   }
@@ -613,7 +614,7 @@ function checkUserCanAnalyze(user, fingerprint, ip) {
       allowed: false,
       tier,
       error: 'RATE_LIMIT',
-      message: '请求过于频繁，请稍后再试',
+      message: MSG.RATE_LIMIT,
     };
   }
   if (!user.email_verified) {
@@ -621,7 +622,7 @@ function checkUserCanAnalyze(user, fingerprint, ip) {
       allowed: false,
       tier,
       error: 'EMAIL_NOT_VERIFIED',
-      message: '请先验证邮箱后再使用分析功能',
+      message: MSG.EMAIL_NOT_VERIFIED_ANALYZE,
     };
   }
   return { allowed: true, tier, remaining: FREE_MONTHLY_CAP - monthlyUsed };

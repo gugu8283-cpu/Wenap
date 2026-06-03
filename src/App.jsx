@@ -13,6 +13,7 @@ import NotificationCenter from './components/NotificationCenter.jsx'
 import { resolveAppLanguage } from './i18n/index.js'
 import { useAuth } from './context/AuthContext.jsx'
 import { apiFetch, getToken } from './lib/api.js'
+import { apiErrorMessage } from './lib/apiErrorMessage.js'
 import { applyTheme, getTheme } from './utils/theme.js'
 import { resolveTickerInput } from './utils/tickerResolve.js'
 import TickerQuickPicks from './components/TickerQuickPicks.jsx'
@@ -340,15 +341,11 @@ export default function App() {
             }
             if (handleAuthFailure(j)) {
               /* cleared stale session */
-            } else if (j.error === 'EMAIL_NOT_VERIFIED') {
-              setError(j.message || t('app.errVerifyEmail'))
-            } else if (j.error === 'RATE_LIMIT') {
-              setError(j.message || '请求过于频繁，请稍后再试')
             } else {
-              setError(j.message || j.error || `请求失败（${resp.status}）`)
+              setError(j.message || j.error || t('app.errRequestFailed'))
             }
           } else {
-            setError(await resp.text().catch(() => `请求失败（${resp.status}）`))
+            setError(t('app.errRequestFailed'))
           }
           setLoading(false)
           return
@@ -356,7 +353,7 @@ export default function App() {
 
         const reader = resp.body?.getReader()
         if (!reader) {
-          setError('无法读取响应流')
+          setError(t('app.errStreamRead'))
           setLoading(false)
           return
         }
@@ -393,7 +390,9 @@ export default function App() {
               if (data.type === 'token' && data.text) {
                 setStreamText((prev) => prev + data.text)
               }
-              if (data.type === 'error') setError(data.message || '分析出错')
+              if (data.type === 'error') {
+                setError(data.message || t('app.errAnalyze'))
+              }
             }
           }
         }
@@ -414,7 +413,9 @@ export default function App() {
               if (data.type === 'token' && data.text) {
                 setStreamText((prev) => prev + data.text)
               }
-              if (data.type === 'error') setError(data.message || '分析出错')
+              if (data.type === 'error') {
+                setError(data.message || t('app.errAnalyze'))
+              }
             } catch {
               /* ignore */
             }
@@ -438,10 +439,10 @@ export default function App() {
         refreshUser()
       } catch (e) {
         if (e?.name === 'AbortError') return
-        const msg = e?.message || '网络错误'
+        const msg = e?.message || t('app.errNetwork')
         const hint =
-          /Failed to fetch|NetworkError|Load failed/i.test(msg) || msg === '网络错误'
-            ? ' 本地请确认后端已启动（端口 3002）：在 wenap 目录运行 `node server.cjs`，或一条命令 `npm run dev:full` 同时起前后端。'
+          /Failed to fetch|NetworkError|Load failed/i.test(msg)
+            ? ' Check that the backend is running (port 3002).'
             : ''
         setError(msg + hint)
       } finally {

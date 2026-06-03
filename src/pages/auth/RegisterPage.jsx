@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '../../components/LanguageSwitcher.jsx'
 import { apiFetch } from '../../lib/api.js'
 import LegalConsentFields, { allRegistrationConsents } from '../../components/LegalConsentFields.jsx'
-import LegalFooter from '../../components/LegalFooter.jsx'
+import { authErrorMessage } from '../../lib/apiErrorMessage.js'
 import '../../components/LegalFooter.css'
 import './AuthPages.css'
 
@@ -80,15 +80,7 @@ export default function RegisterPage() {
       const verifyUrl = `/verify-email?email=${encodeURIComponent(email)}${prefilledSymbol ? `&symbol=${encodeURIComponent(prefilledSymbol)}` : ''}`
       navigate(verifyUrl)
     } catch (err) {
-      if (err.code === 'EMAIL_NOT_CONFIGURED') {
-        setError(t('auth.emailNotConfigured'))
-      } else if (err.code === 'EMAIL_SEND_FAILED') {
-        setError(t('auth.emailSendFailed'))
-      } else if (err.code === 'LEGAL_CONSENT_REQUIRED') {
-        setError(t('legal.registerMustAgreeAll'))
-      } else {
-        setError(err.message || t('auth.registerFail'))
-      }
+      setError(authErrorMessage(err, t, 'auth.registerFail'))
     } finally {
       setLoading(false)
     }

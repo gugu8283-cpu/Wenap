@@ -122,10 +122,36 @@ export function normalizeSourceHostLabel(label, locale) {
   return s
 }
 
+export function localizeRiskCredTokensInText(text, locale) {
+  if (isZhLocale(locale)) return String(text ?? '')
+  const loc = normalizeUiLocale(locale)
+  let t = String(text ?? '')
+  if (!t || !/[高中低]/.test(t)) return t
+
+  const risk = (ch) => {
+    if (loc === 'de') return ch === '高' ? 'Hoch' : ch === '低' ? 'Niedrig' : 'Mittel'
+    if (loc === 'ko') return ch === '高' ? '높음' : ch === '低' ? '낮음' : '중간'
+    return ch === '高' ? 'High' : ch === '低' ? 'Low' : 'Medium'
+  }
+
+  t = t.replace(/Risk score\s*高/gi, `${risk('高')} risk score`)
+  t = t.replace(/Risk score\s*中/gi, `${risk('中')} risk score`)
+  t = t.replace(/Risk score\s*低/gi, `${risk('低')} risk score`)
+  t = t.replace(/Risk level\s*[:：]\s*高/gi, `Risk level: ${risk('高')}`)
+  t = t.replace(/Risk level\s*[:：]\s*中/gi, `Risk level: ${risk('中')}`)
+  t = t.replace(/Risk level\s*[:：]\s*低/gi, `Risk level: ${risk('低')}`)
+  t = t.replace(/(?<=[\s(,:/]|^)(高|中|低)(?=[\s).,;]|$)/g, (ch) => risk(ch))
+  return t
+}
+
+function locText(text, locale) {
+  return localizeRiskCredTokensInText(localizeCitationBrackets(text, locale), locale)
+}
+
 /** @param {import('../types/analysis.js').MobileReport} report */
 export function localizeMobileReportCitations(report, locale) {
   if (!report || isZhLocale(locale)) return report
-  const loc = (s) => localizeCitationBrackets(s, locale)
+  const loc = (s) => locText(s, locale)
   if (report.forecast) report.forecast = loc(report.forecast)
   if (report.forecastAssumption) report.forecastAssumption = loc(report.forecastAssumption)
   if (report.technicalSnapshot) report.technicalSnapshot = loc(report.technicalSnapshot)
@@ -169,6 +195,21 @@ export function localizeMobileReportCitations(report, locale) {
       title: loc(s.title),
       source: normalizeSourceHostLabel(s.source, locale),
     }))
+  }
+  if (report.bullBearDebate && typeof report.bullBearDebate === 'object') {
+    const normSide = (arr) =>
+      (Array.isArray(arr) ? arr : []).map((x) => ({
+        ...x,
+        reason: loc(x.reason),
+        text: loc(x.text),
+      }))
+    report.bullBearDebate = {
+      bull: normSide(report.bullBearDebate.bull),
+      bear: normSide(report.bullBearDebate.bear),
+    }
+  }
+  if (Array.isArray(report.criticAngles)) {
+    report.criticAngles = report.criticAngles.map((w) => loc(w))
   }
   return report
 }

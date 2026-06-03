@@ -40,7 +40,7 @@ export async function apiFetch(path, options = {}) {
     if (/better_sqlite3|NODE_MODULE_VERSION/i.test(text)) {
       data = {
         error: 'SQLITE_NATIVE',
-        message: '后端数据库模块与 Node 版本不匹配。请在 stockai 目录执行 npm run rebuild:native 后重启 npm run dev:full',
+        message: 'Native SQLite module mismatch. Run npm run rebuild:native in stockai, then restart the server.',
       }
     } else if (text && text.length < 280) {
       data = { error: 'HTTP_ERROR', message: text }

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { apiFetch } from '../../lib/api.js'
+import { authErrorMessage } from '../../lib/apiErrorMessage.js'
 import LegalFooter from '../../components/LegalFooter.jsx'
 import '../../components/LegalFooter.css'
 import './AuthPages.css'
@@ -27,7 +28,7 @@ export default function ForgotPasswordPage() {
       })
       setSent(true)
     } catch (err) {
-      setError(err?.message || t('auth.forgotFail', { defaultValue: 'Request failed, please try again' }))
+      setError(authErrorMessage(err, t, 'auth.forgotFail'))
     } finally {
       setLoading(false)
     }

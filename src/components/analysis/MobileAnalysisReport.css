@@ -417,8 +417,9 @@
 
 .ma-axis-svg {
   width: 100%;
-  height: 56px;
+  height: 64px;
   margin-top: 8px;
+  overflow: visible;
 }
 
 .ma-supply-card.ma-card {
