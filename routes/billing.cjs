@@ -27,13 +27,28 @@ const STRIPE_PRICE = {
   pro_plus: (process.env.STRIPE_PRICE_PRO_PLUS || '').trim(),
 };
 
+let stripeClient;
+
 function getStripe() {
   if (!STRIPE_SECRET) return null;
+  if (stripeClient !== undefined) return stripeClient;
   try {
-    return require('stripe')(STRIPE_SECRET);
-  } catch {
+    stripeClient = require('stripe')(STRIPE_SECRET);
+    return stripeClient;
+  } catch (e) {
+    console.error('[Wenap] Stripe SDK load failed:', e.message);
+    stripeClient = null;
     return null;
   }
+}
+
+function isStripeReady() {
+  return Boolean(
+    getStripe() &&
+      STRIPE_PRICE.pro &&
+      STRIPE_PRICE.pro_plus &&
+      (process.env.STRIPE_PUBLISHABLE_KEY || '').trim(),
+  );
 }
 
 function noStripe(res) {
@@ -52,7 +67,7 @@ router.get('/config', (req, res) => {
       pro: STRIPE_PRICE.pro || null,
       pro_plus: STRIPE_PRICE.pro_plus || null,
     },
-    configured: Boolean(STRIPE_SECRET),
+    configured: isStripeReady(),
   });
 });
 
