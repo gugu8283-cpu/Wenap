@@ -156,6 +156,25 @@ export default function App() {
   useEffect(() => {
     ensureAnonId()
   }, [])
+
+  useEffect(() => {
+    if (searchParams.get('checkout') !== 'success' || !getToken()) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        await apiFetch('/billing/sync-after-checkout', { method: 'POST', body: '{}' })
+      } catch {
+        /* webhook may have already applied; still refresh */
+      }
+      if (!cancelled) await refreshUser()
+      if (!cancelled) {
+        setSearchParams({}, { replace: true })
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [searchParams, setSearchParams, refreshUser])
   const clientTier = user?.tier || readClientTier()
   const [ticker, setTicker] = useState('')
   const [assetType, setAssetType] = useState('stock')

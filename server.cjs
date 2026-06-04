@@ -147,6 +147,18 @@ app.use((req, res, next) => {
   next();
 });
 
+/** Stripe webhook signature requires raw body — must run before express.json() */
+const billingWebhookRaw = express.raw({ type: 'application/json' });
+app.use((req, res, next) => {
+  if (
+    req.method === 'POST' &&
+    (req.path === '/api/billing/webhook' || req.path === '/billing/webhook')
+  ) {
+    return billingWebhookRaw(req, res, next);
+  }
+  next();
+});
+
 app.use(express.json({ limit: '1mb' }));
 
 if (SPA_MODE) {

@@ -14,7 +14,7 @@
 
 const express = require('express');
 const { requireAuth } = require('../middleware/requireAuth.cjs');
-const { getUserById } = require('../db/auth.cjs');
+const { getUserById, publicUser } = require('../db/auth.cjs');
 const { getDb } = require('./billingDb.cjs');
 
 const router = express.Router();
@@ -57,6 +57,37 @@ function noStripe(res) {
     message: 'Stripe is not configured. To upgrade, email support@wenap.app.',
     contactEmail: 'support@wenap.app',
   });
+}
+
+function tierFromPriceId(priceId) {
+  const id = String(priceId || '').trim();
+  if (id && id === STRIPE_PRICE.pro_plus) return 'pro_plus';
+  if (id && id === STRIPE_PRICE.pro) return 'pro';
+  return 'pro';
+}
+
+function applyPaidSubscription({ userId, tier, customerId, subscriptionId, customerCountry }) {
+  const normalizedTier = tier === 'pro_plus' ? 'pro_plus' : 'pro';
+  const { initDb } = require('../db/store.cjs');
+  const adb = initDb();
+  adb.prepare(`UPDATE users SET tier = ?, referral_bonus_until = NULL WHERE id = ?`).run(
+    normalizedTier,
+    userId,
+  );
+
+  const db = getDb();
+  db.prepare(`
+    INSERT INTO billing (user_id, stripe_customer_id, stripe_subscription_id, tier, status, customer_country, updated_at)
+    VALUES (?, ?, ?, ?, 'active', ?, datetime('now'))
+    ON CONFLICT(user_id) DO UPDATE SET
+      stripe_customer_id = excluded.stripe_customer_id,
+      stripe_subscription_id = excluded.stripe_subscription_id,
+      tier = excluded.tier,
+      status = 'active',
+      customer_country = COALESCE(excluded.customer_country, billing.customer_country),
+      updated_at = datetime('now')
+  `).run(userId, customerId, subscriptionId, normalizedTier, customerCountry || null);
+  return normalizedTier;
 }
 
 // Public: return Stripe publishable key so frontend can init Stripe.js
@@ -156,6 +187,67 @@ router.post('/create-checkout-session', requireAuth, async (req, res) => {
   }
 });
 
+// After Checkout redirect: sync tier from Stripe if webhook was delayed or missed
+router.post('/sync-after-checkout', requireAuth, async (req, res) => {
+  const stripe = getStripe();
+  if (!stripe) return noStripe(res);
+
+  const user = getUserById(req.authUser.id);
+  if (!user) return res.status(401).json({ error: 'UNAUTHORIZED' });
+
+  try {
+    const db = getDb();
+    const billingRow = db
+      .prepare('SELECT stripe_customer_id FROM billing WHERE user_id = ?')
+      .get(user.id);
+
+    let customerId = billingRow?.stripe_customer_id || null;
+    if (!customerId) {
+      const customers = await stripe.customers.list({ email: user.email, limit: 3 });
+      customerId = customers.data[0]?.id || null;
+    }
+    if (!customerId) {
+      return res.status(404).json({
+        error: 'NO_CUSTOMER',
+        message: 'No Stripe customer found for this account yet.',
+      });
+    }
+
+    const subs = await stripe.subscriptions.list({
+      customer: customerId,
+      status: 'active',
+      limit: 5,
+    });
+    const sub = subs.data[0];
+    if (!sub) {
+      return res.status(404).json({
+        error: 'NO_SUBSCRIPTION',
+        message: 'No active Stripe subscription found.',
+      });
+    }
+
+    const priceId = sub.items?.data?.[0]?.price?.id;
+    const tier =
+      sub.metadata?.tier ||
+      tierFromPriceId(priceId);
+
+    applyPaidSubscription({
+      userId: user.id,
+      tier,
+      customerId,
+      subscriptionId: sub.id,
+      customerCountry: null,
+    });
+
+    const updated = getUserById(user.id);
+    console.log(`[Wenap] Stripe sync-after-checkout: user ${user.id} -> ${tier}`);
+    res.json({ ok: true, tier, user: publicUser(updated) });
+  } catch (e) {
+    console.error('[Wenap] Stripe sync-after-checkout error:', e.message);
+    res.status(500).json({ error: 'STRIPE_ERROR', message: e.message });
+  }
+});
+
 // Stripe Customer Portal (manage subscription / cancel / change card)
 router.post('/portal-session', requireAuth, async (req, res) => {
   const stripe = getStripe();
@@ -182,8 +274,8 @@ router.post('/portal-session', requireAuth, async (req, res) => {
   }
 });
 
-// Stripe Webhook handler (raw body required - set up in server.cjs before json middleware)
-router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+// Stripe Webhook handler (raw body parsed in server.cjs before express.json)
+router.post('/webhook', async (req, res) => {
   const stripe = getStripe();
   if (!stripe) return res.sendStatus(200);
 
@@ -212,24 +304,16 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         null;
 
       if (userId) {
-        const { initDb } = require('../db/store.cjs');
-        const adb = initDb();
-        adb.prepare(`UPDATE users SET tier = ?, referral_bonus_until = NULL WHERE id = ?`).run(tier, userId);
-
-        // Upsert billing row
-        db.prepare(`
-          INSERT INTO billing (user_id, stripe_customer_id, stripe_subscription_id, tier, status, customer_country, updated_at)
-          VALUES (?, ?, ?, ?, 'active', ?, datetime('now'))
-          ON CONFLICT(user_id) DO UPDATE SET
-            stripe_customer_id = excluded.stripe_customer_id,
-            stripe_subscription_id = excluded.stripe_subscription_id,
-            tier = excluded.tier,
-            status = 'active',
-            customer_country = COALESCE(excluded.customer_country, billing.customer_country),
-            updated_at = datetime('now')
-        `).run(userId, customerId, subscriptionId, tier, customerCountry);
-
+        applyPaidSubscription({
+          userId,
+          tier,
+          customerId,
+          subscriptionId,
+          customerCountry,
+        });
         console.log(`[Wenap] Stripe: user ${userId} upgraded to ${tier}`);
+      } else {
+        console.warn('[Wenap] Stripe checkout.session.completed missing metadata.userId');
       }
     } else if (event.type === 'customer.subscription.updated') {
       const sub = event.data.object;
