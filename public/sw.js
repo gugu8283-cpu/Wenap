@@ -1,5 +1,5 @@
 // Wenap Service Worker – offline cache + push notifications
-const CACHE_NAME = 'wenap-v1';
+const CACHE_NAME = 'wenap-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -20,14 +20,27 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Network-first for API calls, cache-first for static assets
+// Network-first for HTML navigations (avoid stale SPA shell after deploy)
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET and API calls
   if (request.method !== 'GET') return;
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/') || url.pathname.startsWith('/billing/')) return;
+
+  if (request.mode === 'navigate' || (request.headers.get('accept') || '').includes('text/html')) {
+    event.respondWith(
+      fetch(request).catch(() => caches.match(request)),
+    );
+    return;
+  }
+
+  if (url.pathname.startsWith('/assets/')) {
+    event.respondWith(
+      fetch(request).catch(() => caches.match(request)),
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(request).then((cached) => {

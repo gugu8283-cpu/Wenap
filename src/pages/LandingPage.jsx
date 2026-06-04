@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '../components/LanguageSwitcher.jsx'
 import LegalFooter from '../components/LegalFooter.jsx'
@@ -53,8 +53,17 @@ function TierFeatureList({ featuresKey, t }) {
 export default function LandingPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [accuracy, setAccuracy] = useState(null)
   const [ticker, setTicker] = useState('')
+
+  useEffect(() => {
+    if (searchParams.get('checkout') === 'success') {
+      const tier = searchParams.get('tier')
+      const q = tier ? `?checkout=success&tier=${encodeURIComponent(tier)}` : '?checkout=success'
+      navigate(`/app${q}`, { replace: true })
+    }
+  }, [searchParams, navigate])
 
   useEffect(() => {
     fetch(`${API_BASE}/accuracy/stats`)

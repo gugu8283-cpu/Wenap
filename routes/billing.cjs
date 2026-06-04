@@ -167,7 +167,7 @@ router.post('/create-checkout-session', requireAuth, async (req, res) => {
     const sessionParams = {
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${APP_URL}/?checkout=success&tier=${tier}`,
+      success_url: `${APP_URL}/app?checkout=success&tier=${tier}`,
       cancel_url: `${APP_URL}/pricing?checkout=cancelled`,
       metadata: { userId: user.id, tier },
       subscription_data: { metadata: { userId: user.id, tier } },
