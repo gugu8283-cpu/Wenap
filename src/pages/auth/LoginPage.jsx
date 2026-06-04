@@ -21,7 +21,12 @@ export default function LoginPage() {
 
   const navigate = useNavigate()
   const location = useLocation()
-  const returnTo = `${location.pathname}${location.search}`
+  const returnToParam = new URLSearchParams(location.search).get('returnTo')
+  const redirectAfterLogin =
+    (returnToParam && returnToParam.startsWith('/') ? returnToParam : null) ||
+    (typeof location.state?.from === 'string' ? location.state.from : null) ||
+    '/app'
+  const legalReturnTo = `${location.pathname}${location.search}`
 
   const { login } = useAuth()
 
@@ -53,7 +58,7 @@ export default function LoginPage() {
 
       await login(email.trim(), password)
 
-      navigate('/app', { replace: true })
+      navigate(redirectAfterLogin, { replace: true })
 
     } catch (err) {
 
@@ -219,7 +224,7 @@ export default function LoginPage() {
 
       </p>
 
-      <LegalFooter className="auth-legal-footer" returnTo={returnTo} />
+      <LegalFooter className="auth-legal-footer" returnTo={legalReturnTo} />
 
     </div>
 

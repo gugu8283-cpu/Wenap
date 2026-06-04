@@ -65,10 +65,13 @@ export default function PricingPage() {
   const checkoutStatus = searchParams.get('checkout')
 
   useEffect(() => {
-    if (checkoutStatus === 'success') {
-      navigate('/', { replace: true })
+    if (checkoutStatus !== 'success') return
+    if (user) {
+      navigate('/app?checkout=success', { replace: true })
+    } else {
+      navigate(`/login?returnTo=${encodeURIComponent('/app?checkout=success')}`, { replace: true })
     }
-  }, [checkoutStatus, navigate])
+  }, [checkoutStatus, navigate, user])
 
   useEffect(() => {
     const base = API_BASE.replace(/\/$/, '')
@@ -80,7 +83,7 @@ export default function PricingPage() {
 
   async function handleUpgrade(tier) {
     if (!user) {
-      navigate('/register')
+      navigate(`/login?returnTo=${encodeURIComponent('/pricing')}`)
       return
     }
     if (!agreeSubscription) {

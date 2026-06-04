@@ -27,8 +27,8 @@ export default function ProtectedRoute({ children }) {
   }
 
   if (!user) {
-    // If user visits /app directly while unauthenticated, send to landing
-    return <Navigate to="/" replace state={{ from: location.pathname }} />
+    const returnTo = `${location.pathname}${location.search}`
+    return <Navigate to={`/login?returnTo=${encodeURIComponent(returnTo)}`} replace />
   }
 
   if (!user.emailVerified) {
