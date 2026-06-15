@@ -2261,7 +2261,9 @@ function stripDataForViz(
     dataAsOf: data.dataAsOf,
     quoteAsOf: data.quoteAsOf || data.dataAsOf,
     priceAsOfDisplay: String(data.priceAsOfDisplay || marketSnapshot?.priceAsOfDisplay || '').trim(),
-    priceSource: String(data.priceSource || marketSnapshot?.sourceLabel || 'Alpha Vantage').trim(),
+    priceSource: String(
+      data.priceSource || marketSnapshot?.sourceLabel || marketDataProvider() || 'market data',
+    ).trim(),
     priceStaleNotice: String(data.priceStaleNotice || marketSnapshot?.priceStaleNotice || '').trim(),
     dataFieldFreshness: Array.isArray(data.dataFieldFreshness)
       ? data.dataFieldFreshness.slice(0, 8)
@@ -2271,7 +2273,9 @@ function stripDataForViz(
     freshnessScore: Number.isFinite(Number(data.freshnessScore)) ? data.freshnessScore : null,
     trustWarnings: Array.isArray(data.trustWarnings) ? data.trustWarnings.slice(0, 8) : [],
     reportTier: tier,
+    currentPrice: Number.isFinite(curForSnap) && curForSnap > 0 ? curForSnap : null,
     latestPriceUsd: Number.isFinite(curForSnap) && curForSnap > 0 ? curForSnap : null,
+    reportGeneratedAt: new Date().toISOString(),
     actionLine: String(data.actionLine || '').trim(),
     actionLineObj:
       data.actionLineObj && typeof data.actionLineObj === 'object'
@@ -2335,6 +2339,9 @@ function stripDataForViz(
             license: marketEnrichment.macro.license,
             licenseUrl: marketEnrichment.macro.licenseUrl,
             attribution: marketEnrichment.macro.attribution,
+            asOfYear: marketEnrichment.macro.asOfYear,
+            vintageNote: marketEnrichment.macro.vintageNote,
+            fetchedAt: marketEnrichment.macro.fetchedAt,
           }
         : null,
     technicals:
@@ -3179,6 +3186,31 @@ function apiClientWantsJson(req) {
   return orig.startsWith('/api/');
 }
 
+function sampleStaleWarnings(vizSnapshot, sampleTs, locale) {
+  const zh = String(locale || '').startsWith('zh');
+  const warnings = [];
+  const tsMs = Number(sampleTs) || Date.parse(String(sampleTs || ''));
+  if (Number.isFinite(tsMs) && Date.now() - tsMs > 24 * 60 * 60 * 1000) {
+    warnings.push(
+      zh
+        ? '⚠️ 公开样本为历史存档（超过 24 小时）。登录后按住 Shift 再点「分析」获取最新行情与报告。'
+        : '⚠️ Public sample is an archived report (>24h old). Log in and Shift+click Analyze for fresh quotes.',
+    );
+  }
+  const asOf = String(vizSnapshot?.dataAsOf || vizSnapshot?.quoteAsOf || '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(asOf)) {
+    const lagDays = Math.floor((Date.now() - new Date(`${asOf}T00:00:00Z`).getTime()) / 86400000);
+    if (lagDays > 2) {
+      warnings.push(
+        zh
+          ? `⚠️ 样本价格日期为 ${asOf}（已滞后约 ${lagDays} 天）。勿用于口播现价。`
+          : `⚠️ Sample price as-of ${asOf} (~${lagDays}d old). Do not use for voiceover spot prices.`,
+      );
+    }
+  }
+  return warnings;
+}
+
 function sendPublicSampleReport(req, res) {
   const sym = String(req.params.ticker || '')
     .toUpperCase()
@@ -3226,8 +3258,17 @@ function sendPublicSampleReport(req, res) {
       if (Array.isArray(raw.vizSnapshot.criticAngles)) {
         raw.vizSnapshot.criticAngles = raw.vizSnapshot.criticAngles.slice(0, 1);
       }
+      const stale = sampleStaleWarnings(raw.vizSnapshot, raw.ts || targetEntry.ts, locale);
+      if (stale.length) {
+        raw.vizSnapshot.trustWarnings = [...stale, ...(raw.vizSnapshot.trustWarnings || [])];
+      }
     }
-    return res.json({ ...raw, isSample: true, sampleTicker: sym });
+    return res.json({
+      ...raw,
+      isSample: true,
+      sampleTicker: sym,
+      sampleGeneratedAt: raw.ts || targetEntry.ts,
+    });
   } catch {
     return res.status(404).json({ error: 'NOT_FOUND' });
   }

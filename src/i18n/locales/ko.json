@@ -309,6 +309,7 @@
     "compare": "비교",
     "enrichmentTitle": "시장 맥락",
     "macroBlock": "거시(세계은행)",
+    "macroDataYear": "WB {{year}}",
     "technicalsBlock": "기술적(EOD)",
     "trend": "추세",
     "dataSource": "출처",

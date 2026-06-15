@@ -13,12 +13,21 @@ export default function EnrichmentSection({ macroSnapshot, technicals }) {
       {hasMacro ? (
         <div className="enrichment-block">
           <div className="enrichment-block-head">{t('report.macroBlock')}</div>
+          {macroSnapshot.vintageNote ? (
+            <p className="enrichment-vintage">{macroSnapshot.vintageNote}</p>
+          ) : null}
           <ul className="enrichment-list">
             {macroSnapshot.series.map((s) => (
               <li key={s.id}>
                 <span className="enrichment-label">{s.label}</span>
                 <span className="enrichment-value">
-                  {s.value} <span className="enrichment-muted">({s.year})</span>
+                  {s.value}
+                  {s.year ? (
+                    <span className="enrichment-muted">
+                      {' '}
+                      ({t('report.macroDataYear', { year: s.year })})
+                    </span>
+                  ) : null}
                 </span>
               </li>
             ))}

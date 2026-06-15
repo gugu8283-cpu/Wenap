@@ -456,6 +456,7 @@
     "compare": "Compare",
     "enrichmentTitle": "Market context",
     "macroBlock": "Macro (World Bank)",
+    "macroDataYear": "WB {{year}}",
     "technicalsBlock": "Technicals (EOD)",
     "trend": "Trend",
     "dataSource": "Source",

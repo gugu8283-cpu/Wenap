@@ -451,6 +451,7 @@
     "compare": "对比分析",
     "enrichmentTitle": "市场背景",
     "macroBlock": "宏观（世界银行）",
+    "macroDataYear": "WB {{year}}年",
     "technicalsBlock": "技术面（EOD）",
     "trend": "趋势",
     "dataSource": "来源",

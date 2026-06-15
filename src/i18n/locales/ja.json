@@ -309,6 +309,7 @@
     "compare": "比較",
     "enrichmentTitle": "マーケットコンテキスト",
     "macroBlock": "マクロ（世界銀行）",
+    "macroDataYear": "WB {{year}}",
     "technicalsBlock": "テクニカル（EOD）",
     "trend": "トレンド",
     "dataSource": "出典",
