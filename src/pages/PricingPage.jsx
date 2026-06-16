@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { apiFetch } from '../lib/api.js'
+import { getRewardfulReferralId } from '../lib/rewardful.js'
 import { useAuth } from '../context/AuthContext.jsx'
 import LegalFooter from '../components/LegalFooter.jsx'
 import '../components/LegalFooter.css'
@@ -93,9 +94,14 @@ export default function PricingPage() {
     setLoadingTier(tier)
     setError('')
     try {
+      const rewardfulReferral = await getRewardfulReferralId()
       const j = await apiFetch('/billing/create-checkout-session', {
         method: 'POST',
-        body: JSON.stringify({ tier, agreeSubscriptionTerms: true }),
+        body: JSON.stringify({
+          tier,
+          agreeSubscriptionTerms: true,
+          ...(rewardfulReferral ? { rewardfulReferral } : {}),
+        }),
       })
       if (j.url) {
         window.location.href = j.url

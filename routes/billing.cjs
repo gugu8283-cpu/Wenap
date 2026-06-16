@@ -169,9 +169,19 @@ router.post('/create-checkout-session', requireAuth, async (req, res) => {
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${APP_URL}/app?checkout=success&tier=${tier}`,
       cancel_url: `${APP_URL}/pricing?checkout=cancelled`,
+      allow_promotion_codes: true,
       metadata: { userId: user.id, tier },
       subscription_data: { metadata: { userId: user.id, tier } },
     };
+
+    const rewardfulReferral = String(
+      req.body?.rewardfulReferral || req.body?.clientReferenceId || '',
+    )
+      .trim()
+      .slice(0, 200);
+    if (rewardfulReferral) {
+      sessionParams.client_reference_id = rewardfulReferral;
+    }
 
     if (existingCustomerId) {
       sessionParams.customer = existingCustomerId;

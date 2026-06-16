@@ -5,6 +5,7 @@ import './i18n/index.js'
 import './index.css'
 import { applyTheme, getTheme } from './utils/theme.js'
 import { migrateLegacyStorage } from './utils/migrateStorage.js'
+import { initRewardful } from './lib/rewardful.js'
 import { AuthProvider } from './context/AuthContext.jsx'
 import AppShell from './AppShell.jsx'
 import AdminApp from './admin/AdminApp.jsx'
@@ -27,6 +28,7 @@ import LegalPage from './pages/legal/LegalPage.jsx'
 
 migrateLegacyStorage()
 applyTheme(getTheme())
+initRewardful()
 
 // Register service worker for PWA / offline support
 if ('serviceWorker' in navigator) {

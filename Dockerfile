@@ -4,6 +4,8 @@ RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
+ARG VITE_REWARDFUL_API_KEY=
+ENV VITE_REWARDFUL_API_KEY=$VITE_REWARDFUL_API_KEY
 RUN npm run build
 
 FROM node:20-bookworm-slim
