@@ -5,6 +5,35 @@
  */
 
 const KEY = String(import.meta.env.VITE_REWARDFUL_API_KEY || '').trim()
+const STORAGE_KEY = 'wenap_rewardful_referral'
+
+function readLiveReferral() {
+  try {
+    const id = window.Rewardful?.referral
+    const s = id != null ? String(id).trim() : ''
+    return s && s.length <= 200 ? s : null
+  } catch {
+    return null
+  }
+}
+
+function readCachedReferral() {
+  try {
+    const s = sessionStorage.getItem(STORAGE_KEY)
+    return s && s.length <= 200 ? s : null
+  } catch {
+    return null
+  }
+}
+
+function cacheReferral(id) {
+  try {
+    const s = id != null ? String(id).trim() : ''
+    if (s && s.length <= 200) sessionStorage.setItem(STORAGE_KEY, s)
+  } catch {
+    /* ignore */
+  }
+}
 
 export function rewardfulConfigured() {
   return Boolean(KEY)
@@ -19,6 +48,13 @@ export function initRewardful() {
     "(function(w,r){w._rwq=r;w[r]=w[r]||function(){(w[r].q=w[r].q||[]).push(arguments)}})(window,'rewardful');"
   document.head.appendChild(boot)
 
+  if (typeof window.rewardful === 'function') {
+    window.rewardful('ready', () => {
+      const id = readLiveReferral()
+      if (id) cacheReferral(id)
+    })
+  }
+
   const remote = document.createElement('script')
   remote.async = true
   remote.src = 'https://r.wdfl.co/rw.js'
@@ -27,23 +63,22 @@ export function initRewardful() {
 }
 
 /** Resolves Rewardful referral UUID for Stripe client_reference_id, or null. */
-export function getRewardfulReferralId(timeoutMs = 3000) {
+export function getRewardfulReferralId(timeoutMs = 8000) {
   if (!KEY || typeof window === 'undefined') {
     return Promise.resolve(null)
   }
+
+  const cached = readCachedReferral()
+  if (cached) return Promise.resolve(cached)
 
   return new Promise((resolve) => {
     let settled = false
     const finish = () => {
       if (settled) return
       settled = true
-      try {
-        const id = window.Rewardful?.referral
-        const s = id != null ? String(id).trim() : ''
-        resolve(s && s.length <= 200 ? s : null)
-      } catch {
-        resolve(null)
-      }
+      const live = readLiveReferral()
+      if (live) cacheReferral(live)
+      resolve(live || readCachedReferral())
     }
 
     if (typeof window.rewardful === 'function') {
