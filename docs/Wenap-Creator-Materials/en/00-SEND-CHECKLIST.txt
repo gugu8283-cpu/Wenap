@@ -1,0 +1,23 @@
+Wenap Creator Pack (English) — what to send
+
+WHEN
+· After they agree to try / promote, or ask for assets
+· With the follow-up DM that includes their ?via= tracking link
+
+ATTACH (email)
+· one-pager.pdf
+· shot-hero.png + shot-radar.png + shot-scenarios.png
+· logo.png (optional)
+· demo.mp4 (~7MB — use Drive/Dropbox if email size limit)
+
+PASTE IF ASKED
+· affiliate-terms.txt (commission + Wise payout rules)
+
+ALWAYS INCLUDE IN MESSAGE
+· Sample: https://wenap.app/sample/NVDA
+· Their link: https://wenap.app/?via=TOKEN (from Rewardful after Invite)
+· Disclosure: #ad / affiliate · Not financial advice
+· Contact: support@wenap.app
+
+FREE PRO
+· Offer via Admin → Users → set tier Pro (or Stripe 100% coupon)

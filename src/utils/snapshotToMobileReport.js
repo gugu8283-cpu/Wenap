@@ -321,7 +321,7 @@ export function snapshotToMobileReport(snapshot, meta = {}) {
     dataAsOf: String(snapshot.dataAsOf || '').trim() || '—',
     quoteAsOf: String(snapshot.quoteAsOf || snapshot.dataAsOf || '').trim() || '—',
     priceAsOfDisplay: String(snapshot.priceAsOfDisplay || '').trim(),
-    priceSource: String(snapshot.priceSource || 'Alpha Vantage').trim(),
+    priceSource: String(snapshot.priceSource || '').trim(),
     priceStaleNotice: String(snapshot.priceStaleNotice || '').trim(),
     dataFieldFreshness: Array.isArray(snapshot.dataFieldFreshness) ? snapshot.dataFieldFreshness : [],
     freshnessScore: Number.isFinite(Number(snapshot.freshnessScore)) ? Number(snapshot.freshnessScore) : null,

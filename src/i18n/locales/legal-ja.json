@@ -61,7 +61,7 @@
       {
         "title": "3. 第三者",
         "paragraphs": [
-          "OpenRouter、Alpha Vantage、Stripe、Resend、Render、Cloudflare 等を利用します。",
+          "OpenRouter、Marketstack、Alpha Vantage、Stripe、Resend、Google Cloud、Cloudflare 等を利用します。",
           "AI に送信される内容に個人情報を含めないでください。"
         ]
       },

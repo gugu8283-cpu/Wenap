@@ -1,0 +1,30 @@
+Wenap — 数据来源说明（给创作者 / 测评）
+
+行情
+· 主源：Marketstack — 美股 EOD / 延迟行情（非实时 Level-1）
+· 备用：Alpha Vantage — Marketstack 不可用时；部分加密/外汇亦使用
+· 报告会标注价格截至时间与来源
+
+申报与披露
+· SEC EDGAR — 美国官方申报
+· Pro：财报 / 申报日历
+· Pro+：Form 4 内幕摘要 + 美国众议院公开股票交易披露
+
+宏观与上下文
+· World Bank Indicators — Pro 宏观背景（定性）
+· OpenRouter 联网检索 — 新闻、公告及报告引用
+
+AI 模型（经 OpenRouter，政策维可选 Gemini API）
+· Free / Pro：Google Gemini 2.5 Flash Lite
+· Pro+：Anthropic Claude Haiku 4.5 + Gemini 2.5 Flash Lite（混合）
+
+Wenap 自有数据
+· 预测历史 → 公开 /accuracy 页
+· 30 日情绪曲线 = 您对该标的历史分析得分的衍生
+
+请注意
+· 数据可能延迟、不完整或有误；AI 可能产生幻觉
+· 非投资建议 — 交易前请自行核实价格与申报
+· 完整说明：https://wenap.app/methodology
+
+联系：support@wenap.app

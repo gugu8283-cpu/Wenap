@@ -1,0 +1,31 @@
+Wenap Affiliate Program — Commission Terms (snippet for creators)
+
+Product
+· Wenap — AI structured stock research (~2 min per ticker)
+· Pro: $9.99/month · Pro+: $19.99/month
+· Sample (no login): https://wenap.app/sample/NVDA
+
+Commission (recurring on subscriptions)
+· Starter: 20% recurring on every paid month
+· Growth: 25% after 10 paying referrals (per affiliate)
+· Partner: 30% after 50 paying referrals (per affiliate)
+· Each referral keeps the rate in effect when that customer first subscribed (earlier referrals stay at their original rate)
+
+Tracking & payouts
+· Links use Rewardful (?via= token)
+· Add your Wise payout email in Rewardful → Affiliate dashboard → Settings / Payout details
+· Commissions are approved after a 30-day hold (refund window), then marked Due
+· Minimum payout: $50 — smaller balances roll to the next month
+· We pay monthly via Wise batch transfer (CSV from Rewardful → Wise Business)
+· Keep your Wise email current in Rewardful so payouts are not delayed
+
+Content requirements
+· Disclose sponsored/affiliate relationship (#ad, sponsored, affiliate link, etc.)
+· Not financial advice — Wenap is a research tool, not buy/sell recommendations
+· Do not promise returns or imply guaranteed profits
+
+Reviewer support
+· Free Pro account available for honest review/demo
+· Logo, screenshots, and short demo available on request
+
+Contact: support@wenap.app

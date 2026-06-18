@@ -360,7 +360,7 @@ export default function HeroCard({
           <span className="ma-hero-price-asof">
             {t('report.priceAsOfLine', {
               datetime: report.priceAsOfDisplay,
-              source: report.priceSource || 'Alpha Vantage',
+              source: report.priceSource || t('report.marketDataDefault'),
             })}
           </span>
         ) : null}

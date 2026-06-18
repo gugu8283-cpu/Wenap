@@ -17,10 +17,13 @@ export default function TrustBanner({
     priceAsOfDisplay && priceAsOfDisplay !== '—'
       ? t('report.priceAsOfLine', {
           datetime: priceAsOfDisplay,
-          source: priceSource || 'Alpha Vantage',
+          source: priceSource || t('report.marketDataDefault'),
         })
       : quoteAsOf && quoteAsOf !== '—'
-        ? t('report.priceAsOfLine', { datetime: quoteAsOf, source: priceSource || 'Alpha Vantage' })
+        ? t('report.priceAsOfLine', {
+            datetime: quoteAsOf,
+            source: priceSource || t('report.marketDataDefault'),
+          })
         : ''
   if (!list.length && freshnessScore == null && !priceLine && !priceStaleNotice && !fieldLines.length) {
     return null

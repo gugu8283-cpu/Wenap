@@ -1,0 +1,31 @@
+Wenap — Data Sources (for creators & reviewers)
+
+Market quotes
+· Primary: Marketstack — US equity EOD / delayed quotes (not live Level-1)
+· Fallback: Alpha Vantage — when Marketstack is unavailable; also some crypto/FX paths
+· Reports show price as-of datetime and source label
+
+Filings & disclosures
+· SEC EDGAR — US official filings
+· Pro: earnings / filing calendar
+· Pro+: Form 4 insider summary + US House public stock trade disclosures
+
+Macro & context
+· World Bank Indicators — qualitative macro block on Pro
+· OpenRouter web search — news, filings, and cited context in reports
+
+AI models (via OpenRouter unless noted)
+· Free / Pro: Google Gemini 2.5 Flash Lite
+· Pro+: Anthropic Claude Haiku 4.5 + Gemini 2.5 Flash Lite (hybrid passes)
+· Optional: Gemini API for policy/regulation dimension fallback
+
+Wenap-owned data
+· Prediction history for public /accuracy page
+· 30-day sentiment trend = derived from your past analysis scores on a symbol
+
+Important
+· Data may be delayed, incomplete, or wrong; AI may hallucinate
+· Not investment advice — verify prices and filings before acting
+· Full methodology: https://wenap.app/methodology
+
+Contact: support@wenap.app

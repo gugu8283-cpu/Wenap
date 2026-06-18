@@ -37,7 +37,7 @@
         "title": "2. 用途與第三方",
         "paragraphs": [
           "用於提供服務、驗證、訂閱管理、防濫用與法令遵循。",
-          "使用 OpenRouter、Alpha Vantage、Stripe、Resend、Render、Cloudflare。不出售郵件列表。"
+          "使用 OpenRouter、Marketstack、Alpha Vantage、Stripe、Resend、Google Cloud、Cloudflare。不出售郵件列表。"
         ]
       },
       {

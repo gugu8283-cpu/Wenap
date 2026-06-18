@@ -2,8 +2,23 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import './AboutPage.css'
 
+function BulletList({ items }) {
+  if (!Array.isArray(items) || !items.length) return null
+  return (
+    <ul>
+      {items.map((line) => (
+        <li key={line}>{line}</li>
+      ))}
+    </ul>
+  )
+}
+
 export default function AboutPage() {
   const { t } = useTranslation()
+  const dataSources = t('about.dataSources', { returnObjects: true })
+  const dimensions = t('about.dimensions', { returnObjects: true })
+  const accuracyResults = t('about.accuracyResults', { returnObjects: true })
+
   return (
     <div className="about-page">
       <nav className="about-nav">
@@ -15,82 +30,76 @@ export default function AboutPage() {
       </nav>
 
       <div className="about-content">
-        <h1>How Wenap Works</h1>
-        <p className="about-lead">Wenap is an AI-powered investment research assistant. It does not give financial advice. Here's exactly how it works.</p>
+        <h1>{t('about.title')}</h1>
+        <p className="about-lead">{t('about.lead')}</p>
 
         <section className="about-section">
-          <h2>1. Data Sources</h2>
-          <p>For each analysis, Wenap gathers data from multiple sources:</p>
-          <ul>
-            <li><strong>Alpha Vantage</strong> — real-time price, volume, fundamental overview (P/E, market cap, etc.)</li>
-            <li><strong>OpenRouter AI search</strong> — recent news, SEC filings, analyst reports, macro context</li>
-            <li><strong>Historical predictions</strong> — our own database of past predictions for accuracy tracking</li>
-          </ul>
+          <h2>{t('about.dataSourcesTitle')}</h2>
+          <p>{t('about.dataSourcesIntro')}</p>
+          <BulletList items={dataSources} />
+          <p className="about-disclaimer">{t('about.dataDelayNote')}</p>
         </section>
 
         <section className="about-section">
-          <h2>2. AI Model Tiers</h2>
-          <p>The quality of analysis depends on your subscription tier:</p>
+          <h2>{t('about.modelsTitle')}</h2>
+          <p>{t('about.modelsIntro')}</p>
           <table className="about-table">
             <thead>
-              <tr><th>Tier</th><th>Model</th><th>Sources</th><th>Features</th></tr>
+              <tr>
+                <th>{t('about.tierColTier')}</th>
+                <th>{t('about.tierColModel')}</th>
+                <th>{t('about.tierColFeatures')}</th>
+              </tr>
             </thead>
             <tbody>
               <tr>
-                <td><strong>Free</strong></td>
-                <td>Gemini 2.5 Flash Lite</td>
-                <td>5</td>
-                <td>Six-dimension scoring, scenarios</td>
+                <td><strong>{t('about.tierFreeName')}</strong></td>
+                <td>{t('about.tierFreeModel')}</td>
+                <td>{t('about.tierFreeFeatures')}</td>
               </tr>
               <tr>
-                <td><strong>Pro</strong></td>
-                <td>Gemini 2.5 Flash Lite</td>
-                <td>8</td>
-                <td>+ Unlimited runs, action line, key events, insider summary, peer comparison</td>
+                <td><strong>{t('about.tierProName')}</strong></td>
+                <td>{t('about.tierProModel')}</td>
+                <td>{t('about.tierProFeatures')}</td>
               </tr>
               <tr>
-                <td><strong>Pro+</strong></td>
-                <td>GPT-5.4 Mini</td>
-                <td>8</td>
-                <td>+ Bull/Bear debate, Critic's corner, PDF export, Compare</td>
+                <td><strong>{t('about.tierProPlusName')}</strong></td>
+                <td>{t('about.tierProPlusModel')}</td>
+                <td>{t('about.tierProPlusFeatures')}</td>
               </tr>
             </tbody>
           </table>
         </section>
 
         <section className="about-section">
-          <h2>3. Six-Dimension Scoring</h2>
-          <p>Every analysis scores the asset on six dimensions (0–100):</p>
+          <h2>{t('about.scoringTitle')}</h2>
+          <p>{t('about.scoringIntro')}</p>
           <ol>
-            <li><strong>Fundamental Health</strong> — earnings quality, balance sheet, cash flow</li>
-            <li><strong>Technical Trend</strong> — price momentum, moving averages, volume patterns</li>
-            <li><strong>Market Sentiment</strong> — analyst consensus, options flow, short interest</li>
-            <li><strong>Industry / Sector Dynamics</strong> — competitive position, sector tailwinds/headwinds</li>
-            <li><strong>Macro / Policy Risk</strong> — interest rate sensitivity, geopolitical exposure, regulatory risk</li>
-            <li><strong>Supply Chain Risk</strong> — concentration risk, key supplier dependencies</li>
+            {Array.isArray(dimensions)
+              ? dimensions.map((line) => <li key={line}>{line}</li>)
+              : null}
           </ol>
-          <p>The overall score is a weighted average of the six dimensions. Weights are determined by the AI based on asset type.</p>
+          <p>{t('about.scoringFoot')}</p>
         </section>
 
         <section className="about-section">
-          <h2>4. Signal Generation</h2>
-          <p>The signal (STRONG BUY / BUY / HOLD / SELL / STRONG SELL) is generated by the AI model based on the composite score, risk/reward ratio, and horizon-adjusted scenarios. It is <em>not</em> a guaranteed prediction.</p>
+          <h2>{t('about.signalTitle')}</h2>
+          <p>{t('about.signalBody')}</p>
         </section>
 
         <section className="about-section">
-          <h2>5. Accuracy Tracking</h2>
-          <p>Every prediction is stored with a target horizon (1m / 3m / 6m / 1y / 2y). After the horizon expires, Wenap automatically fetches the actual price change and marks the prediction as:</p>
-          <ul>
-            <li><strong>Correct</strong> — signal direction matched actual return</li>
-            <li><strong>Incorrect</strong> — signal direction did not match</li>
-            <li><strong>Neutral</strong> — HOLD signal (counted separately)</li>
-          </ul>
-          <p>Accuracy statistics are publicly visible at <Link to="/accuracy">/accuracy</Link>.</p>
+          <h2>{t('about.accuracyTitle')}</h2>
+          <p>{t('about.accuracyIntro')}</p>
+          <BulletList items={accuracyResults} />
+          <p>
+            {t('about.accuracyLink')}{' '}
+            <Link to="/accuracy">/accuracy</Link>.
+          </p>
         </section>
 
         <section className="about-section">
-          <h2>6. Disclaimer</h2>
-          <p className="about-disclaimer">Wenap is not a registered investment advisor. All content is for informational and educational purposes only. Past prediction accuracy does not guarantee future results. Never invest based solely on AI-generated analysis. Always do your own research and consult a qualified financial professional before making investment decisions.</p>
+          <h2>{t('about.disclaimerTitle')}</h2>
+          <p className="about-disclaimer">{t('about.disclaimerBody')}</p>
           <p className="about-disclaimer">
             <Link to="/disclaimer">{t('legal.nav.disclaimer')}</Link>
             {' · '}

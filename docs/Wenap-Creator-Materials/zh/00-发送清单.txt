@@ -1,0 +1,23 @@
+Wenap 创作者资料包（中文）— 发送说明
+
+何时发
+· 对方同意合作、测评，或主动要素材时
+· 与第二条私信一起发（含 ?via= 推广链接）
+
+邮件建议附件
+· one-pager.pdf
+· shot-hero.png + shot-radar.png + shot-scenarios.png
+· logo.png（可选）
+· demo.mp4（约 7MB，邮箱放不下可网盘）
+
+对方问条款时
+· 粘贴或附件 affiliate-terms.txt
+
+正文务必包含
+· 样例：https://wenap.app/sample/NVDA
+· 专属链接：https://wenap.app/?via=TOKEN（Rewardful Invite 后复制）
+· 披露：赞助/联盟 · 非投资建议
+· 联系：support@wenap.app
+
+免费 Pro
+· Admin → Users 改 tier 为 Pro，或 Stripe 100% 优惠券

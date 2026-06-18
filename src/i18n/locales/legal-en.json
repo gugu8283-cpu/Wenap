@@ -65,7 +65,7 @@
       {
         "title": "3. Third parties",
         "paragraphs": [
-          "We rely on OpenRouter (AI), Alpha Vantage (market data), Stripe (payments), Resend (transactional email), Render (hosting), and Cloudflare (CDN/DNS/security), each under their own policies.",
+          "We rely on OpenRouter (AI), Marketstack and Alpha Vantage (market data, with fallback), Stripe (payments), Resend (transactional email), Google Cloud (hosting), and Cloudflare (CDN/DNS/security), each under their own policies.",
           "Content sent to AI models may include your ticker query and report context—do not submit unnecessary sensitive personal data.",
           "We do not sell your email list."
         ]

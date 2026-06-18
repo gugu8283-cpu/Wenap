@@ -501,6 +501,7 @@
     "freshnessScore": "Freshness score {{score}}/100",
     "quoteAsOf": "Quote as of {{date}}",
     "priceAsOfLine": "Price as of {{datetime}} ({{source}})",
+    "marketDataDefault": "Market data",
     "accuracyTeaser": "30-day BUY signal win rate {{pct}}% · Full track record",
     "critiqueSubPreview": "Skeptic preview · Upgrade to Pro+ for full review",
     "critiqueSubPro": "Main-report skeptic angles (blind spot + 2) · Pro+ adds 3 more AI review items",
@@ -559,5 +560,58 @@
     },
     "errorTitle": "Analysis failed",
     "retry": "Retry"
+  },
+  "about": {
+    "title": "How Wenap Works",
+    "lead": "Wenap is an AI-powered investment research assistant. It does not give financial advice. Here's exactly how it works.",
+    "dataSourcesTitle": "1. Data Sources",
+    "dataSourcesIntro": "For each analysis, Wenap combines:",
+    "dataSources": [
+      "Marketstack — primary US equity quotes (EOD / delayed; not live Level-1)",
+      "Alpha Vantage — fallback quotes and fundamentals when Marketstack is unavailable; also used for some crypto/FX paths",
+      "SEC EDGAR — official US filings (earnings calendar on Pro; Form 4 insider summary on Pro+)",
+      "US House financial disclosures — public congressional stock trade dataset (Pro+)",
+      "World Bank Indicators — macro context on Pro (qualitative summary)",
+      "OpenRouter web search — recent news, filings, and context cited in reports",
+      "Wenap database — past predictions for public accuracy tracking; sentiment trend derived from your prior runs on a symbol"
+    ],
+    "dataDelayNote": "Prices are not guaranteed real-time. Reports show price as-of date and source. Always verify before trading.",
+    "modelsTitle": "2. AI Model Tiers",
+    "modelsIntro": "Models are routed via OpenRouter (and Gemini API for optional policy-dimension fallback):",
+    "tierColTier": "Tier",
+    "tierColModel": "Model",
+    "tierColFeatures": "Features",
+    "tierFreeName": "Free",
+    "tierFreeModel": "Gemini 2.5 Flash Lite",
+    "tierFreeFeatures": "5 analyses/month · six-dimension scoring · scenarios",
+    "tierProName": "Pro",
+    "tierProModel": "Gemini 2.5 Flash Lite",
+    "tierProFeatures": "Unlimited analyses · action line · key events · peers · earnings calendar (SEC) · 30-day sentiment · macro (World Bank)",
+    "tierProPlusName": "Pro+",
+    "tierProPlusModel": "Claude Haiku 4.5 + Gemini 2.5 Flash Lite (hybrid)",
+    "tierProPlusFeatures": "Everything in Pro · bull/bear debate · Critic's corner · SEC insider + House disclosures · PDF export · compare · AI screener",
+    "scoringTitle": "3. Six-Dimension Scoring",
+    "scoringIntro": "Every analysis scores the asset on six dimensions (0–100):",
+    "dimensions": [
+      "Fundamental Health — earnings quality, balance sheet, cash flow",
+      "Technical Trend — price momentum, moving averages, volume patterns",
+      "Market Sentiment — analyst consensus, options flow, short interest",
+      "Industry / Sector Dynamics — competitive position, sector tailwinds/headwinds",
+      "Macro / Policy Risk — interest rate sensitivity, geopolitical exposure, regulatory risk",
+      "Supply Chain Risk — concentration risk, key supplier dependencies"
+    ],
+    "scoringFoot": "The overall score is a weighted average. Weights are determined by the AI based on asset type.",
+    "signalTitle": "4. Signal Generation",
+    "signalBody": "The signal (STRONG BUY / BUY / HOLD / SELL / STRONG SELL) is generated from the composite score, risk/reward ratio, and horizon-adjusted scenarios. It is not a guaranteed prediction.",
+    "accuracyTitle": "5. Accuracy Tracking",
+    "accuracyIntro": "Every prediction is stored with a target horizon (1m / 3m / 6m / 1y / 2y). After the horizon expires, Wenap fetches the actual price change and marks the prediction as:",
+    "accuracyResults": [
+      "Correct — signal direction matched actual return",
+      "Incorrect — signal direction did not match",
+      "Neutral — HOLD signal (counted separately)"
+    ],
+    "accuracyLink": "Accuracy statistics are publicly visible at",
+    "disclaimerTitle": "6. Disclaimer",
+    "disclaimerBody": "Wenap is not a registered investment advisor. All content is for informational and educational purposes only. Past prediction accuracy does not guarantee future results. Never invest based solely on AI-generated analysis. Always do your own research and consult a qualified financial professional before making investment decisions."
   }
 }

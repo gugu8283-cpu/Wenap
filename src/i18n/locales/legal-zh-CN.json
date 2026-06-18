@@ -65,7 +65,7 @@
       {
         "title": "3. 第三方服务",
         "paragraphs": [
-          "本服务依赖以下类别第三方，其各自受隐私政策约束：OpenRouter（AI 推理）、Alpha Vantage（行情与基本面）、Stripe（支付）、Resend（事务邮件）、Render（托管）、Cloudflare（CDN/DNS/安全）。",
+          "本服务依赖以下类别第三方，其各自受隐私政策约束：OpenRouter（AI 推理）、Marketstack 与 Alpha Vantage（行情，互为备用）、Stripe（支付）、Resend（事务邮件）、Google Cloud（托管）、Cloudflare（CDN/DNS/安全）。",
           "向 AI 模型发送的内容可能包含您查询的标的与报告上下文；请勿在分析请求中提交不必要的个人敏感信息。",
           "我们不会出售您的个人邮箱列表。"
         ]

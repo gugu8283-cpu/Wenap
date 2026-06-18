@@ -143,7 +143,7 @@ The weekly auto-analysis feeds the `/sample/:ticker` public reports and predicti
 |---|---|---|---|
 | Free | Gemini 2.5 Flash Lite | 5 | 5 |
 | Pro | Gemini 2.5 Flash Lite | 8 | Unlimited |
-| Pro+ | GPT-5.4 Mini | 8 | **1000/month** cap (UTC) |
+| Pro+ | Claude Haiku 4.5 + Gemini 2.5 Flash Lite (hybrid) | 8 | **1000/month** cap (UTC) |
 
 Override models via environment variables. Pro+ monthly cap: `WENAP_PRO_PLUS_MONTHLY_CAP` (default **1000**, UTC month).
 
