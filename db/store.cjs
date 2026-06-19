@@ -6,6 +6,11 @@ const { fetchClosePrice } = require('../lib/alphaPrice.cjs');
 const { checkTendency, checkScenario } = require('../lib/predictionLogic.cjs');
 const { savePrediction, insertAnalysisLog } = require('../jobs/savePrediction.cjs');
 const { periodGroupExpr, resolveRange } = require('../lib/adminPeriod.cjs');
+const {
+  excludedUsersWhere,
+  predictionIncludedInPublicStats,
+  analysisLogIncludedInPublicStats,
+} = require('../lib/statsFilter.cjs');
 
 const DB_PATH = process.env.SQLITE_PATH || path.join(__dirname, '..', 'data', 'wenap.db');
 const VERIFY_DAYS = Number(process.env.PREDICTION_VERIFY_DAYS) || 30;
@@ -42,6 +47,7 @@ function migrateDb() {
   } catch (e) {
     console.warn('[Wenap] auth schema migrate:', e.message);
   }
+  mergeShadowUserRecords();
   migrateFinanceSchema();
 }
 
@@ -434,17 +440,76 @@ function bookkeepingCsv() {
   return lines.join('\n');
 }
 
+function tierRank(tier) {
+  const t = String(tier || 'free')
+    .toLowerCase()
+    .replace('proplus', 'pro_plus');
+  if (t === 'pro_plus') return 2;
+  if (t === 'pro') return 1;
+  return 0;
+}
+
+function touchUserActivity(userId, tier) {
+  const row = db.prepare('SELECT tier FROM users WHERE id = ?').get(userId);
+  if (!row) return;
+  const nextTier = tier && tierRank(tier) > tierRank(row.tier) ? tier : row.tier;
+  db.prepare(`UPDATE users SET last_active_at = datetime('now'), tier = ? WHERE id = ?`).run(nextTier, userId);
+}
+
+/** Merge orphan uid:{uuid} rows into the registered user with the same id. */
+function mergeShadowUserRecords() {
+  initDb();
+  const shadows = db
+    .prepare(
+      `SELECT id, external_key FROM users
+       WHERE external_key LIKE 'uid:%' AND TRIM(COALESCE(email, '')) = ''`,
+    )
+    .all();
+  let merged = 0;
+  for (const shadow of shadows) {
+    const canonicalId = String(shadow.external_key || '').slice(4).trim();
+    if (!canonicalId || canonicalId === shadow.id) continue;
+    const canonical = db
+      .prepare(`SELECT id FROM users WHERE id = ? AND TRIM(COALESCE(email, '')) != ''`)
+      .get(canonicalId);
+    if (!canonical) continue;
+    runInTransaction(() => {
+      db.prepare('UPDATE analysis_logs SET user_id = ? WHERE user_id = ?').run(canonicalId, shadow.id);
+      db.prepare('UPDATE predictions SET user_id = ? WHERE user_id = ?').run(canonicalId, shadow.id);
+      try {
+        db.prepare('UPDATE admin_tier_changes SET user_id = ? WHERE user_id = ?').run(canonicalId, shadow.id);
+      } catch {
+        /* optional table */
+      }
+      db.prepare('DELETE FROM users WHERE id = ?').run(shadow.id);
+    });
+    merged += 1;
+  }
+  if (merged > 0) console.log(`[Wenap] Merged ${merged} shadow user record(s)`);
+  return merged;
+}
+
 function upsertUserByExternalKey(externalKey, tier = 'free') {
   initDb();
   const key = String(externalKey || 'anonymous').slice(0, 128);
+
+  if (key.startsWith('uid:')) {
+    const userId = key.slice(4).trim();
+    if (userId) {
+      const byId = db.prepare('SELECT id FROM users WHERE id = ?').get(userId);
+      if (byId) {
+        touchUserActivity(byId.id, tier);
+        return byId.id;
+      }
+    }
+  }
+
   const existing = db.prepare('SELECT id FROM users WHERE external_key = ?').get(key);
   if (existing) {
-    db.prepare(`UPDATE users SET last_active_at = datetime('now'), tier = COALESCE(?, tier) WHERE id = ?`).run(
-      tier || null,
-      existing.id,
-    );
+    touchUserActivity(existing.id, tier);
     return existing.id;
   }
+
   const id = uuid();
   db.prepare(
     `INSERT INTO users (id, external_key, tier, free_trials_limit, last_active_at) VALUES (?, ?, ?, 5, datetime('now'))`,
@@ -457,12 +522,12 @@ function runInTransaction(fn) {
   return db.transaction(fn)();
 }
 
-function recordAnalysisSuccess({ userKey, tier, model, symbol, data, latestPriceUsd, usage, durationMs }) {
+function recordAnalysisSuccess({ userKey, userId, tier, model, symbol, data, latestPriceUsd, usage, durationMs }) {
   try {
     return runInTransaction(() => {
-      const userId = upsertUserByExternalKey(userKey, tier);
+      const resolvedUserId = userId || upsertUserByExternalKey(userKey, tier);
       return savePrediction(db, {
-        userId,
+        userId: resolvedUserId,
         tier,
         model,
         symbol,
@@ -478,12 +543,12 @@ function recordAnalysisSuccess({ userKey, tier, model, symbol, data, latestPrice
   }
 }
 
-function recordAnalysisFailure({ userKey, tier, model, symbol, errorMessage, durationMs }) {
+function recordAnalysisFailure({ userKey, userId, tier, model, symbol, errorMessage, durationMs }) {
   try {
     return runInTransaction(() => {
-      const userId = upsertUserByExternalKey(userKey, tier);
+      const resolvedUserId = userId || upsertUserByExternalKey(userKey, tier);
       return insertAnalysisLog(db, {
-        userId,
+        userId: resolvedUserId,
         ticker: symbol,
         tier,
         model,
@@ -550,11 +615,12 @@ async function verifyPredictionFailed(predictionId, errorDetail) {
   ).run(resultId, predictionId, String(errorDetail || '').slice(0, 500));
 }
 
-function getAccuracyStats({ backtestOnly = false } = {}) {
+function getAccuracyStats({ backtestOnly = false, publicStatsOnly = false } = {}) {
   initDb();
   const where = backtestOnly ? 'AND p.is_backtest = 1' : 'AND p.is_backtest = 0';
+  const publicFilter = publicStatsOnly ? `AND ${predictionIncludedInPublicStats('p')}` : '';
   const total = db
-    .prepare(`SELECT COUNT(*) AS c FROM predictions p WHERE p.status = 'verified' ${where}`)
+    .prepare(`SELECT COUNT(*) AS c FROM predictions p WHERE p.status = 'verified' ${where} ${publicFilter}`)
     .get().c;
   const statusCounts = {
     pending: db.prepare(`SELECT COUNT(*) AS c FROM predictions WHERE status='pending'`).get().c,
@@ -579,7 +645,7 @@ function getAccuracyStats({ backtestOnly = false } = {}) {
         SUM(r.target_price_hit) AS th
       FROM prediction_results r
       JOIN predictions p ON p.id = r.prediction_id
-      WHERE p.status = 'verified' ${where}`,
+      WHERE p.status = 'verified' ${where} ${publicFilter}`,
     )
     .get();
   return {
@@ -799,6 +865,13 @@ function setUserBan(id, banned, reason = '') {
   db.prepare(`UPDATE users SET is_banned = ?, ban_reason = ? WHERE id = ?`).run(banned ? 1 : 0, reason, id);
 }
 
+function setUserStatsExclude(id, exclude) {
+  initDb();
+  const user = db.prepare('SELECT id FROM users WHERE id = ?').get(id);
+  if (!user) throw new Error('USER_NOT_FOUND');
+  db.prepare(`UPDATE users SET exclude_from_public_stats = ? WHERE id = ?`).run(exclude ? 1 : 0, id);
+}
+
 function listAnalysisLogs(filters = {}) {
   initDb();
   const { tier, ticker, status, from, to, model, limit = 100, offset = 0 } = filters;
@@ -958,8 +1031,9 @@ function setPredictionSkipReason(id, reason) {
   );
 }
 
-function getBuySignalWinRate30d() {
+function getBuySignalWinRate30d(publicStatsOnly = false) {
   initDb();
+  const publicFilter = publicStatsOnly ? `AND ${predictionIncludedInPublicStats('p')}` : '';
   const row = db
     .prepare(
       `SELECT COUNT(*) AS total, SUM(r.tendency_correct) AS hits
@@ -967,7 +1041,8 @@ function getBuySignalWinRate30d() {
        JOIN prediction_results r ON r.prediction_id = p.id
        WHERE p.status = 'verified' AND p.is_backtest = 0
          AND UPPER(p.tendency) = 'BUY'
-         AND p.analyzed_at >= datetime('now', '-30 days')`,
+         AND p.analyzed_at >= datetime('now', '-30 days')
+         ${publicFilter}`,
     )
     .get();
   const total = row?.total || 0;
@@ -975,15 +1050,17 @@ function getBuySignalWinRate30d() {
   return Math.round((row.hits / total) * 1000) / 10;
 }
 
-function getScorePercentile(score) {
+function getScorePercentile(score, publicStatsOnly = false) {
   initDb();
   const s = Number(score);
   if (!Number.isFinite(s)) return null;
+  const publicFilter = publicStatsOnly ? `AND ${predictionIncludedInPublicStats('predictions')}` : '';
   const rows = db
     .prepare(
       `SELECT score FROM predictions
        WHERE analyzed_at >= datetime('now', 'start of day')
-         AND score IS NOT NULL`,
+         AND score IS NOT NULL
+         ${publicFilter}`,
     )
     .all()
     .map((r) => Number(r.score))
@@ -995,14 +1072,16 @@ function getScorePercentile(score) {
 
 function getPublicAccuracy() {
   initDb();
-  const stats = getAccuracyStats({ backtestOnly: false });
-  const buySignalWinRate30d = getBuySignalWinRate30d();
+  const stats = getAccuracyStats({ backtestOnly: false, publicStatsOnly: true });
+  const buySignalWinRate30d = getBuySignalWinRate30d(true);
+  const publicFilter = `AND ${predictionIncludedInPublicStats('p')}`;
   const recent = db
     .prepare(
       `SELECT p.ticker, p.tendency, p.analyzed_at, r.price_change_pct, r.tendency_correct, r.scenario_hit, p.is_backtest
        FROM predictions p
        JOIN prediction_results r ON r.prediction_id = p.id
        WHERE p.status = 'verified' AND p.is_backtest = 0
+         ${publicFilter}
        ORDER BY r.verified_at DESC LIMIT 20`,
     )
     .all();
@@ -1035,6 +1114,8 @@ module.exports = {
   updateUserTier,
   resetUserTrials,
   setUserBan,
+  setUserStatsExclude,
+  mergeShadowUserRecords,
   listAnalysisLogs,
   revenueStats,
   bookkeepingStats,

@@ -172,6 +172,18 @@ router.put('/users/:id/ban', (req, res) => {
   res.json({ ok: true });
 });
 
+router.put('/users/:id/stats-exclude', (req, res) => {
+  const exclude = Boolean(req.body?.exclude);
+  try {
+    store.setUserStatsExclude(req.params.id, exclude);
+    const detail = store.getUserDetail(req.params.id);
+    res.json({ ok: true, ...detail });
+  } catch (e) {
+    if (e.message === 'USER_NOT_FOUND') return res.status(404).json({ error: 'NOT_FOUND' });
+    res.status(500).json({ error: e.message });
+  }
+});
+
 router.get('/analysis-logs', (req, res) => {
   const q = req.query || {};
   res.json(

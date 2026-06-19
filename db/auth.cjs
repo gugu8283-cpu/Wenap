@@ -62,6 +62,14 @@ function migrateAuthSchema(dbIn) {
   if (!userCols.includes('country_code')) addCol('ALTER TABLE users ADD COLUMN country_code TEXT');
   if (!userCols.includes('password_reset_token')) addCol('ALTER TABLE users ADD COLUMN password_reset_token TEXT');
   if (!userCols.includes('password_reset_expires')) addCol('ALTER TABLE users ADD COLUMN password_reset_expires TEXT');
+  if (!userCols.includes('exclude_from_public_stats')) {
+    addCol('ALTER TABLE users ADD COLUMN exclude_from_public_stats INTEGER DEFAULT 0');
+  }
+  try {
+    require('../lib/statsFilter.cjs').markAutoExcludedTestUsers(db);
+  } catch (e) {
+    console.warn('[Wenap] stats exclude migrate:', e.message);
+  }
   try {
     require('../lib/legalConsent.cjs').migrateLegalConsentSchema(db);
   } catch (e) {
@@ -648,7 +656,8 @@ async function createTestUser({ email, password, tier, emailVerified = true }) {
   if (existing) {
     db.prepare(
       `UPDATE users SET password_hash = ?, tier = ?, email_verified = ?, free_trials_used = 0,
-       free_trials_limit = ?, email_verify_token = NULL, email_verify_expires = NULL WHERE id = ?`,
+       free_trials_limit = ?, email_verify_token = NULL, email_verify_expires = NULL,
+       exclude_from_public_stats = 1 WHERE id = ?`,
     ).run(
       await hashPassword(password),
       normalizeTier(tier),
@@ -664,8 +673,9 @@ async function createTestUser({ email, password, tier, emailVerified = true }) {
   db.prepare(
     `INSERT INTO users (
       id, external_key, email, password_hash, tier, email_verified,
-      free_trials_used, free_trials_limit, free_trials_reset_at, created_at, last_active_at
-    ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, datetime('now'), datetime('now'))`,
+      free_trials_used, free_trials_limit, free_trials_reset_at, exclude_from_public_stats,
+      created_at, last_active_at
+    ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, 1, datetime('now'), datetime('now'))`,
   ).run(
     id,
     `email:${email.toLowerCase()}`,

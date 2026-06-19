@@ -168,7 +168,15 @@
     "confirmReset": "Reset free trials to 5?",
     "needBanReason": "Enter ban reason",
     "confirmBan": "Confirm ban?",
-    "confirmUnban": "Confirm unban?"
+    "confirmUnban": "Confirm unban?",
+    "publicStats": "Public stats",
+    "statsIncluded": "Included in published stats",
+    "statsExcluded": "Excluded from published stats",
+    "statsExcludedBadge": "excluded",
+    "excludeFromPublicStats": "Exclude from public stats",
+    "includeInPublicStats": "Include in public stats",
+    "confirmExcludeStats": "Exclude this user from public stats (social proof, accuracy page)? Their data stays in admin.",
+    "confirmIncludeStats": "Include this user in public stats again?"
   },
   "logs": {
     "title": "Analysis logs",

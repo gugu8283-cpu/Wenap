@@ -79,6 +79,17 @@ export default function UsersPage() {
     if (openId === id) openUser(id)
   }
 
+  async function toggleStatsExclude(id, exclude) {
+    const msg = exclude ? t('admin.users.confirmExcludeStats') : t('admin.users.confirmIncludeStats')
+    if (!window.confirm(msg)) return
+    const d = await adminFetch(`/admin/users/${id}/stats-exclude`, {
+      method: 'PUT',
+      body: JSON.stringify({ exclude }),
+    })
+    setDetail(d)
+    load()
+  }
+
   const u = detail?.user
   const usage = detail?.usage
   const billing = detail?.billing
@@ -137,7 +148,14 @@ export default function UsersPage() {
           {rows.map((row) => (
             <Fragment key={row.id}>
               <tr className="cursor-pointer hover:bg-slate-800/50" onClick={() => openUser(row.id)}>
-                <Td>{row.email || row.external_key || row.id.slice(0, 8)}</Td>
+                <Td>
+                  {row.email || row.external_key || row.id.slice(0, 8)}
+                  {row.exclude_from_public_stats ? (
+                    <span className="ml-2 rounded bg-slate-700 px-1.5 py-0.5 text-[10px] text-slate-300">
+                      {t('admin.users.statsExcludedBadge')}
+                    </span>
+                  ) : null}
+                </Td>
                 <Td>{row.tier}</Td>
                 <Td>{fmtDate(row.created_at)}</Td>
                 <Td>{fmtDate(row.last_active_at)}</Td>
@@ -171,6 +189,14 @@ export default function UsersPage() {
                           <div>
                             <dt className="inline text-slate-500">{t('admin.users.emailVerified')}: </dt>
                             <dd className="inline">{u.email_verified ? '✓' : '—'}</dd>
+                          </div>
+                          <div>
+                            <dt className="inline text-slate-500">{t('admin.users.publicStats')}: </dt>
+                            <dd className="inline">
+                              {u.exclude_from_public_stats
+                                ? t('admin.users.statsExcluded')
+                                : t('admin.users.statsIncluded')}
+                            </dd>
                           </div>
                         </dl>
                       </div>
@@ -222,6 +248,14 @@ export default function UsersPage() {
                         onChange={(e) => setTierNote(e.target.value)}
                       />
                       <Btn onClick={() => resetTrials(row.id)}>{t('admin.users.resetTrials')}</Btn>
+                      <Btn
+                        variant={u.exclude_from_public_stats ? 'primary' : 'ghost'}
+                        onClick={() => toggleStatsExclude(row.id, !u.exclude_from_public_stats)}
+                      >
+                        {u.exclude_from_public_stats
+                          ? t('admin.users.includeInPublicStats')
+                          : t('admin.users.excludeFromPublicStats')}
+                      </Btn>
                       <input
                         className={inputCls}
                         placeholder={t('admin.users.banReason')}

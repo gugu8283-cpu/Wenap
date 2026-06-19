@@ -3046,6 +3046,7 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
     }
     store.recordAnalysisSuccess({
       userKey,
+      userId: authContext?.userId,
       tier,
       model: mainModel,
       symbol,
@@ -3078,6 +3079,7 @@ ${String(mainResult.content || '').slice(0, 12000)}`;
   } catch (e) {
     store.recordAnalysisFailure({
       userKey,
+      userId: authContext?.userId,
       tier,
       model: mainModel,
       symbol,
@@ -3346,7 +3348,7 @@ app.get('/user/research-profile', requireAuth, (req, res) => {
 app.get('/stats/score-percentile', (req, res) => {
   try {
     const store = require('./db/store.cjs');
-    const percentile = store.getScorePercentile(req.query?.score);
+    const percentile = store.getScorePercentile(req.query?.score, true);
     res.json({ percentile: percentile ?? null, sampleSize: percentile != null ? 'ok' : 'insufficient' });
   } catch (e) {
     res.status(500).json({ error: e.message });

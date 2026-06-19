@@ -168,7 +168,15 @@
     "confirmReset": "确认重置免费次数为 5？",
     "needBanReason": "请填写封禁原因",
     "confirmBan": "确认封禁？",
-    "confirmUnban": "确认解封？"
+    "confirmUnban": "确认解封？",
+    "publicStats": "公开统计",
+    "statsIncluded": "计入发布统计",
+    "statsExcluded": "不计入发布统计",
+    "statsExcludedBadge": "已排除",
+    "excludeFromPublicStats": "从公开统计排除",
+    "includeInPublicStats": "恢复计入公开统计",
+    "confirmExcludeStats": "将此用户从公开统计中排除（社会证明、准确率页）？Admin 内数据仍保留。",
+    "confirmIncludeStats": "恢复将此用户计入公开统计？"
   },
   "logs": {
     "title": "分析记录",
