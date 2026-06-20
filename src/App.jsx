@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import './App.css'
 import AnalysisViz from './AnalysisViz.jsx'
 import EconomicsPanel from './EconomicsPanel.jsx'
-import LanguageSwitcher from './components/LanguageSwitcher.jsx'
+import AppNav from './components/AppNav.jsx'
+import AppWelcome from './components/AppWelcome.jsx'
+import './components/AppNav.css'
+import './components/AppWelcome.css'
 import QuotaStrip from './components/QuotaStrip.jsx'
 import ResearchProfileCard from './components/conversion/ResearchProfileCard.jsx'
 import UpgradeDecisionModal from './components/conversion/UpgradeDecisionModal.jsx'
 import './components/conversion/conversion.css'
-import NotificationCenter from './components/NotificationCenter.jsx'
 import { resolveAppLanguage } from './i18n/index.js'
 import { useAuth } from './context/AuthContext.jsx'
 import { apiFetch, getToken } from './lib/api.js'
@@ -568,45 +570,12 @@ export default function App() {
   return (
     <div className="app">
       <QuotaStrip quotaBanner={quotaBanner} />
-      <header className="header">
-        <div className="header-top">
-          <p className="brand">
-            Wen<span>ap</span>
-          </p>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            {user && <NotificationCenter />}
-            <LanguageSwitcher />
-            {user?.email ? (
-              <Link to="/settings" className="tagline" style={{ margin: 0, fontSize: 12, textDecoration: 'none' }}>
-                {user.email}
-                {user.tier && user.tier !== 'free' ? ` · ${user.tier.replace('_', '+')}` : ''}
-              </Link>
-            ) : null}
-            {(user?.tier === 'pro' || user?.tier === 'pro_plus' || user?.tier === 'proplus') && (
-              <Link to="/tools" className="theme-toggle" style={{ textDecoration: 'none' }}>
-                {t('tools.nav', { defaultValue: 'Tools' })}
-              </Link>
-            )}
-            {!user && (
-              <Link to="/pricing" className="theme-toggle" style={{ textDecoration: 'none' }}>
-                {t('app.upgradeBtn', { defaultValue: 'Pricing' })}
-              </Link>
-            )}
-            <button
-              type="button"
-              className="theme-toggle"
-              onClick={() => setTheme((th) => (th === 'dark' ? 'light' : 'dark'))}
-              aria-label={theme === 'dark' ? t('app.themeDark') : t('app.themeLight')}
-            >
-              {theme === 'dark' ? t('app.themeDarkBtn') : t('app.themeLightBtn')}
-            </button>
-            <button type="button" className="theme-toggle" onClick={logout}>
-              {t('common.logout')}
-            </button>
-          </div>
-        </div>
-        <p className="tagline">{t('app.tagline')}</p>
-      </header>
+      <AppNav
+        user={user}
+        theme={theme}
+        onToggleTheme={() => setTheme((th) => (th === 'dark' ? 'light' : 'dark'))}
+        onLogout={logout}
+      />
 
       <section className="card watchlist-card">
         <div className="watchlist-head">
@@ -838,9 +807,9 @@ export default function App() {
 
       {user ? <ResearchProfileCard tier={quotaBanner?.tier || clientTier} /> : null}
 
-      {hasResults && !error && (
-        <section className="results">
-          {vizSnapshot ? (
+      <section className="results">
+        {hasResults && !error ? (
+          vizSnapshot ? (
             <AnalysisViz
               snapshot={vizSnapshot}
               meta={meta}
@@ -852,7 +821,6 @@ export default function App() {
               onDevUnlock={
                 DEV_UNLOCK
                   ? () => {
-                      // Dev-only: write localStorage tier for UI preview only (server uses JWT)
                       try {
                         localStorage.setItem('wenap_tier', 'pro_plus')
                       } catch {
@@ -894,9 +862,11 @@ export default function App() {
                 </article>
               ))}
             </>
-          )}
-        </section>
-      )}
+          )
+        ) : !loading && !error ? (
+          <AppWelcome />
+        ) : null}
+      </section>
 
       {(import.meta.env.DEV || import.meta.env.VITE_SHOW_ECONOMICS === '1') && <EconomicsPanel />}
 

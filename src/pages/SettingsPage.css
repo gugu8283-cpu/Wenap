@@ -1,41 +1,42 @@
 .settings-page {
-  min-height: 100vh;
-  background: #080b14;
-  color: #fff;
-  padding: 24px 20px 64px;
-  max-width: 600px;
+  min-height: 100svh;
+  background: var(--bg-base);
+  background-image: var(--gradient-hero);
+  color: var(--text-primary);
+  padding: 16px 20px 80px;
+  max-width: 640px;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
-.settings-top { margin-bottom: 24px; }
-
-.settings-back {
-  color: rgba(255,255,255,0.55);
-  text-decoration: none;
-  font-size: 0.875rem;
+.settings-page .app-nav {
+  margin-bottom: 24px;
 }
-.settings-back:hover { color: #fff; }
 
 .settings-title {
+  font-family: var(--font-display);
   font-size: 1.5rem;
   font-weight: 800;
-  margin: 0 0 24px;
+  letter-spacing: -0.02em;
+  margin: 0 0 20px;
+  color: var(--text-primary);
 }
 
 .settings-card {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
   border-radius: 14px;
   padding: 20px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-card);
 }
 
 .settings-section-title {
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: rgba(255,255,255,0.45);
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
   margin: 0 0 14px;
 }
 
@@ -43,8 +44,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-subtle);
   gap: 12px;
 }
 .settings-row:last-of-type { border-bottom: none; }
@@ -52,13 +53,13 @@
 
 .settings-label {
   font-size: 0.875rem;
-  color: rgba(255,255,255,0.55);
+  color: var(--text-secondary);
 }
 
 .settings-value {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-primary);
   word-break: break-all;
 }
 
@@ -69,58 +70,60 @@
   font-weight: 700;
 }
 .settings-tier--pro_plus {
-  background: rgba(168, 85, 247, 0.15);
-  color: #a855f7;
+  background: rgba(183, 148, 246, 0.18);
+  color: var(--accent-purple);
 }
 .settings-tier--pro {
-  background: rgba(0, 212, 170, 0.15);
-  color: #00d4aa;
+  background: rgba(0, 230, 184, 0.15);
+  color: var(--accent-green);
 }
 .settings-tier--free {
-  background: rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.55);
+  background: var(--bg-elevated);
+  color: var(--text-muted);
 }
 
 .settings-upgrade-btn {
   display: inline-block;
   padding: 10px 22px;
-  background: #00d4aa;
-  color: #080b14;
-  border-radius: 9px;
+  background: var(--gradient-cta);
+  color: #0a1612;
+  border-radius: 10px;
   font-size: 0.875rem;
   font-weight: 700;
   text-decoration: none;
-  transition: background 0.15s;
+  box-shadow: var(--glow-green);
+  transition: filter 0.15s;
 }
-.settings-upgrade-btn:hover { background: #00c49a; }
+.settings-upgrade-btn:hover { filter: brightness(1.06); }
 
 .settings-portal-btn {
   padding: 10px 22px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.15);
-  color: #fff;
-  border-radius: 9px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 10px;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
 }
-.settings-portal-btn:hover { background: rgba(255,255,255,0.14); }
+.settings-portal-btn:hover { background: var(--bg-input); }
 .settings-portal-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .settings-sub-note {
-  font-size: 0.8rem;
-  color: rgba(255,255,255,0.45);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
   margin: 8px 0;
 }
-.settings-sub-note--warn { color: #f5a623; }
+.settings-sub-note--warn { color: var(--accent-amber); }
 
 .settings-error {
-  background: rgba(255, 77, 77, 0.1);
-  border: 1px solid rgba(255, 77, 77, 0.3);
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.3);
   border-radius: 8px;
   padding: 10px 14px;
-  color: #ff6b6b;
+  color: var(--accent-red);
   font-size: 0.85rem;
   margin-bottom: 12px;
 }
@@ -128,15 +131,15 @@
 .settings-logout-btn {
   padding: 10px 22px;
   background: transparent;
-  border: 1px solid rgba(255, 77, 77, 0.4);
-  color: #ff6b6b;
-  border-radius: 9px;
+  border: 1px solid rgba(255, 107, 107, 0.4);
+  color: var(--accent-red);
+  border-radius: 10px;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
 }
-.settings-logout-btn:hover { background: rgba(255, 77, 77, 0.1); }
+.settings-logout-btn:hover { background: rgba(255, 107, 107, 0.1); }
 
 .settings-referral-row {
   display: flex;
@@ -149,10 +152,29 @@
 .settings-referral-link {
   flex: 1;
   font-size: 0.75rem;
-  color: rgba(255,255,255,0.55);
-  background: rgba(255,255,255,0.05);
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
   padding: 8px 12px;
   border-radius: 8px;
   word-break: break-all;
   min-width: 0;
+}
+
+.settings-alert-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.settings-num-input {
+  width: 72px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
 }

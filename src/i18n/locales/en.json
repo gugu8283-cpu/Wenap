@@ -72,7 +72,17 @@
     "themeDark": "Switch to light mode",
     "themeLight": "Switch to dark mode",
     "themeDarkBtn": "☀ Light",
-    "themeLightBtn": "☾ Dark"
+    "themeLightBtn": "☾ Dark",
+    "navAnalyze": "Analyze",
+    "navSample": "Sample",
+    "navSettings": "Settings",
+    "welcomeTitle": "Your research desk is ready",
+    "welcomeBody": "Enter any ticker on the left — Wenap pulls public news, filings, and market data into a scored six-dimension report in about a minute.",
+    "welcomeStep1": "Pick asset type and horizon that match your thesis",
+    "welcomeStep2": "Hit Generate report — sources are cited so you can verify",
+    "welcomeStep3": "Save symbols to your watchlist for quick re-runs",
+    "welcomeSample": "Preview NVDA sample report →",
+    "welcomeTip": "Tip: Shift+click Analyze to force a fresh quote pull"
   },
   "asset": {
     "stock": "Stock",
@@ -93,6 +103,9 @@
   "auth": {
     "loginTitle": "Welcome back",
     "loginSub": "Sign in to your Wenap account",
+    "trust1": "Six-dimension score with cited public sources",
+    "trust2": "Not investment advice — verify before you act",
+    "trust3": "Free tier includes monthly reports; upgrade anytime",
     "registerLink": "Sign up free",
     "email": "Email",
     "password": "Password",

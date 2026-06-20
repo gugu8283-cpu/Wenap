@@ -25,7 +25,8 @@
 
 @media (min-width: 1024px) {
   .mobile-analysis-root {
-    max-width: 440px;
+    max-width: 100%;
+    padding: 8px 0 48px;
   }
 }
 

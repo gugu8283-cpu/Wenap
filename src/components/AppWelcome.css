@@ -1,0 +1,121 @@
+.app-welcome {
+  position: relative;
+  text-align: center;
+  padding: 32px 20px 40px;
+  border-radius: 16px;
+  border: 1px dashed var(--border);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.app-welcome-glow {
+  position: absolute;
+  inset: -40% -20% auto;
+  height: 60%;
+  background: var(--gradient-hero);
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.app-welcome-icon {
+  position: relative;
+  margin: 0 auto 16px;
+  width: 48px;
+  height: 48px;
+}
+
+.app-welcome-title {
+  position: relative;
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.app-welcome-body {
+  position: relative;
+  margin: 0 auto 20px;
+  max-width: 420px;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.app-welcome-steps {
+  position: relative;
+  list-style: none;
+  margin: 0 auto 20px;
+  padding: 0;
+  max-width: 360px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.app-welcome-steps li {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.app-welcome-steps li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.45em;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-green);
+  box-shadow: var(--glow-green);
+}
+
+.app-welcome-sample {
+  position: relative;
+  display: inline-block;
+  padding: 10px 18px;
+  border-radius: 10px;
+  background: rgba(77, 154, 255, 0.12);
+  border: 1px solid rgba(77, 154, 255, 0.35);
+  color: var(--accent-blue);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+
+.app-welcome-sample:hover {
+  background: rgba(77, 154, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.app-welcome-tip {
+  position: relative;
+  margin: 16px 0 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+@media (min-width: 1024px) {
+  .app-welcome {
+    padding: 48px 32px 56px;
+    text-align: left;
+  }
+
+  .app-welcome-icon {
+    margin: 0 0 16px;
+  }
+
+  .app-welcome-body,
+  .app-welcome-steps {
+    margin-left: 0;
+  }
+}

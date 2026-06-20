@@ -110,6 +110,12 @@ export default function LoginPage() {
 
         <p className="auth-sub">{t('auth.loginSub')}</p>
 
+        <ul className="auth-trust">
+          <li>{t('auth.trust1')}</li>
+          <li>{t('auth.trust2')}</li>
+          <li>{t('auth.trust3')}</li>
+        </ul>
+
       </div>
 
       <form className="auth-card" onSubmit={submit}>

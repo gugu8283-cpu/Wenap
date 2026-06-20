@@ -103,6 +103,11 @@ export default function RegisterPage() {
       <div className="auth-head">
         <h1 className="auth-title">{t('auth.registerTitle')}</h1>
         <p className="auth-sub">{t('auth.registerSub')}</p>
+        <ul className="auth-trust">
+          <li>{t('auth.trust1')}</li>
+          <li>{t('auth.trust2')}</li>
+          <li>{t('auth.trust3')}</li>
+        </ul>
       </div>
       <form className="auth-card" onSubmit={submit}>
         {error ? <div className="auth-error">{error}</div> : null}

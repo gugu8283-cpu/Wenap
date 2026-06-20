@@ -3,6 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { apiFetch } from '../lib/api.js'
 import { useAuth } from '../context/AuthContext.jsx'
+import AppNav from '../components/AppNav.jsx'
+import '../components/AppNav.css'
+import { applyTheme, getTheme } from '../utils/theme.js'
 import LegalFooter from '../components/LegalFooter.jsx'
 import '../components/LegalFooter.css'
 import './SettingsPage.css'
@@ -10,6 +13,7 @@ import './SettingsPage.css'
 export default function SettingsPage() {
   const { t } = useTranslation()
   const { user, logout } = useAuth()
+  const [theme, setTheme] = useState(getTheme)
   const [billing, setBilling] = useState(null)
   const [portalLoading, setPortalLoading] = useState(false)
   const [error, setError] = useState('')
@@ -17,6 +21,10 @@ export default function SettingsPage() {
   const [alertsSaving, setAlertsSaving] = useState(false)
 
   const isProPlus = user?.tier === 'pro_plus' || user?.tier === 'proplus'
+
+  useEffect(() => {
+    applyTheme(theme)
+  }, [theme])
 
   useEffect(() => {
     apiFetch('/billing/config').then(setBilling).catch(() => {})
@@ -61,9 +69,12 @@ export default function SettingsPage() {
 
   return (
     <div className="settings-page">
-      <div className="settings-top">
-        <Link to="/" className="settings-back">← {t('settings.backToApp')}</Link>
-      </div>
+      <AppNav
+        user={user}
+        theme={theme}
+        onToggleTheme={() => setTheme((th) => (th === 'dark' ? 'light' : 'dark'))}
+        onLogout={logout}
+      />
 
       <h1 className="settings-title">{t('settings.title')}</h1>
 

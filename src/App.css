@@ -1,47 +1,53 @@
 .app {
-  max-width: 460px;
+  max-width: 480px;
   margin: 0 auto;
-  padding: 20px 16px 120px;
+  padding: 16px 16px 100px;
   box-sizing: border-box;
   text-align: left;
   background: var(--bg-base);
+  background-image: var(--gradient-hero);
   min-height: 100svh;
 }
 
 /* ── Desktop two-column layout ≥1024px ─────────────────────────── */
 @media (min-width: 1024px) {
   .app {
-    max-width: 1200px;
+    max-width: 1280px;
     display: grid;
-    grid-template-columns: 400px 1fr;
+    grid-template-columns: minmax(340px, 400px) minmax(0, 1fr);
     grid-template-rows: auto auto 1fr auto auto;
-    column-gap: 24px;
-    padding: 24px 32px 80px;
+    column-gap: 28px;
+    padding: 24px 32px 72px;
     align-items: start;
   }
 
-  /* Full-width rows */
   .quota-strip,
-  .header,
+  .app-nav,
   .disclaimer {
     grid-column: 1 / -1;
   }
 
-  /* Left sidebar: watchlist, controls, history, accuracy */
   .watchlist-card,
-  .card:not(.results),
+  .card:not(.results):not(.segment),
   .history-card {
     grid-column: 1;
   }
 
-  /* Right panel: results take all remaining space */
   .results {
     grid-column: 2;
     grid-row: 3 / 6;
     position: sticky;
-    top: 24px;
-    max-height: calc(100vh - 48px);
+    top: 20px;
+    max-height: calc(100vh - 40px);
     overflow-y: auto;
+    margin-top: 0;
+  }
+
+  .results .mobile-analysis-root {
+    max-width: 100%;
+    margin: 0;
+    padding-left: 0;
+    padding-right: 0;
   }
 }
 
@@ -178,12 +184,14 @@
 .input {
   width: 100%;
   box-sizing: border-box;
-  padding: 12px 14px;
+  padding: 13px 16px;
   border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--bg-input);
   color: var(--text-primary);
-  font-size: 1rem;
+  font-size: 1.0625rem;
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
   outline: none;
 }
 
@@ -351,7 +359,7 @@
   margin: 0;
   white-space: pre-wrap;
   word-break: break-word;
-  font-family: var(--sans);
+  font-family: var(--font-body);
   font-size: 0.875rem;
   line-height: 1.55;
   color: var(--text);
@@ -369,19 +377,23 @@
   right: 0;
   bottom: 0;
   padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
-  background: rgba(11, 15, 26, 0.92);
-  border-top: 1px solid var(--border);
-  backdrop-filter: blur(8px);
+  background: var(--overlay-blur);
+  border-top: 1px solid var(--border-subtle);
+  backdrop-filter: blur(10px);
   z-index: 20;
 }
 
 .disclaimer p {
-  max-width: 460px;
+  max-width: 720px;
   margin: 0 auto;
   font-size: 0.6875rem;
   line-height: 1.45;
   color: var(--text-muted);
   text-align: center;
+}
+
+.disclaimer a {
+  color: var(--accent-blue);
 }
 
 .quota-strip {

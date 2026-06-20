@@ -30,7 +30,7 @@ html[data-wenap-theme='dark'] {
   font-weight: 700;
   letter-spacing: -0.02em;
 }
-.landing-logo span { color: #00d4aa; }
+.landing-logo span { color: var(--accent-green); }
 
 .landing-nav-right {
   display: flex;
