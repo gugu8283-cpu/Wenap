@@ -3213,6 +3213,73 @@ function sampleStaleWarnings(vizSnapshot, sampleTs, locale) {
   return warnings;
 }
 
+function snapshotLooksDelayedQuote(viz) {
+  const blob = [
+    viz?.priceStaleNotice,
+    viz?.priceSource,
+    ...(Array.isArray(viz?.trustWarnings) ? viz.trustWarnings : []),
+  ].join(' ');
+  return /EOD|delayed|延迟|收盘|Marketstack|marketstack/i.test(blob);
+}
+
+/** Rebuild trust / stale notices for public sample — stored snapshots may be zh-CN. */
+function relocalizeSampleTrustFields(vizSnapshot, locale) {
+  if (!vizSnapshot || typeof vizSnapshot !== 'object') return;
+  const loc = normalizeLocale(locale);
+  const zh = loc.startsWith('zh');
+  const delayed = snapshotLooksDelayedQuote(vizSnapshot);
+  const priceStaleNotice = delayed
+    ? zh
+      ? '⚠️ 当前为延迟/收盘口径，盘中波动请交叉核验。'
+      : '⚠️ Delayed/EOD quote; cross-check intraday volatility.'
+    : '';
+  vizSnapshot.priceStaleNotice = priceStaleNotice;
+
+  const tradingDay = String(vizSnapshot.dataAsOf || vizSnapshot.quoteAsOf || '').trim();
+  const marketSnapshot = {
+    tradingDay,
+    priceStaleNotice,
+    fieldFreshnessWarnings: [],
+    priceStaleOver7Days: false,
+    currentPrice: vizSnapshot.avCurrentPrice ?? vizSnapshot.currentPrice,
+    priceAsOfDisplay: vizSnapshot.priceAsOfDisplay,
+  };
+
+  enforceReportAccuracy(vizSnapshot, { locale: loc, marketSnapshot });
+  vizSnapshot.dataFieldFreshness = [];
+
+  if (delayed) {
+    const eodWarn = zh
+      ? '⚠️ 行情源为 EOD/延迟数据，盘中可能与最新成交价存在差异。'
+      : '⚠️ Quote source is EOD/delayed; intraday spot may differ.';
+    if (!vizSnapshot.trustWarnings.includes(eodWarn)) {
+      vizSnapshot.trustWarnings.push(eodWarn);
+    }
+  }
+
+  if (!zh && vizSnapshot.riskBlindSpot && /[\u4e00-\u9fff]/.test(String(vizSnapshot.riskBlindSpot))) {
+    vizSnapshot.riskBlindSpot = 'Some inputs are dated or undated; higher uncertainty';
+  }
+}
+
+function dedupeTrustWarnings(list) {
+  const seen = new Set();
+  return (Array.isArray(list) ? list : []).filter((w) => {
+    const k = String(w || '').trim();
+    if (!k || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
+
+function filterTrustWarningsForLocale(list, locale) {
+  const zh = String(locale || '').startsWith('zh');
+  return dedupeTrustWarnings(list).filter((w) => {
+    if (zh) return true;
+    return !/[\u4e00-\u9fff]/.test(String(w || ''));
+  });
+}
+
 function sendPublicSampleReport(req, res) {
   const sym = String(req.params.ticker || '')
     .toUpperCase()
@@ -3260,10 +3327,12 @@ function sendPublicSampleReport(req, res) {
       if (Array.isArray(raw.vizSnapshot.criticAngles)) {
         raw.vizSnapshot.criticAngles = raw.vizSnapshot.criticAngles.slice(0, 1);
       }
+      relocalizeSampleTrustFields(raw.vizSnapshot, locale);
       const stale = sampleStaleWarnings(raw.vizSnapshot, raw.ts || targetEntry.ts, locale);
-      if (stale.length) {
-        raw.vizSnapshot.trustWarnings = [...stale, ...(raw.vizSnapshot.trustWarnings || [])];
-      }
+      raw.vizSnapshot.trustWarnings = filterTrustWarningsForLocale(
+        [...stale, ...(raw.vizSnapshot.trustWarnings || [])],
+        locale,
+      );
     }
     return res.json({
       ...raw,
