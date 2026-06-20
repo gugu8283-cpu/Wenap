@@ -330,7 +330,8 @@
     "ctaSignup": "免费试用",
     "loading": "正在加载样本报告…",
     "notFound": "暂无该标的的样本报告，请稍后再试。",
-    "error": "无法加载样本报告。"
+    "error": "无法加载样本报告。",
+    "mixedLocaleNote": "样本报告正文为英文生成。请在上方切换为 English 以获得一致体验。"
   },
   "compare": {
     "title": "对比标的",

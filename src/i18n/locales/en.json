@@ -335,7 +335,8 @@
     "ctaSignup": "Try free",
     "loading": "Loading sample report…",
     "notFound": "No sample report available for this ticker yet. Check back soon.",
-    "error": "Failed to load sample report."
+    "error": "Failed to load sample report.",
+    "mixedLocaleNote": "Sample report text is generated in English. Switch to English above for a fully consistent view."
   },
   "compare": {
     "title": "Compare Tickers",
