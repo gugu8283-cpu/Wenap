@@ -169,16 +169,30 @@
   "landing": {
     "signIn": "サインイン",
     "getStarted": "無料で始める",
-    "kicker": "AI 株式分析",
-    "headline": "60秒で銘柄を深掘り",
-    "subheadline": "決算・ニュース・テクニカル・サプライチェーンを統合した構造化レポート。シナリオ、リスク、明確なシグナル付き。",
+    "trySampleNav": "サンプルを見る",
+    "aboutLink": "About",
+    "kicker": "個人投資家向け AI 投資リサーチ",
+    "headline": "約60秒で銘柄を深掘り",
+    "subheadline": "Wenap は個人投資家・トレーダー・アナリスト向けの AI 投資リサーチツールです。主要指標・ニュース・テクニカル・リスク分析を構造化レポートにまとめます。",
+    "timingNote": "多くの場合、レポートは約60秒で生成されます。実際の時間はデータ取得状況とネットワークに依存します。",
+    "reportIncludes": [
+      "6次元レーダースコア",
+      "強気 / ベース / 弱気シナリオ",
+      "ニュース・テクニカル・サプライチェーン",
+      "30日精度の公開トラッキング"
+    ],
     "accuracyLabel": "検証済み予測 {{count}} 件を追跡",
+    "accuracyFallback": "公開精度トラッキング — /accuracy で結果を確認",
     "searchPlaceholder": "ティッカーを入力（例 NVDA）",
     "analyzeBtn": "分析する →",
-    "fineprint": "月5回無料分析。クレジットカード不要。",
-    "featuresTitle": "より速い意思決定に必要なすべて",
-    "featureFastTitle": "60秒ディープリサーチ",
-    "featureFastSub": "複数ソースを1本の構造化レポートに。",
+    "trySampleCta": "NVDA サンプルを見る — 登録不要 →",
+    "trySampleHint": "アカウント作成なしで30秒以内にレポートを確認",
+    "previewCaption": "クリックで NVDA サンプルレポートを開く",
+    "fineprint": "月5回無料 · クレジットカード不要",
+    "trustNote": "AI 生成のリサーチ支援ツール — 投資助言ではありません。精度やリターンを保証しません。",
+    "featuresTitle": "レポートに含まれる内容",
+    "featureFastTitle": "約60秒の構造化レポート",
+    "featureFastSub": "複数ソースを固定レイアウトに統合 — チャット形式ではありません。",
     "featureScenarioTitle": "強気 / ベース / 弱気シナリオ",
     "featureScenarioSub": "確率、価格レンジ、トリガー条件。",
     "featureSixTitle": "6次元レーダー",
@@ -190,6 +204,8 @@
     "featureLanguagesTitle": "6言語",
     "featureLanguagesSub": "English、中文、日本語、한국어、Deutsch、繁體中文。",
     "pricingTitle": "投資家向けプラン",
+    "sampleTitle": "無料サンプルレポート",
+    "sampleNote": "AIレポートを公開サンプルで確認 — 登録不要。",
     "freeFeatures": [
       "月5回の分析",
       "コアレポート：6次元レーダー + シナリオ",
@@ -205,9 +221,7 @@
       "批評家レビュー + Bull/Bear + サプライチェーン詳細",
       "PDF出力 + 2銘柄比較 + ウォッチリスト200"
     ],
-    "upgradeBtn": "プランを見る",
-    "sampleTitle": "サンプルレポート",
-    "sampleNote": "AIレポートを公開サンプルで確認 — 登録不要。"
+    "upgradeBtn": "プランを見る"
   },
   "sample": {
     "banner": "公開サンプルレポートです。任意の銘柄分析は登録後にご利用ください。",

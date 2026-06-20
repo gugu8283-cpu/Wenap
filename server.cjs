@@ -3734,22 +3734,93 @@ app.get('/market/snapshot', requireAuth, async (req, res) => {
 });
 
 // ── OG image endpoint (SVG-based, no puppeteer) ───────────────────────────
+function ogEscapeText(value) {
+  return String(value || '')
+    .slice(0, 80)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function ogRadarPolygon(cx, cy, maxR, scores) {
+  const n = scores.length;
+  const rings = [0.25, 0.5, 0.75, 1];
+  let svg = '';
+  rings.forEach((level) => {
+    const pts = Array.from({ length: n }, (_, i) => {
+      const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
+      const r = maxR * level;
+      return `${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`;
+    }).join(' ');
+    svg += `<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>`;
+  });
+  Array.from({ length: n }, (_, i) => {
+    const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
+    svg += `<line x1="${cx}" y1="${cy}" x2="${cx + maxR * Math.cos(angle)}" y2="${cy + maxR * Math.sin(angle)}" stroke="rgba(255,255,255,0.14)" stroke-width="1"/>`;
+  });
+  const poly = scores
+    .map((s, i) => {
+      const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
+      const r = maxR * (Math.min(100, Math.max(0, Number(s) || 0)) / 100);
+      return `${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`;
+    })
+    .join(' ');
+  svg += `<polygon points="${poly}" fill="rgba(0,212,170,0.28)" stroke="#00d4aa" stroke-width="3"/>`;
+  svg += `<circle cx="${cx}" cy="${cy}" r="4" fill="#00d4aa"/>`;
+  return svg;
+}
+
+function sendOgSvg(res, svg) {
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.send(svg);
+}
+
+/** Homepage / root-domain share card — tool-focused, not a stock tip. */
+app.get('/og/brand', (req, res) => {
+  const radarScores = [82, 75, 70, 85, 68, 78];
+  const svg = `<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e1b4b"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <text x="80" y="72" font-family="system-ui,sans-serif" font-size="32" fill="rgba(255,255,255,0.85)" font-weight="700">Wenap · AI Investment Research</text>
+  <text x="80" y="168" font-family="system-ui,sans-serif" font-size="52" fill="white" font-weight="700">Structured stock research in ~60s</text>
+  <text x="80" y="228" font-family="system-ui,sans-serif" font-size="26" fill="rgba(255,255,255,0.65)">Six-dimension radar · bull/base/bear scenarios · public accuracy</text>
+  <text x="80" y="278" font-family="system-ui,sans-serif" font-size="22" fill="rgba(255,255,255,0.45)">For individual investors &amp; analysts · research tool, not trade signals</text>
+  <rect x="80" y="320" width="420" height="52" rx="10" fill="rgba(0,212,170,0.12)" stroke="rgba(0,212,170,0.35)" stroke-width="1"/>
+  <text x="100" y="354" font-family="system-ui,sans-serif" font-size="22" fill="#00d4aa" font-weight="600">Free sample · no login → wenap.app/sample/NVDA</text>
+  ${ogRadarPolygon(920, 300, 110, radarScores)}
+  <text x="80" y="580" font-family="system-ui,sans-serif" font-size="20" fill="rgba(255,255,255,0.35)">wenap.app · 5 free analyses/month · Not financial advice</text>
+</svg>`;
+  sendOgSvg(res, svg);
+});
+
 app.get('/og/:ticker', (req, res) => {
   const sym = String(req.params.ticker || '').toUpperCase().replace(/[^A-Z0-9.^-]/g, '').slice(0, 16);
   const score = String(req.query.score || '').replace(/[^0-9]/g, '').slice(0, 3);
   const signal = String(req.query.signal || 'BUY').replace(/[^A-Z_]/g, '').slice(0, 10);
-  const company = String(req.query.company || sym).slice(0, 40).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const company = ogEscapeText(req.query.company || sym);
 
-  const scoreNum = parseInt(score, 10) || 0;
+  const scoreNum = parseInt(score, 10) || 72;
   const signalColor = signal === 'BUY' || signal === 'STRONG_BUY'
     ? '#22c55e'
     : signal === 'SELL' || signal === 'STRONG_SELL'
     ? '#ef4444'
     : '#f59e0b';
-
-  const radius = 54;
-  const circumference = 2 * Math.PI * radius;
-  const dashOffset = circumference - (scoreNum / 100) * circumference;
+  const signalLabel = signal.replace(/_/g, ' ');
+  const radarScores = [
+    Math.min(100, scoreNum + 6),
+    Math.min(100, scoreNum - 4),
+    Math.min(100, scoreNum - 10),
+    Math.min(100, scoreNum + 2),
+    Math.min(100, scoreNum - 12),
+    Math.min(100, scoreNum - 6),
+  ].map((v) => Math.max(35, v));
 
   const svg = `<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -3759,25 +3830,19 @@ app.get('/og/:ticker', (req, res) => {
     </linearGradient>
   </defs>
   <rect width="1200" height="630" fill="url(#bg)"/>
-  <text x="80" y="80" font-family="system-ui,sans-serif" font-size="28" fill="rgba(255,255,255,0.4)" font-weight="500">Wenap · AI Investment Research</text>
-  <text x="80" y="200" font-family="system-ui,sans-serif" font-size="72" fill="white" font-weight="700">${sym}</text>
-  <text x="80" y="260" font-family="system-ui,sans-serif" font-size="30" fill="rgba(255,255,255,0.6)">${company}</text>
-  <rect x="80" y="320" width="160" height="56" rx="12" fill="${signalColor}22"/>
-  <text x="160" y="356" text-anchor="middle" font-family="system-ui,sans-serif" font-size="28" fill="${signalColor}" font-weight="700">${signal.replace('_', ' ')}</text>
-  ${scoreNum > 0 ? `
-  <circle cx="980" cy="315" r="${radius}" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="10"/>
-  <circle cx="980" cy="315" r="${radius}" fill="none" stroke="${signalColor}" stroke-width="10"
-    stroke-dasharray="${circumference}" stroke-dashoffset="${dashOffset}"
-    stroke-linecap="round" transform="rotate(-90 980 315)"/>
-  <text x="980" y="325" text-anchor="middle" font-family="system-ui,sans-serif" font-size="42" fill="white" font-weight="700">${scoreNum}</text>
-  <text x="980" y="355" text-anchor="middle" font-family="system-ui,sans-serif" font-size="18" fill="rgba(255,255,255,0.5)">/ 100</text>
-  ` : ''}
-  <text x="80" y="560" font-family="system-ui,sans-serif" font-size="22" fill="rgba(255,255,255,0.3)">wenap.app · AI-powered · Not financial advice</text>
+  <text x="80" y="72" font-family="system-ui,sans-serif" font-size="30" fill="rgba(255,255,255,0.85)" font-weight="700">Wenap · AI Investment Research</text>
+  <text x="80" y="118" font-family="system-ui,sans-serif" font-size="22" fill="rgba(255,255,255,0.5)">Structured report in ~60s · six-dimension radar · scenarios</text>
+  <text x="80" y="210" font-family="system-ui,sans-serif" font-size="68" fill="white" font-weight="700">${ogEscapeText(sym)}</text>
+  <text x="80" y="268" font-family="system-ui,sans-serif" font-size="28" fill="rgba(255,255,255,0.6)">${company}</text>
+  <text x="80" y="318" font-family="system-ui,sans-serif" font-size="18" fill="rgba(255,255,255,0.4)">AI research snapshot · not a buy/sell recommendation</text>
+  <rect x="80" y="340" width="${Math.max(120, signalLabel.length * 14 + 40)}" height="48" rx="10" fill="${signalColor}22" stroke="${signalColor}55" stroke-width="1"/>
+  <text x="100" y="372" font-family="system-ui,sans-serif" font-size="24" fill="${signalColor}" font-weight="700">${ogEscapeText(signalLabel)}</text>
+  <text x="80" y="430" font-family="system-ui,sans-serif" font-size="20" fill="rgba(255,255,255,0.45)">Composite score ${scoreNum}/100 · see full report on wenap.app</text>
+  ${ogRadarPolygon(920, 300, 110, radarScores)}
+  <text x="80" y="580" font-family="system-ui,sans-serif" font-size="20" fill="rgba(255,255,255,0.35)">wenap.app/sample/${ogEscapeText(sym)} · Not financial advice</text>
 </svg>`;
 
-  res.setHeader('Content-Type', 'image/svg+xml');
-  res.setHeader('Cache-Control', 'public, max-age=3600');
-  res.send(svg);
+  sendOgSvg(res, svg);
 });
 
 app.listen(PORT, () => {

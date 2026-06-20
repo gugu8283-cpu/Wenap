@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcher from '../components/LanguageSwitcher.jsx'
 import LegalFooter from '../components/LegalFooter.jsx'
+import LandingHeroPreview from '../components/LandingHeroPreview.jsx'
 import '../components/LegalFooter.css'
 import './LandingPage.css'
 
@@ -37,6 +38,8 @@ const PRICING_TEASERS = [
   { id: 'pro', name: 'Pro', priceKey: 'pricing.proPrice', featuresKey: 'landing.proFeatures', cardClass: 'landing-tier-card--pro', to: '/pricing', ctaKey: 'landing.upgradeBtn' },
   { id: 'pro_plus', name: 'Pro+', priceKey: 'pricing.proPlusPrice', featuresKey: 'landing.proPlusFeatures', cardClass: 'landing-tier-card--proplus', badgeKey: 'pricing.mostPopular', to: '/pricing', ctaKey: 'landing.upgradeBtn' },
 ]
+
+const SAMPLE_TICKERS = ['NVDA', 'AAPL', 'JPM', 'SPY', 'QQQ']
 
 function TierFeatureList({ featuresKey, t }) {
   const items = t(featuresKey, { returnObjects: true })
@@ -82,53 +85,84 @@ export default function LandingPage() {
     }
   }
 
+  const reportIncludes = t('landing.reportIncludes', { returnObjects: true })
+  const hasAccuracy = accuracy && accuracy.total > 0
+  const accuracyPct = hasAccuracy
+    ? (accuracy.buySignalWinRate30d ?? accuracy.pct_correct ?? accuracy.tendencyAccuracy ?? '—')
+    : null
+
   return (
     <div className="landing">
       <nav className="landing-nav">
         <div className="landing-logo">W<span>enap</span></div>
         <div className="landing-nav-right">
           <LanguageSwitcher />
+          <Link to="/sample/NVDA" className="landing-nav-link">{t('landing.trySampleNav')}</Link>
           <Link to="/login" className="landing-nav-link">{t('landing.signIn')}</Link>
           <Link to="/register" className="landing-nav-cta">{t('landing.getStarted')}</Link>
         </div>
       </nav>
 
       <section className="landing-hero">
-        <div className="landing-hero-inner">
-          <div className="landing-kicker">{t('landing.kicker')}</div>
-          <h1 className="landing-headline">{t('landing.headline')}</h1>
-          <p className="landing-subheadline">{t('landing.subheadline')}</p>
+        <div className="landing-hero-layout">
+          <div className="landing-hero-copy">
+            <div className="landing-kicker">{t('landing.kicker')}</div>
+            <h1 className="landing-headline">{t('landing.headline')}</h1>
+            <p className="landing-subheadline">{t('landing.subheadline')}</p>
+            <p className="landing-timing-note">{t('landing.timingNote')}</p>
 
-          {accuracy && accuracy.total > 0 ? (
+            {Array.isArray(reportIncludes) && reportIncludes.length > 0 ? (
+              <ul className="landing-report-includes">
+                {reportIncludes.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            ) : null}
+
             <div className="landing-accuracy-pill">
-              <span className="landing-accuracy-num">
-                {accuracy.buySignalWinRate30d ?? accuracy.pct_correct ?? accuracy.tendencyAccuracy ?? '—'}%
-              </span>
-              <span className="landing-accuracy-label">
-                {t('landing.accuracyLabel', { count: accuracy.total })}
-              </span>
+              {hasAccuracy ? (
+                <>
+                  <span className="landing-accuracy-num">{accuracyPct}%</span>
+                  <span className="landing-accuracy-label">
+                    {t('landing.accuracyLabel', { count: accuracy.total })}
+                  </span>
+                </>
+              ) : (
+                <span className="landing-accuracy-label">{t('landing.accuracyFallback')}</span>
+              )}
               <Link to="/accuracy" className="landing-accuracy-link">→</Link>
             </div>
-          ) : null}
 
-          <form className="landing-search" onSubmit={handleSearch}>
-            <input
-              className="landing-search-input"
-              type="text"
-              placeholder={t('landing.searchPlaceholder')}
-              value={ticker}
-              onChange={(e) => setTicker(e.target.value)}
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <button type="submit" className="landing-search-btn">
-              {t('landing.analyzeBtn')}
-            </button>
-          </form>
+            <form className="landing-search" onSubmit={handleSearch}>
+              <input
+                className="landing-search-input"
+                type="text"
+                placeholder={t('landing.searchPlaceholder')}
+                value={ticker}
+                onChange={(e) => setTicker(e.target.value)}
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <button type="submit" className="landing-search-btn">
+                {t('landing.analyzeBtn')}
+              </button>
+            </form>
 
-          <p className="landing-fine">
-            {t('landing.fineprint')}
-          </p>
+            <div className="landing-hero-actions">
+              <Link to="/sample/NVDA" className="landing-sample-cta">
+                {t('landing.trySampleCta')}
+              </Link>
+              <span className="landing-sample-hint">{t('landing.trySampleHint')}</span>
+            </div>
+
+            <p className="landing-fine">{t('landing.fineprint')}</p>
+            <p className="landing-trust-note">{t('landing.trustNote')}</p>
+          </div>
+
+          <Link to="/sample/NVDA" className="landing-hero-preview-link" aria-label={t('landing.trySampleCta')}>
+            <LandingHeroPreview />
+            <span className="landing-hero-preview-caption">{t('landing.previewCaption')}</span>
+          </Link>
         </div>
       </section>
 
@@ -170,11 +204,11 @@ export default function LandingPage() {
       </section>
 
       <section className="landing-samples">
-        <h2 className="landing-section-title">{t('landing.sampleTitle') || 'Free Sample Reports'}</h2>
-        <p className="landing-section-sub" style={{ textAlign: 'center', color: 'rgba(255,255,255,0.45)', marginBottom: 16 }}>{t('landing.sampleNote') || 'See a live AI report — no sign-up required.'}</p>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', padding: '0 16px 24px' }}>
-          {['NVDA', 'AAPL', 'JPM', 'SPY', 'QQQ'].map((sym) => (
-            <Link key={sym} to={`/sample/${sym}`} style={{ display: 'inline-block', padding: '8px 18px', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 8, color: 'rgba(255,255,255,0.8)', textDecoration: 'none', fontSize: 14, fontWeight: 600 }}>
+        <h2 className="landing-section-title">{t('landing.sampleTitle')}</h2>
+        <p className="landing-section-sub">{t('landing.sampleNote')}</p>
+        <div className="landing-sample-chips">
+          {SAMPLE_TICKERS.map((sym) => (
+            <Link key={sym} to={`/sample/${sym}`} className="landing-sample-chip">
               {sym}
             </Link>
           ))}
@@ -185,7 +219,7 @@ export default function LandingPage() {
         <LegalFooter showDisclaimerLine className="landing-legal-footer" />
         <div className="landing-footer-links">
           <Link to="/accuracy">{t('app.accuracyLink')}</Link>
-          <Link to="/about">About</Link>
+          <Link to="/about">{t('landing.aboutLink')}</Link>
           <Link to="/login">{t('landing.signIn')}</Link>
           <Link to="/pricing">{t('pricing.title')}</Link>
         </div>
