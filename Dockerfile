@@ -23,6 +23,7 @@ COPY jobs ./jobs
 COPY lib ./lib
 COPY routes ./routes
 COPY middleware ./middleware
+COPY samples ./samples
 COPY scripts/createTestAccounts.cjs ./scripts/createTestAccounts.cjs
 RUN mkdir -p data
 EXPOSE 3002

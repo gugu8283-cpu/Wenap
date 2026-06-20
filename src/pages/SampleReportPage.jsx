@@ -151,7 +151,7 @@ export default function SampleReportPage() {
         {vizSnapshot && !loading && (
           <MobileAnalysisReport
             snapshot={vizSnapshot}
-            meta={{ ticker: sym }}
+            meta={{ ticker: sym, locale: sampleLocale }}
             ticker={sym}
           />
         )}

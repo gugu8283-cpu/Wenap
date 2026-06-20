@@ -3178,6 +3178,163 @@ app.get('/health', (req, res) => {
 });
 
 const FEATURED_SAMPLE_TICKERS = ['NVDA', 'AAPL', 'JPM', 'UNH', 'SPY', 'QQQ', 'VTI', 'O', 'PLD', 'GLD'];
+const FEATURED_SAMPLES_DIR = path.join(__dirname, 'samples', 'featured');
+
+/** Guess whether index summary / snapshot text is zh vs en (for locale-aware sample pick). */
+function textLocaleHint(text) {
+  const s = String(text || '');
+  if (!s.trim()) return 'unknown';
+  const han = (s.match(/[\u4e00-\u9fff]/g) || []).length;
+  const latin = (s.match(/[a-zA-Z]/g) || []).length;
+  if (han >= 6 && han > latin * 0.25) return 'zh';
+  if (latin >= 20) return 'en';
+  if (han >= 2 && han >= latin) return 'zh';
+  return 'unknown';
+}
+
+function snapshotLocaleHint(viz) {
+  if (!viz || typeof viz !== 'object') return 'unknown';
+  const blob = [viz.summary, viz.outlook, viz.riskBlindSpot, ...(viz.dimensions || []).map((d) => d?.note)]
+    .filter(Boolean)
+    .join(' ');
+  return textLocaleHint(blob);
+}
+
+function collectFeaturedSampleCandidates(idx, sym) {
+  const out = [];
+  for (const [userKey, entries] of Object.entries(idx.byUser || {})) {
+    for (const entry of Array.isArray(entries) ? entries : []) {
+      if (entry.symbol === sym) out.push({ entry, userKey });
+    }
+  }
+  return out;
+}
+
+function scoreSampleEntryForLocale(entry, locale) {
+  const loc = normalizeLocale(locale);
+  const wantZh = loc.startsWith('zh');
+  const hint = textLocaleHint(entry.summary);
+  let score = Number(entry.ts) || Date.parse(String(entry.ts || '')) || 0;
+  if (wantZh) {
+    if (hint === 'zh') score += 1e15;
+    else if (hint === 'en') score -= 1e12;
+  } else {
+    if (hint === 'en') score += 1e15;
+    else if (hint === 'zh') score -= 1e12;
+  }
+  return score;
+}
+
+function pickFeaturedSampleFromHistory(idx, sym, locale) {
+  const candidates = collectFeaturedSampleCandidates(idx, sym);
+  if (!candidates.length) return null;
+  let best = candidates[0];
+  let bestScore = -Infinity;
+  for (const c of candidates) {
+    const score = scoreSampleEntryForLocale(c.entry, locale);
+    if (score > bestScore) {
+      bestScore = score;
+      best = c;
+    }
+  }
+  return best;
+}
+
+function loadBundledFeaturedSample(sym, locale) {
+  const loc = normalizeLocale(locale);
+  const short = loc.split('-')[0];
+  const tryPaths = [
+    path.join(FEATURED_SAMPLES_DIR, `${sym}-${loc}.json`),
+    path.join(FEATURED_SAMPLES_DIR, `${sym}-${short}.json`),
+    path.join(FEATURED_SAMPLES_DIR, `${sym}.json`),
+  ];
+  for (const p of tryPaths) {
+    try {
+      if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf8'));
+    } catch {
+      /* try next */
+    }
+  }
+  return null;
+}
+
+function loadFeaturedSampleRecord(idx, sym, locale) {
+  const loc = normalizeLocale(locale);
+  const wantZh = loc.startsWith('zh');
+
+  // Public marketing samples: pinned bundled JSON wins for non-zh (avoids stale zh history).
+  if (!wantZh) {
+    const bundled = loadBundledFeaturedSample(sym, locale);
+    if (bundled?.vizSnapshot) {
+      return {
+        raw: bundled,
+        entry: { id: bundled.id, ts: bundled.ts, symbol: sym },
+        userKey: null,
+        source: 'bundled',
+      };
+    }
+  }
+
+  const picked = pickFeaturedSampleFromHistory(idx, sym, locale);
+
+  if (picked) {
+    const filePath = path.join(HISTORY_DIR, userKeyHash(picked.userKey), `${picked.entry.id}.json`);
+    try {
+      const raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      const hint = snapshotLocaleHint(raw.vizSnapshot);
+      const localeOk = wantZh ? hint !== 'en' : hint !== 'zh';
+      if (localeOk || hint === 'unknown') {
+        return { raw, entry: picked.entry, userKey: picked.userKey, source: 'history' };
+      }
+      const bundled = loadBundledFeaturedSample(sym, locale);
+      if (bundled?.vizSnapshot) {
+        return {
+          raw: bundled,
+          entry: { id: bundled.id, ts: bundled.ts, symbol: sym },
+          userKey: null,
+          source: 'bundled',
+        };
+      }
+      return { raw, entry: picked.entry, userKey: picked.userKey, source: 'history-fallback' };
+    } catch {
+      /* fall through to bundled */
+    }
+  }
+
+  const bundled = loadBundledFeaturedSample(sym, locale);
+  if (bundled?.vizSnapshot) {
+    return {
+      raw: bundled,
+      entry: { id: bundled.id, ts: bundled.ts, symbol: sym },
+      userKey: null,
+      source: 'bundled',
+    };
+  }
+  return null;
+}
+
+function preparePublicSampleVizSnapshot(vizSnapshot, locale, sampleTs) {
+  if (!vizSnapshot || typeof vizSnapshot !== 'object') return;
+  const loc = normalizeLocale(locale);
+  const sampleAsset = vizSnapshot.assetType || 'stock';
+  if (Array.isArray(vizSnapshot.dimensions)) {
+    vizSnapshot.dimensions = alignDimensionSlots(vizSnapshot.dimensions, sampleAsset, loc);
+    vizSnapshot.dimensions = applySixthDimensionFloor(vizSnapshot.dimensions, sampleAsset, loc);
+    vizSnapshot.dimensions = markUnavailableDimensionScores(vizSnapshot.dimensions, loc);
+  }
+  localizeReportCitations(vizSnapshot, loc);
+  vizSnapshot.bullBearDebate = undefined;
+  vizSnapshot.secondPassCritique = undefined;
+  if (Array.isArray(vizSnapshot.criticAngles)) {
+    vizSnapshot.criticAngles = vizSnapshot.criticAngles.slice(0, 1);
+  }
+  relocalizeSampleTrustFields(vizSnapshot, loc);
+  const stale = sampleStaleWarnings(vizSnapshot, sampleTs, loc);
+  vizSnapshot.trustWarnings = filterTrustWarningsForLocale(
+    [...stale, ...(vizSnapshot.trustWarnings || [])],
+    loc,
+  );
+}
 
 function apiClientWantsJson(req) {
   const accept = String(req.headers.accept || '');
@@ -3289,56 +3446,23 @@ function sendPublicSampleReport(req, res) {
     return res.status(404).json({ error: 'NOT_FOUND', message: 'Sample only available for featured tickers' });
   }
 
+  const locale = normalizeLocale(req.query?.locale);
   const idx = readHistoryIndex();
-  let targetEntry = null;
-  let targetUserKey = null;
-  for (const [userKey, entries] of Object.entries(idx.byUser || {})) {
-    const match = (Array.isArray(entries) ? entries : []).find((e) => e.symbol === sym);
-    if (match) {
-      if (!targetEntry || match.ts > (targetEntry?.ts || 0)) {
-        targetEntry = match;
-        targetUserKey = userKey;
-      }
-    }
-  }
+  const loaded = loadFeaturedSampleRecord(idx, sym, locale);
 
-  if (!targetEntry || !targetUserKey) {
+  if (!loaded?.raw?.vizSnapshot) {
     return res.status(404).json({ error: 'NOT_FOUND', message: 'No sample report available yet for this ticker' });
   }
 
-  const filePath = path.join(HISTORY_DIR, userKeyHash(targetUserKey), `${targetEntry.id}.json`);
+  const { raw, entry: targetEntry } = loaded;
   try {
-    const raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-    const locale = normalizeLocale(req.query?.locale);
-    if (raw.vizSnapshot && Array.isArray(raw.vizSnapshot.dimensions)) {
-      const sampleAsset = raw.assetType || 'stock';
-      raw.vizSnapshot.dimensions = alignDimensionSlots(raw.vizSnapshot.dimensions, sampleAsset, locale);
-      raw.vizSnapshot.dimensions = applySixthDimensionFloor(
-        raw.vizSnapshot.dimensions,
-        sampleAsset,
-        locale,
-      );
-      raw.vizSnapshot.dimensions = markUnavailableDimensionScores(raw.vizSnapshot.dimensions, locale);
-    }
-    if (raw.vizSnapshot) {
-      localizeReportCitations(raw.vizSnapshot, locale);
-      raw.vizSnapshot.bullBearDebate = undefined;
-      raw.vizSnapshot.secondPassCritique = undefined;
-      if (Array.isArray(raw.vizSnapshot.criticAngles)) {
-        raw.vizSnapshot.criticAngles = raw.vizSnapshot.criticAngles.slice(0, 1);
-      }
-      relocalizeSampleTrustFields(raw.vizSnapshot, locale);
-      const stale = sampleStaleWarnings(raw.vizSnapshot, raw.ts || targetEntry.ts, locale);
-      raw.vizSnapshot.trustWarnings = filterTrustWarningsForLocale(
-        [...stale, ...(raw.vizSnapshot.trustWarnings || [])],
-        locale,
-      );
-    }
+    preparePublicSampleVizSnapshot(raw.vizSnapshot, locale, raw.ts || targetEntry.ts);
     return res.json({
       ...raw,
       isSample: true,
       sampleTicker: sym,
       sampleGeneratedAt: raw.ts || targetEntry.ts,
+      sampleSource: loaded.source,
     });
   } catch {
     return res.status(404).json({ error: 'NOT_FOUND' });

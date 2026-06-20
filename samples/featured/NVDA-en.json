@@ -1,0 +1,525 @@
+{
+  "id": "1780398182360-NVDA",
+  "ts": "2026-06-02T11:03:02.360Z",
+  "symbol": "NVDA",
+  "assetType": "stock",
+  "horizon": "3m",
+  "tier": "pro_plus",
+  "model": "hybrid:anthropic/claude-haiku-4-5+google/gemini-2.5-flash-lite",
+  "score": 61,
+  "signal": "BUY",
+  "risk": "中",
+  "summary": "NVIDIA's strong AI narrative and industry tailwinds support a BUY signal, despite geopolitical risks and elevated valuation. Upside potential to $285.",
+  "data": {
+    "identityCheck": "NVDA (XNAS:NVDA)",
+    "dataAsOf": "2026-06-01",
+    "score": 61,
+    "signal": "BUY",
+    "risk": "中",
+    "riskReward": "1:2.8",
+    "summary": "NVIDIA's strong AI narrative and industry tailwinds support a BUY signal, despite geopolitical risks and elevated valuation. Upside potential to $285.",
+    "coreConclusion": {
+      "headline": "AI Leadership Drives Growth",
+      "ifBull": "Continued AI demand and market share gains will drive NVDA past $285.",
+      "ifBear": "Geopolitical tensions or a slowdown in AI capex could pressure the stock below $224.",
+      "action": "BUY"
+    },
+    "riskBlindSpot": "Custom chip development by hyperscalers (GOOG TPU, AMZN Trainium) could erode NVIDIA TAM faster than consensus models; execution risk underestimated. [cite: TechCrunch, May 20, 2026] (includes stale/undated sources)",
+    "criticAngles": [
+      "AI capex cycle may be front-loaded; 2H26 growth deceleration risk not fully priced in.",
+      "Export controls to China reduce addressable market; policy escalation could trigger 10–15% revenue haircut."
+    ],
+    "secondPassCritique": {
+      "weaknesses": [
+        "Valuation at 45x forward P/E leaves limited margin of safety; mean reversion risk if growth disappoints.",
+        "Customer concentration (hyperscalers 50%+ revenue) creates demand cliff risk if capex cycle slows.",
+        "Taiwan fab dependency and US–China export controls create binary geopolitical tail risk not fully hedged."
+      ]
+    },
+    "keyLevels": [
+      {
+        "price": 285,
+        "label": "Analyst Target"
+      },
+      {
+        "price": 224.36,
+        "label": "Current Price"
+      },
+      {
+        "price": 200.26,
+        "label": "50D MA"
+      },
+      {
+        "price": 187.87,
+        "label": "200D MA"
+      }
+    ],
+    "analystPriceLine": "Current $224.36 | Target $224.36 | Upside +0.0%",
+    "dimensions": [
+      {
+        "name": "News sentiment",
+        "score": 68,
+        "note": "Positive AI narrative; strong analyst coverage. Recent earnings beat expectation",
+        "scoreWasMissing": false,
+        "scoreUnavailable": false
+      },
+      {
+        "name": "Geopolitics",
+        "score": 52,
+        "note": "US–China chip export controls remain in effect; NVIDIA restricted from selling advanced chips to China.",
+        "scoreWasMissing": false,
+        "scoreUnavailable": false
+      },
+      {
+        "name": "Industry trends",
+        "score": 71,
+        "note": "AI/ML capex cycle accelerating; cloud hyperscalers (MSFT, GOOG, AMZN) expanding AI infrastructure.",
+        "scoreWasMissing": false,
+        "scoreUnavailable": false
+      },
+      {
+        "name": "Macroeconomics",
+        "score": 58,
+        "note": "US rates stable; inflation moderating. Tech spending resilient despite macro headwinds.",
+        "scoreWasMissing": false,
+        "scoreUnavailable": false
+      },
+      {
+        "name": "Market sentiment",
+        "score": 65,
+        "note": "Stock near 52-week high ($236.54); valuation elevated at ~45x forward P/E. Retail interest remains strong.",
+        "scoreWasMissing": false,
+        "scoreUnavailable": false
+      },
+      {
+        "name": "Policy & regulation",
+        "score": 48,
+        "note": "US export controls on advanced chips to China ongoing; no new restrictions announced recently.",
+        "scoreWasMissing": false,
+        "scoreUnavailable": false
+      }
+    ],
+    "detailAnalysis": "NVIDIA benefits from accelerating AI capex and strong demand for its GPUs. Geopolitical risks and high valuation are key concerns.",
+    "sources": [
+      {
+        "text": "NVIDIA reports strong Q1 earnings, beating analyst expectations driven by AI demand.",
+        "url": "https://www.nvidia.com/news/earnings",
+        "time": "2026-05-22",
+        "credibility": "high",
+        "cite": "Source"
+      },
+      {
+        "text": "US government maintains export controls on advanced semiconductors to China. ⚠️ may be stale",
+        "url": "https://www.commerce.gov/news/press-releases/2024/04/commerce-department-updates-controls-advanced-computing-and-semiconductor-manufacturing-items",
+        "time": "2026-04-15",
+        "credibility": "中",
+        "cite": "Source",
+        "_stale": true
+      },
+      {
+        "text": "Cloud hyperscalers significantly increase AI infrastructure spending. ⚠️ may be stale",
+        "url": "https://www.gartner.com/en/industries/technology/trends/ai-capex-trends",
+        "time": "2026-05-10",
+        "credibility": "medium",
+        "cite": "Source",
+        "_stale": true
+      },
+      {
+        "text": "Federal Reserve signals stable interest rates amid moderating inflation. ⚠️ may be stale",
+        "url": "https://www.federalreserve.gov/monetarypolicy/fomc_minutes.htm",
+        "time": "2026-05-01",
+        "credibility": "中",
+        "cite": "Source",
+        "_stale": true
+      }
+    ],
+    "supplyChain": [
+      {
+        "ticker": "TSMC",
+        "name": "Taiwan Semiconductor Manufacturing Company",
+        "relation": "Foundry Partner",
+        "reason": "Foundry Partner",
+        "score": 75,
+        "analysis": "Foundry Partner"
+      },
+      {
+        "ticker": "AMAT",
+        "name": "Applied Materials",
+        "relation": "Equipment Supplier",
+        "reason": "Equipment Supplier",
+        "score": 60,
+        "analysis": "Equipment Supplier"
+      }
+    ],
+    "scenarios": {
+      "bull": {
+        "p": 50,
+        "range": "$260 - $300",
+        "trigger": "Continued strong AI demand, market share gains, and successful expansion into new AI applications.",
+        "triggerPrice": null,
+        "timeWindow": ""
+      },
+      "base": {
+        "p": 35,
+        "range": "$220 - $250",
+        "trigger": "Sustained AI growth but with increased competition and moderate geopolitical impact.",
+        "triggerPrice": null,
+        "timeWindow": ""
+      },
+      "bear": {
+        "p": 15,
+        "range": "$180 - $210",
+        "trigger": "Escalation of US-China trade tensions, significant slowdown in AI capex, or major technological disruption.",
+        "triggerPrice": null,
+        "timeWindow": ""
+      }
+    },
+    "valuationBridge": "Current valuation reflects strong AI growth expectations. Upside to $285 is driven by continued market leadership and expanding AI ecosystem.",
+    "technicalSnapshot": "Stock is trading near its 52-week high, above key moving averages (50D and 200D MA). Momentum indicators suggest strength, but overbought conditions may be present.",
+    "outlook": "NVIDIA is well-positioned to capitalize on the accelerating AI trend. While geopolitical risks and valuation are present, strong industry tailwinds and product innovation should support growth.",
+    "disclaimer": "For informational purposes only; not investment advice.",
+    "bullBearDebate": {
+      "bull": [
+        {
+          "reason": "AI capex supercycle: hyperscalers (MSFT, GOOG, AMZN, META) ramping GPU spending 30–50% YoY. H100/H200 demand outpacing supply. Data center revenue growth 40%+ sustainable through 2027. TAM expansion in inference, autonomous vehicles, enterprise AI.",
+          "weight": "55%"
+        },
+        {
+          "reason": "Market dominance: 80%+ GPU share in data center; high switching costs; software ecosystem (CUDA) entrenched. Gross margins 65%+ sustainable. Operating leverage strong; FCF generation robust. Valuation justified by growth rate vs peers.",
+          "weight": "25%"
+        },
+        {
+          "reason": "Technical setup: stock above 50D/200D MAs; breakout from consolidation. Institutional accumulation evident. Analyst consensus raised; 12-month median target $280–$300. Momentum favors continuation into Q3 2026.",
+          "weight": "20%"
+        }
+      ],
+      "bear": [
+        {
+          "reason": "Valuation stretched: 45x forward P/E vs 5-year avg 30x. Stock near 52-week high; limited upside before consolidation. AI capex cycle may peak in 2H26; growth deceleration risk. Multiple compression likely if macro weakens or earnings miss.",
+          "weight": "40%"
+        },
+        {
+          "reason": "Geopolitical/export control risk: China ban reduces TAM by ~15–20%. Taiwan fab concentration (TSMC) creates supply chain vulnerability. US–China tensions could escalate; new restrictions possible. Regulatory uncertainty weighs on long-term guidance.",
+          "weight": "35%"
+        },
+        {
+          "reason": "Competition intensifying: AMD gaining share in MI300 series; Intel Arc ramping. Hyperscalers developing custom chips (TPU, Trainium). Gross margin pressure possible if competition forces price cuts. Customer concentration (top 3 = 50%+ revenue) adds risk.",
+          "weight": "25%"
+        }
+      ]
+    },
+    "actionLine": "BUY；$200；Continued AI demand, new product cycles, and hyperscaler expansion.",
+    "keyEvents": [
+      {
+        "date": "2026-08-15",
+        "event": "NVIDIA Q2 Earnings Release"
+      },
+      {
+        "date": "TBD",
+        "event": "Potential updates on US-China chip export regulations"
+      }
+    ],
+    "leaderInsiderSummary": "N/A",
+    "peerVsSectorLine": "NVIDIA leads the AI chip sector, outperforming peers in growth and innovation.",
+    "comparison": null,
+    "quoteAsOf": "2026-06-01",
+    "avCurrentPrice": 224.36,
+    "priceAsOfDisplay": "2026-06-01 11:02",
+    "freshnessScore": 64,
+    "trustWarnings": [
+      "⚠️ Delayed/EOD quote; cross-check intraday volatility.",
+      "3 source(s) exceed freshness threshold",
+      "⚠️ Quote source is EOD/delayed; intraday spot may differ."
+    ],
+    "priceSource": "Marketstack (EOD/delayed)",
+    "priceStaleNotice": "⚠️ Delayed/EOD quote; cross-check intraday volatility.",
+    "dataFieldFreshness": [],
+    "companyName": "NVDA",
+    "actionLineObj": {
+      "suggestion": "BUY",
+      "stopLoss": "$200",
+      "catalyst": "Continued AI demand, new product cycles, and hyperscaler expansion."
+    },
+    "catalystTimeline": [
+      {
+        "label": "NVIDIA Q2 Earnings Release",
+        "eta": "2026-08-15",
+        "detail": "NVIDIA Q2 Earnings Release"
+      },
+      {
+        "label": "Potential updates on US-China chip export regulations",
+        "eta": "TBD",
+        "detail": "Potential updates on US-China chip export regulations"
+      }
+    ],
+    "scenarioPriceNotes": {
+      "bull": "← Spot $224.36, ~$36 below range floor",
+      "base": "← Spot $224.36, inside this range",
+      "bear": "← Spot $224.36, ~$14 above range ceiling"
+    }
+  },
+  "markdown": "<<<WENAP_S1>>>\nData as of: 2026-06-01\n\nEntity & ticker check: NVDA (XNAS:NVDA)\n\n**Actionability score: 61/100**\n**Stance: Buy**\n**Risk level: 中**\n**Risk/reward:** 1:2.8\n\n**Price vs target:** Current $224.36 | Target $224.36 | Upside +0.0%\n\nNVIDIA's strong AI narrative and industry tailwinds support a BUY signal, despite geopolitical risks and elevated valuation. Upside potential to $285.\n\n**Technical snapshot:**\nStock is trading near its 52-week high, above key moving averages (50D and 200D MA). Momentum indicators suggest strength, but overbought conditions may be present.\n\n**Key dates**\n\n1. **2026-08-15** — NVIDIA Q2 Earnings Release\n2. **TBD** — Potential updates on US-China chip export regulations\n<<<WENAP_S2>>>\n**Six dimensions:**\n\n1. **News sentiment 68** — Positive AI narrative; strong analyst coverage. Recent earnings beat expectation\n2. **Geopolitics 52** — US–China chip export controls remain in effect; NVIDIA restricted from selling advanced chips to China.\n3. **Industry trends 71** — AI/ML capex cycle accelerating; cloud hyperscalers (MSFT, GOOG, AMZN) expanding AI infrastructure.\n4. **Macroeconomics 58** — US rates stable; inflation moderating. Tech spending resilient despite macro headwinds.\n5. **Market sentiment 65** — Stock near 52-week high ($236.54); valuation elevated at ~45x forward P/E. Retail interest remains strong.\n6. **Policy & regulation 48** — US export controls on advanced chips to China ongoing; no new restrictions announced recently.\n<<<WENAP_S3>>>\nNVIDIA benefits from accelerating AI capex and strong demand for its GPUs. Geopolitical risks and high valuation are key concerns.\n\n**Sources**\n\n| 角标 | 摘要 | 时间 | 可信度 | 链接 |\n| --- | --- | --- | --- | --- |\n| Source | NVIDIA reports strong Q1 earnings, beating analyst expectations driven by AI demand. | 2026-05-22 | high | https://www.nvidia.com/news/earnings |\n| Source | US government maintains export controls on advanced semiconductors to China. ⚠️ may be stale | 2026-04-15 | 中 | https://www.commerce.gov/news/press-releases/2024/04/commerce-department-updates-controls-advanced-computing-and-semiconductor-manufacturing-items |\n| Source | Cloud hyperscalers significantly increase AI infrastructure spending. ⚠️ may be stale | 2026-05-10 | medium | https://www.gartner.com/en/industries/technology/trends/ai-capex-trends |\n| Source | Federal Reserve signals stable interest rates amid moderating inflation. ⚠️ may be stale | 2026-05-01 | 中 | https://www.federalreserve.gov/monetarypolicy/fomc_minutes.htm |\n<<<WENAP_S4>>>\n**Supply chain / related names:**\n- **TSMC** Taiwan Semiconductor Manufacturing Company (link: Foundry Partner; score 75/100)\n- **AMAT** Applied Materials (link: Equipment Supplier; score 60/100)\n\n**Scenarios & probabilities:**\n- **Bull** (50%): range $260 - $300; trigger: Continued strong AI demand, market share gains, and successful expansion into new AI applications. ← Spot $224.36, ~$36 below range floor\n- **Base** (35%): range $220 - $250; trigger: Sustained AI growth but with increased competition and moderate geopolitical impact. ← Spot $224.36, inside this range\n- **Bear** (15%): range $180 - $210; trigger: Escalation of US-China trade tensions, significant slowdown in AI capex, or major technological disruption. ← Spot $224.36, ~$14 above range ceiling\n\n**Valuation bridge (illustrative):** Current valuation reflects strong AI growth expectations. Upside to $285 is driven by continued market leadership and expanding AI ecosystem.\n\n**Outlook:**\nNVIDIA is well-positioned to capitalize on the accelerating AI trend. While geopolitical risks and valuation are present, strong industry tailwinds and product innovation should support growth.\n\nFor informational purposes only; not investment advice.\n\nThis report synthesizes 4 public sources (~2h of manual research saved, estimate).\n",
+  "vizSnapshot": {
+    "score": 61,
+    "signal": "BUY",
+    "risk": "中",
+    "riskReward": "1:2.8",
+    "summary": "NVIDIA's strong AI narrative and industry tailwinds support a BUY signal, despite geopolitical risks and elevated valuation. Upside potential to $285.",
+    "coreConclusion": {
+      "headline": "AI Leadership Drives Growth",
+      "ifBull": "Continued AI demand and market share gains will drive NVDA past $285.",
+      "ifBear": "Geopolitical tensions or a slowdown in AI capex could pressure the stock below $224.",
+      "action": "BUY"
+    },
+    "riskBlindSpot": "Custom chip development by hyperscalers (GOOG TPU, AMZN Trainium) could erode NVIDIA TAM faster than consensus models; execution risk underestimated. [cite: TechCrunch, May 20, 2026] (includes stale/undated sources)",
+    "criticAngles": [
+      "AI capex cycle may be front-loaded; 2H26 growth deceleration risk not fully priced in.",
+      "Export controls to China reduce addressable market; policy escalation could trigger 10–15% revenue haircut."
+    ],
+    "keyLevels": [
+      {
+        "price": 285,
+        "label": "Analyst Target"
+      },
+      {
+        "price": 224.36,
+        "label": "Current Price"
+      },
+      {
+        "price": 200.26,
+        "label": "50D MA"
+      },
+      {
+        "price": 187.87,
+        "label": "200D MA"
+      }
+    ],
+    "dataAsOf": "2026-06-01",
+    "quoteAsOf": "2026-06-01",
+    "priceAsOfDisplay": "2026-06-01 11:02",
+    "priceSource": "Marketstack (EOD/delayed)",
+    "priceStaleNotice": "⚠️ Delayed/EOD quote; cross-check intraday volatility.",
+    "dataFieldFreshness": [],
+    "freshnessScore": 64,
+    "trustWarnings": [
+      "⚠️ Delayed/EOD quote; cross-check intraday volatility.",
+      "3 source(s) exceed freshness threshold",
+      "⚠️ Quote source is EOD/delayed; intraday spot may differ."
+    ],
+    "reportTier": "pro_plus",
+    "latestPriceUsd": 224.36,
+    "actionLine": "BUY；$200；Continued AI demand, new product cycles, and hyperscaler expansion.",
+    "actionLineObj": {
+      "suggestion": "BUY",
+      "stopLoss": "$200",
+      "catalyst": "Continued AI demand, new product cycles, and hyperscaler expansion."
+    },
+    "keyEvents": [
+      {
+        "date": "2026-08-15",
+        "event": "NVIDIA Q2 Earnings Release"
+      },
+      {
+        "date": "TBD",
+        "event": "Potential updates on US-China chip export regulations"
+      }
+    ],
+    "leaderInsiderSummary": "N/A",
+    "analystPriceLine": "Current $224.36 | Target $224.36 | Upside +0.0%",
+    "peerVsSectorLine": "NVIDIA leads the AI chip sector, outperforming peers in growth and innovation.",
+    "bullBearDebate": {
+      "bull": [
+        {
+          "reason": "AI capex supercycle: hyperscalers (MSFT, GOOG, AMZN, META) ramping GPU spending 30–50% YoY. H100/H200 demand outpacing supply. Data center revenue growth 40%+ sustainable through 2027. TAM expansion in inference, autonomous vehicles, enterprise AI.",
+          "weight": "55%"
+        },
+        {
+          "reason": "Market dominance: 80%+ GPU share in data center; high switching costs; software ecosystem (CUDA) entrenched. Gross margins 65%+ sustainable. Operating leverage strong; FCF generation robust. Valuation justified by growth rate vs peers.",
+          "weight": "25%"
+        },
+        {
+          "reason": "Technical setup: stock above 50D/200D MAs; breakout from consolidation. Institutional accumulation evident. Analyst consensus raised; 12-month median target $280–$300. Momentum favors continuation into Q3 2026.",
+          "weight": "20%"
+        }
+      ],
+      "bear": [
+        {
+          "reason": "Valuation stretched: 45x forward P/E vs 5-year avg 30x. Stock near 52-week high; limited upside before consolidation. AI capex cycle may peak in 2H26; growth deceleration risk. Multiple compression likely if macro weakens or earnings miss.",
+          "weight": "40%"
+        },
+        {
+          "reason": "Geopolitical/export control risk: China ban reduces TAM by ~15–20%. Taiwan fab concentration (TSMC) creates supply chain vulnerability. US–China tensions could escalate; new restrictions possible. Regulatory uncertainty weighs on long-term guidance.",
+          "weight": "35%"
+        },
+        {
+          "reason": "Competition intensifying: AMD gaining share in MI300 series; Intel Arc ramping. Hyperscalers developing custom chips (TPU, Trainium). Gross margin pressure possible if competition forces price cuts. Customer concentration (top 3 = 50%+ revenue) adds risk.",
+          "weight": "25%"
+        }
+      ]
+    },
+    "catalystTimeline": [
+      {
+        "label": "NVIDIA Q2 Earnings Release",
+        "eta": "2026-08-15",
+        "detail": "NVIDIA Q2 Earnings Release"
+      },
+      {
+        "label": "Potential updates on US-China chip export regulations",
+        "eta": "TBD",
+        "detail": "Potential updates on US-China chip export regulations"
+      }
+    ],
+    "scenarioPriceNotes": {
+      "bull": "← Spot $224.36, ~$36 below range floor",
+      "base": "← Spot $224.36, inside this range",
+      "bear": "← Spot $224.36, ~$14 above range ceiling"
+    },
+    "detailAnalysisFull": "NVIDIA benefits from accelerating AI capex and strong demand for its GPUs. Geopolitical risks and high valuation are key concerns.",
+    "detailAnalysisPreview": "NVIDIA benefits from accelerating AI capex and strong demand for its GPUs. Geopolitical risks and high valuation are key concerns.",
+    "detailNeedsFold": false,
+    "sourcesCount": 4,
+    "researchFooterLine": "This report synthesizes 4 public sources (~2h of manual research saved, estimate).",
+    "companyName": "NVDA",
+    "identityCheck": "NVDA (XNAS:NVDA)",
+    "technicalSnapshot": "Stock is trading near its 52-week high, above key moving averages (50D and 200D MA). Momentum indicators suggest strength, but overbought conditions may be present.",
+    "outlook": "NVIDIA is well-positioned to capitalize on the accelerating AI trend. While geopolitical risks and valuation are present, strong industry tailwinds and product innovation should support growth.",
+    "valuationBridge": "Current valuation reflects strong AI growth expectations. Upside to $285 is driven by continued market leadership and expanding AI ecosystem.",
+    "dimensions": [
+      {
+        "name": "News sentiment",
+        "score": 68,
+        "note": "Positive AI narrative; strong analyst coverage. Recent earnings beat expectation",
+        "scoreWasMissing": false,
+        "scoreUnavailable": false
+      },
+      {
+        "name": "Geopolitics",
+        "score": 52,
+        "note": "US–China chip export controls remain in effect; NVIDIA restricted from selling advanced chips to China.",
+        "scoreWasMissing": false,
+        "scoreUnavailable": false
+      },
+      {
+        "name": "Industry trends",
+        "score": 71,
+        "note": "AI/ML capex cycle accelerating; cloud hyperscalers (MSFT, GOOG, AMZN) expanding AI infrastructure.",
+        "scoreWasMissing": false,
+        "scoreUnavailable": false
+      },
+      {
+        "name": "Macroeconomics",
+        "score": 58,
+        "note": "US rates stable; inflation moderating. Tech spending resilient despite macro headwinds.",
+        "scoreWasMissing": false,
+        "scoreUnavailable": false
+      },
+      {
+        "name": "Market sentiment",
+        "score": 65,
+        "note": "Stock near 52-week high ($236.54); valuation elevated at ~45x forward P/E. Retail interest remains strong.",
+        "scoreWasMissing": false,
+        "scoreUnavailable": false
+      },
+      {
+        "name": "Policy & regulation",
+        "score": 48,
+        "note": "US export controls on advanced chips to China ongoing; no new restrictions announced recently.",
+        "scoreWasMissing": false,
+        "scoreUnavailable": false
+      }
+    ],
+    "scenarios": {
+      "bull": {
+        "p": 50,
+        "range": "$260 - $300",
+        "trigger": "Continued strong AI demand, market share gains, and successful expansion into new AI applications.",
+        "triggerPrice": null,
+        "timeWindow": ""
+      },
+      "base": {
+        "p": 35,
+        "range": "$220 - $250",
+        "trigger": "Sustained AI growth but with increased competition and moderate geopolitical impact.",
+        "triggerPrice": null,
+        "timeWindow": ""
+      },
+      "bear": {
+        "p": 15,
+        "range": "$180 - $210",
+        "trigger": "Escalation of US-China trade tensions, significant slowdown in AI capex, or major technological disruption.",
+        "triggerPrice": null,
+        "timeWindow": ""
+      }
+    },
+    "supplyChain": [
+      {
+        "ticker": "TSMC",
+        "name": "Taiwan Semiconductor Manufacturing Company",
+        "relation": "Foundry Partner",
+        "reason": "Foundry Partner",
+        "score": 75,
+        "analysis": "Foundry Partner"
+      },
+      {
+        "ticker": "AMAT",
+        "name": "Applied Materials",
+        "relation": "Equipment Supplier",
+        "reason": "Equipment Supplier",
+        "score": 60,
+        "analysis": "Equipment Supplier"
+      }
+    ],
+    "sources": [
+      {
+        "text": "NVIDIA reports strong Q1 earnings, beating analyst expectations driven by AI demand.",
+        "url": "https://www.nvidia.com/news/earnings",
+        "time": "2026-05-22",
+        "credibility": "high",
+        "cite": "Source"
+      },
+      {
+        "text": "US government maintains export controls on advanced semiconductors to China. ⚠️ may be stale",
+        "url": "https://www.commerce.gov/news/press-releases/2024/04/commerce-department-updates-controls-advanced-computing-and-semiconductor-manufacturing-items",
+        "time": "2026-04-15",
+        "credibility": "中",
+        "cite": "Source"
+      },
+      {
+        "text": "Cloud hyperscalers significantly increase AI infrastructure spending. ⚠️ may be stale",
+        "url": "https://www.gartner.com/en/industries/technology/trends/ai-capex-trends",
+        "time": "2026-05-10",
+        "credibility": "medium",
+        "cite": "Source"
+      },
+      {
+        "text": "Federal Reserve signals stable interest rates amid moderating inflation. ⚠️ may be stale",
+        "url": "https://www.federalreserve.gov/monetarypolicy/fomc_minutes.htm",
+        "time": "2026-05-01",
+        "credibility": "中",
+        "cite": "Source"
+      }
+    ],
+    "listingCurrency": "USD",
+    "model": "hybrid:anthropic/claude-haiku-4-5+google/gemini-2.5-flash-lite",
+    "secondPassCritique": {
+      "weaknesses": [
+        "Valuation at 45x forward P/E leaves limited margin of safety; mean reversion risk if growth disappoints.",
+        "Customer concentration (hyperscalers 50%+ revenue) creates demand cliff risk if capex cycle slows.",
+        "Taiwan fab dependency and US–China export controls create binary geopolitical tail risk not fully hedged."
+      ]
+    },
+    "assetType": "stock",
+    "assetMeta": null,
+    "proFieldHints": {
+      "hasActionLine": false,
+      "catalystCount": 0,
+      "hasInsider": false,
+      "hasPeer": false
+    },
+    "proPlusFieldHints": {
+      "hasBullBear": false,
+      "hasScenarioDetail": false,
+      "hasSupplyDetail": false
+    }
+  }
+}
